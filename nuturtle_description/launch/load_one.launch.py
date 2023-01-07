@@ -10,11 +10,6 @@ PACKAGE_NAME = "nuturtle_description"
 
 def generate_launch_description():
     
-    # Get parameters from turtle.yaml file 
-    #  params = PathJoinSubstitution([
-        #  FindPackageShare('nuturtle_description'),
-        #  'config/turtle.yaml'
-    #  ])
 
     return LaunchDescription([
         
@@ -59,14 +54,14 @@ def generate_launch_description():
         Node (
             package="rviz2",
             executable="rviz2",
-            condition = LaunchConfigurationEquals("use_rviz", "true")
-            #  arguments=[
-                #  '-d',
-                #  PathJoinSubstitution([
-                    #  FindPackageShare(package_name),
-                    #  "config/ddrive_urdf.rviz"
-                #  ])
-            #  ]
+            condition = LaunchConfigurationEquals("use_rviz", "true"),
+            arguments=[
+                '-d',
+                PathJoinSubstitution([
+                    FindPackageShare(PACKAGE_NAME),
+                    "config/basic_purple.rviz"
+                ])
+            ]
         )
 
     ])
