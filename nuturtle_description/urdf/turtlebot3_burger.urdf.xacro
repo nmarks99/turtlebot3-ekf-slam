@@ -1,14 +1,18 @@
 <?xml version="1.0" ?>
 <robot name="nuturtle_burger"
   xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find nuturtle_description)/urdf/common_properties.urdf.xacro"/>
+
+  <xacro:arg name="color" default="purple"/>
+   
+  <xacro:include filename="$(find nuturtle_description)/urdf/utils.xacro"/>
+  
   <xacro:property name="config_file" value="$(find nuturtle_description)/config/diff_params.yaml" />
   <xacro:property name="params" value="${xacro.load_yaml(config_file)}"/> 
-
+ 
   <xacro:property name="wheel_radius" value="${params['/**']['ros__parameters']['wheel_radius']}"/>
   <xacro:property name="track_width" value="${params['/**']['ros__parameters']['track_width']}"/>
   <xacro:property name="collision_radius" value="${params['/**']['ros__parameters']['collision_radius']}"/>
-  
+
 
   <link name="base_footprint"/>
 
@@ -24,7 +28,7 @@
       <geometry>
         <mesh filename="package://nuturtle_description/meshes/burger_base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="light_black"/>
+      <material name="$(arg color)"/>
     </visual>
 
     <collision>
@@ -59,7 +63,7 @@
       <geometry>
         <mesh filename="package://nuturtle_description/meshes/left_tire.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="black"/>
+      <material name="light_black"/>
     </visual>
 
     <collision>
@@ -89,7 +93,7 @@
       <geometry>
         <mesh filename="package://nuturtle_description/meshes/right_tire.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="black"/>
+      <material name="light_black"/>
     </visual>
 
     <collision>
@@ -147,7 +151,7 @@
       <geometry>
         <mesh filename="package://nuturtle_description/meshes/lds.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="brown"/>
+      <material name="light_black"/>
     </visual>
 
     <collision>
