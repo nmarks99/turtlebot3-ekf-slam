@@ -2,6 +2,7 @@ import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import PathJoinSubstitution, Command, TextSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.substitutions import FindPackageShare
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import LaunchConfigurationEquals
@@ -18,6 +19,13 @@ def generate_launch_description():
             "use_jsp",
             default_value="true",
             description="Choose whether to use the joint state publisher"
+        ),
+    
+        # Argument to set the color of the robot which is passed to urdf
+        DeclareLaunchArgument(
+            "color",
+            default_value="purple",
+            description="Set the color of the robot (purple, red, green, or blue)"
         ),
 
         # Argument for whether or not to use rviz
@@ -36,8 +44,10 @@ def generate_launch_description():
                     TextSubstitution(text="xacro "),
                     PathJoinSubstitution([
                         FindPackageShare(PACKAGE_NAME),
-                        "urdf/turtlebot3_burger.urdf.xacro"
-                    ])
+                        "urdf/turtlebot3_burger.urdf.xacro "
+                    ]),
+                    TextSubstitution(text="color:="),
+                    LaunchConfiguration("color")
                 ])
                 }
             ]
