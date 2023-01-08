@@ -5,4 +5,4 @@
     motor_cmd_max: 265
     motor_cmd_per_rad_sec: 0.024
     encoder_ticks_per_rad: 651.9
-    collision_radius: 0.1
+    collision_radius: 0.105

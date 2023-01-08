@@ -7,7 +7,7 @@
 
   <xacro:property name="wheel_radius" value="${params['/**']['ros__parameters']['wheel_radius']}"/>
   <xacro:property name="track_width" value="${params['/**']['ros__parameters']['track_width']}"/>
-  <xacro:property name="collision_radius" value="${params['/**']['ros__parameters']['wheel_radius']}"/>
+  <xacro:property name="collision_radius" value="${params['/**']['ros__parameters']['collision_radius']}"/>
   
 
   <link name="base_footprint"/>
@@ -30,8 +30,12 @@
     <collision>
       <origin xyz="-0.032 0 0.070" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="${collision_radius}" length="0.143"/>
-        <!-- <box size="0.140 0.140 0.143"/> -->
+        <xacro:if value="${collision_radius &lt; 0}">
+          <box size="0.140 0.140 0.143"/>
+        </xacro:if>
+        <xacro:if value="${collision_radius &gt; 0}">
+          <cylinder radius="${collision_radius}" length="0.143"/>
+        </xacro:if>
       </geometry>
     </collision>
 
