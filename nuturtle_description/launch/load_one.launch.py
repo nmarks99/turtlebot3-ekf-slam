@@ -4,7 +4,7 @@ from launch_ros.actions import Node
 from launch.substitutions import PathJoinSubstitution, Command, TextSubstitution
 from launch.substitutions import LaunchConfiguration
 from launch_ros.substitutions import FindPackageShare
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, SetLaunchConfiguration
 from launch.conditions import LaunchConfigurationEquals
 
 PACKAGE_NAME = "nuturtle_description"
@@ -21,6 +21,13 @@ def generate_launch_description():
             description="Choose whether to use the joint state publisher"
         ),
     
+        # Argument for whether or not to use rviz
+        DeclareLaunchArgument(
+            "use_rviz",
+            default_value="true",
+            description="Choose whether to use rviz"
+        ),
+        
         # Argument to set the color of the robot which is passed to urdf
         DeclareLaunchArgument(
             "color",
@@ -28,15 +35,14 @@ def generate_launch_description():
             choices=["purple","red","blue","green"],
             description="Set the color of the robot"
         ),
-
-        # Argument for whether or not to use rviz
-        DeclareLaunchArgument(
-            "use_rviz",
-            default_value="true",
-            description="Choose whether to use rviz"
+        
+        # Defines the TF prefix to be color/
+        SetLaunchConfiguration(
+            "tf_prefix",
+            [LaunchConfiguration("color"),TextSubstitution(text="/")]
         ),
     
-        # loads turtlebot3_burger.urdf.xacro into a robot state publisher
+        # Loads turtlebot3_burger.urdf.xacro into a robot state publisher
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",
@@ -50,7 +56,8 @@ def generate_launch_description():
                     TextSubstitution(text="color:="),
                     LaunchConfiguration("color")
                 ])
-                }
+                },
+                {"frame_prefix" : LaunchConfiguration("tf_prefix")}
             ]
         ),
 
@@ -61,7 +68,7 @@ def generate_launch_description():
             condition = LaunchConfigurationEquals("use_jsp","true")
         ),
 
-        # start rviz
+        # Start rviz
         Node (
             package="rviz2",
             executable="rviz2",
