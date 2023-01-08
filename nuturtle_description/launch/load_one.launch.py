@@ -25,7 +25,8 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "color",
             default_value="purple",
-            description="Set the color of the robot (purple, red, green, or blue)"
+            choices=["purple","red","blue","green"],
+            description="Set the color of the robot"
         ),
 
         # Argument for whether or not to use rviz
