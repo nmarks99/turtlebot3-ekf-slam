@@ -36,11 +36,33 @@ def generate_launch_description():
             description="Set the color of the robot"
         ),
         
-        # Defines the TF prefix to be color/
+        # Defines the TF prefix to be "color/"
         SetLaunchConfiguration(
             "tf_prefix",
             [LaunchConfiguration("color"),TextSubstitution(text="/")]
         ),
+        
+        # Constructs the name of the rviz config file based on color
+        SetLaunchConfiguration(
+            "rviz_config",
+            [
+                TextSubstitution(text="config/basic_"),
+                LaunchConfiguration("color"),
+                TextSubstitution(text=".rviz")
+            ]
+        ),
+        
+        # Constructs the name of the fixed frame based on color
+        SetLaunchConfiguration(
+            "fixed_frame",
+            [
+                LaunchConfiguration("color"),
+                TextSubstitution(text="/base_footprint")
+            ]
+        ),
+
+
+
     
         # Loads turtlebot3_burger.urdf.xacro into a robot state publisher
         Node(
@@ -68,7 +90,7 @@ def generate_launch_description():
             condition = LaunchConfigurationEquals("use_jsp","true")
         ),
 
-        # Start rviz
+        # Start rviz with appropriate config file and fixed frame
         Node (
             package="rviz2",
             executable="rviz2",
@@ -77,8 +99,9 @@ def generate_launch_description():
                 '-d',
                 PathJoinSubstitution([
                     FindPackageShare(PACKAGE_NAME),
-                    "config/basic_purple.rviz"
-                ])
+                    LaunchConfiguration("rviz_config")
+                ]),
+                '--fixed-frame',LaunchConfiguration("fixed_frame")
             ]
         )
 
