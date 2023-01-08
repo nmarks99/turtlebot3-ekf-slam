@@ -61,9 +61,6 @@ def generate_launch_description():
             ]
         ),
 
-
-
-    
         # Loads turtlebot3_burger.urdf.xacro into a robot state publisher
         Node(
             package="robot_state_publisher",
@@ -80,14 +77,16 @@ def generate_launch_description():
                 ])
                 },
                 {"frame_prefix" : LaunchConfiguration("tf_prefix")}
-            ]
+            ],
+            namespace = LaunchConfiguration("color")
         ),
 
         # Run joint_state_publisher if use_jsp="true"
         Node (
             package="joint_state_publisher",
             executable="joint_state_publisher",
-            condition = LaunchConfigurationEquals("use_jsp","true")
+            condition = LaunchConfigurationEquals("use_jsp","true"),
+            namespace = LaunchConfiguration("color")
         ),
 
         # Start rviz with appropriate config file and fixed frame
@@ -102,7 +101,8 @@ def generate_launch_description():
                     LaunchConfiguration("rviz_config")
                 ]),
                 '--fixed-frame',LaunchConfiguration("fixed_frame")
-            ]
+            ],
+            namespace = LaunchConfiguration("color")
         )
 
     ])
