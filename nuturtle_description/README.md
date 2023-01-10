@@ -10,7 +10,8 @@ URDF files for Nuturtle <NameYourRobot>
 * The rqt_graph when all four robots are visualized (Nodes Only, Hide Debug) is:
 ![](images/rqt_graph_all.svg)
 
-# Launch File Details
+# Launch File Details 
+## TODO: I think the load_all.launch.xml shouldn't show all the args
 * `ros2 launch nuturtle_description load_one.launch.py --show-args`
     ```
     Arguments (pass arguments as '<name>:=<value>'):
