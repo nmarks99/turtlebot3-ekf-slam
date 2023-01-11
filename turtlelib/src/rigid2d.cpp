@@ -10,62 +10,61 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D 
 
 turtlelib::Transform2D::Transform2D() {
 
-    std::vector<std::vector<double>> _tf
-    {
-        {1.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0},
-        {0.0, 0.0, 1.0}
-    };
-    
-    tf = _tf;
-
+    // std::vector<std::vector<double>> _tf
+    // {
+        // {1.0, 0.0, 0.0},
+        // {0.0, 1.0, 0.0},
+        // {0.0, 0.0, 1.0}
+    // };
+   
+    rotation_rad = 0.0;
 }
 
 
 turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
     
-    std::vector<std::vector<double>> _tf
-    {
-        {1.0, 0.0, trans.x},
-        {0.0, 1.0, trans.y},
-        {0.0, 0.0, 1.0}
-    };
+    // std::vector<std::vector<double>> _tf
+    // {
+        // {1.0, 0.0, trans.x},
+        // {0.0, 1.0, trans.y},
+        // {0.0, 0.0, 1.0}
+    // };
+    
+    translation_vec = trans;
 
-    tf = _tf;
 }
 
 
 turtlelib::Transform2D::Transform2D(double radians) {
 
-    std::vector<std::vector<double>> _tf 
-    {
-        {cos(radians), -sin(radians), 0.0},
-        {sin(radians), cos(radians), 0.0},
-        {0.0, 0.0, 1.0}
-    };
+    // std::vector<std::vector<double>> _tf
+    // {
+        // {cos(radians), -sin(radians), 0.0},
+        // {sin(radians), cos(radians), 0.0},
+        // {0.0, 0.0, 1.0}
+    // };
+    //
+    // tf_vec = _tf;
 
-    tf = _tf;
-}
-
-        
-void turtlelib::Transform2D::display() {
-    
-    for(int i = 0; i < 3; i++) {
-        for(int j = 0; j < 3; j++){
-            if (almost_equal(0.0,tf[i][j])){
-                tf[i][j] = 0.0; 
-            }
-            std::cout << tf[i][j] <<" ";
-        }
-        std::cout << std::endl;
-    }
-
+    rotation_rad = radians;
 }
 
 
+turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
+    rotation_rad = radians;
+    translation_vec = trans;
+}
 
-
-
-
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
+{
+    os<<
+        "deg:"<<
+        rad2deg(tf.rotation_rad)<<
+        " x:"<<
+        tf.translation_vec.x<<
+        " y:"<<
+        tf.translation_vec.y;
+    return os;
+}
 
 

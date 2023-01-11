@@ -108,12 +108,11 @@ namespace turtlelib
     {
 
     private:
-
-        std::vector<std::vector<double>> tf;
-
+        
+        double rotation_rad;
+        Vector2D translation_vec; 
+    
     public:
-
-        void display();
 
         /// \brief Create an identity transformation
         Transform2D();
