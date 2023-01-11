@@ -6,6 +6,8 @@
 
 #include <iosfwd>    // contains forward definitions for iostream objects
 #include <cstdlib>  // C standard library
+#include <vector>
+#include <cmath>
 
 namespace turtlelib
 {
@@ -104,7 +106,15 @@ namespace turtlelib
     /// \brief a rigid body transformation in 2 dimensions
     class Transform2D
     {
+
+    private:
+
+        std::vector<std::vector<double>> tf;
+
     public:
+
+        void display();
+
         /// \brief Create an identity transformation
         Transform2D();
 
