@@ -51,8 +51,10 @@ turtlelib::Transform2D::Transform2D(double radians) {
 
 
 turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
+
     rotation_rad = radians;
     translation_vec = trans;
+
 }
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
@@ -66,5 +68,38 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform
         tf.translation_vec.y;
     return os;
 }
+
+
+turtlelib::Vector2D turtlelib::Transform2D::translation() const {
+    return translation_vec;
+}
+
+
+double turtlelib::Transform2D::rotation() const {
+    return rotation_rad; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
