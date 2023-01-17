@@ -111,6 +111,7 @@ namespace turtlelib
         
         double rotation_rad;
         Vector2D translation_vec; 
+        std::vector<std::vector<double>> tf_vec;
     
     public:
 
@@ -135,7 +136,6 @@ namespace turtlelib
         /// \param v - the vector to transform
         /// \return a vector in the new coordinate system
         Vector2D operator()(Vector2D v) const;
-
 
         /// \brief invert the transformation
         /// \return the inverse transformation. 
