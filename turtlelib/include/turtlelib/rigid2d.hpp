@@ -111,9 +111,9 @@ namespace turtlelib
         
         double rotation_rad;
         Vector2D translation_vec; 
-        std::vector<std::vector<double>> tf_vec;
     
     public:
+        std::vector<std::vector<double>> tf_vec;
 
         /// \brief Create an identity transformation
         Transform2D();

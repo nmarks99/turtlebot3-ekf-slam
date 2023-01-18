@@ -57,7 +57,7 @@ turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
     std::vector<std::vector<double>> _tf
     {
         {cos(radians), -sin(radians), trans.x},
-        {sin(radians), cos(radians), trans.x},
+        {sin(radians), cos(radians), trans.y},
         {0.0, 0.0, 1.0}
     };
 
@@ -73,20 +73,20 @@ turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) co
     
     turtlelib::Vector2D res; 
 
-    std::vector<double> v_vec = {v.x, v.y, 1};
-    
+    std::vector<double> v_vec = {v.x, v.y, 1.0};
+    std::vector<double> v_res = {0.0, 0.0, 0.0};
     double _row = 0;
     for (auto i = 0; i < 3; i++){
         for (auto j = 0; j < 3; j++){
             _row += v_vec.at(j) * turtlelib::Transform2D::tf_vec.at(i).at(j); 
         }
-        v_vec.at(i) = _row;
+        v_res[i] = _row;
         _row = 0;
     }
     
-    res.x = v_vec.at(0);
-    res.y = v_vec.at(1);
-
+    res.x = v_res.at(0);
+    res.y = v_res.at(1);
+        
     return res;
 }
 
