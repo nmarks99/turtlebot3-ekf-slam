@@ -75,19 +75,22 @@ turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) co
     
     turtlelib::Vector2D res; 
 
-    std::vector<double> v_vec = {v.x, v.y, 1.0};
-    std::vector<double> v_res = {0.0, 0.0, 0.0};
-    double _row = 0;
-    for (auto i = 0; i < 3; i++){
-        for (auto j = 0; j < 3; j++){
-            _row += v_vec.at(j) * turtlelib::Transform2D::tf_vec.at(i).at(j); 
-        }
-        v_res[i] = _row;
-        _row = 0;
-    }
+    // std::vector<double> v_vec = {v.x, v.y, 1.0};
+    // std::vector<double> v_res = {0.0, 0.0, 0.0};
+    // double _row = 0;
+    // for (auto i = 0; i < 3; i++){
+        // for (auto j = 0; j < 3; j++){
+            // _row += v_vec.at(j) * turtlelib::Transform2D::tf_vec.at(i).at(j);
+        // }
+        // v_res[i] = _row;
+        // _row = 0;
+    // }
+    //
+    // res.x = v_res.at(0);
+    // res.y = v_res.at(1);
     
-    res.x = v_res.at(0);
-    res.y = v_res.at(1);
+    res.x = v.x*cos(rotation_rad) - v.y*sin(rotation_rad) + translation_vec.x;
+    res.y = v.x*sin(rotation_rad) + v.y*cos(rotation_rad) + translation_vec.y;
         
     return res;
 }

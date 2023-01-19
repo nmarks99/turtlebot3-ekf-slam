@@ -21,9 +21,9 @@ int main() {
     double angle = M_PI/2;
     turtlelib::Vector2D p{x:0, y:0};
     turtlelib::Transform2D g(p, angle);
-    std::cout << g << std::endl;
-    turtlelib::Transform2D g_inv = g.inv();
-    std::cout << g_inv << std::endl;
+    turtlelib::Vector2D v{x:1.0, y:0.0};
+    auto v_new = g(v);
+    std::cout << v_new << std::endl;
 
 
     return 0;
