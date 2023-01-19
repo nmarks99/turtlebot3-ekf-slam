@@ -1,5 +1,6 @@
 #include "turtlelib/rigid2d.hpp"
 #include <iostream>
+#include <cassert>
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v)
 {
@@ -7,30 +8,6 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D 
     return os;
 }
 
-// turtlelib::Transform2D matmul(Matrix A) {
-    // auto rows_A = A.size();
-    // auto cols_A = A.at(0).size();
-    // auto rows_B = B.size();
-    // auto cols_B = B.at(0).size();
-    // assert(cols_A == rows_B);
-//
-    // Matrix C(
-        // rows_A,
-        // std::vector<double> (cols_B, 0)
-    // );
-    // for (auto i = 0; i < rows_A; i++) {
-        // for (auto j = 0; j < cols_B; j++) {
-            // for (auto k = 0; k < rows_B; k++) {
-                // C[i][j] += B[i][k] * A[k][j];
-            // }
-        // }
-    // }
-    //
-    // turtlelib::Transform2D tf;
-    // tf.tf_vec = C;
-//
-    // return tf;
-// }
 
 
 turtlelib::Transform2D::Transform2D() {
@@ -132,40 +109,14 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform
 
 turtlelib::Transform2D turtlelib::Transform2D::inv() const {
 
-    auto tf_vec0 = turtlelib::Transform2D::tf_vec;
-
-    // transpose a 2d matrix by swapping elements across main diagonal
-    std::vector<std::vector<double>> R_T
-    {
-        {tf_vec0[0][0], tf_vec0[1][0]},
-        {tf_vec0[0][1], tf_vec0[1][1]}
-    };
-    
-    auto p_vec = std::vector<double> {
-        turtlelib::Transform2D::translation_vec.x,
-        turtlelib::Transform2D::translation_vec.y
-    };
-
-    // p_res(2x2) = -R_T * p_vec 
-    auto _row = 0;
-    auto p_res = std::vector<double> {0.0,0.0};
-    for (auto i = 0; i < 2; i++){
-        for (auto j = 0; j < 2; j++){
-            _row += p_vec.at(j) * -R_T.at(i).at(j); 
-        }
-        p_res[i] = _row;
-        _row = 0;
-    }
-    
-    // Fill in the inverse into tf_vec of a new tf
     turtlelib::Transform2D tf_out;
-    tf_out.tf_vec[0][0] = R_T[0][0];
-    tf_out.tf_vec[0][1] = R_T[0][1];
-    tf_out.tf_vec[1][0] = R_T[1][0];
-    tf_out.tf_vec[1][1] = R_T[1][1];
-    // std::cout << p_res[0] << ", " << p_res[1] << std::endl;
-    tf_out.tf_vec[0][2] = p_res[0];
-    tf_out.tf_vec[1][2] = p_res[1];
+    tf_out.rotation_rad = -rotation_rad;
+
+    tf_out.translation_vec.x =
+        -translation_vec.x * cos(rotation_rad) - translation_vec.y * sin(rotation_rad);
+    
+    tf_out.translation_vec.y =
+        translation_vec.x * sin(rotation_rad) - translation_vec.y * cos(rotation_rad);
 
     return tf_out;
     

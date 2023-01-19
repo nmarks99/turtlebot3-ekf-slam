@@ -3,7 +3,6 @@
 /// \file
 /// \brief Two-dimensional rigid body transformations.
 
-
 #include <iosfwd>    // contains forward definitions for iostream objects
 #include <cstdlib>  // C standard library
 #include <vector>
@@ -11,6 +10,9 @@
 
 namespace turtlelib
 {
+
+    using Matrix = std::vector<std::vector<double>>;
+
     /// \brief PI.  Not in C++ standard until C++20.
     constexpr double PI=3.14159265358979323846;
 
@@ -72,9 +74,10 @@ namespace turtlelib
 
         /// \brief the y coordinate
         double y = 0.0;
+
     };
 
-
+    
 
 
     /// \brief output a 2 dimensional vector as [xcomponent ycomponent]
@@ -109,15 +112,12 @@ namespace turtlelib
 
     private:
         
-        using Matrix = std::vector<std::vector<double>>;
-
         double rotation_rad;
         Vector2D translation_vec; 
-        std::vector<std::vector<double>> tf_vec;
         
-        // Transform2D matmul(Matrix A) const;
 
     public:
+        std::vector<std::vector<double>> tf_vec;
         
         /// \brief Create an identity transformation
         Transform2D();
