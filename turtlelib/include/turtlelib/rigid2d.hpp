@@ -109,12 +109,16 @@ namespace turtlelib
 
     private:
         
+        using Matrix = std::vector<std::vector<double>>;
+
         double rotation_rad;
         Vector2D translation_vec; 
-    
-    public:
         std::vector<std::vector<double>> tf_vec;
+        
+        // Transform2D matmul(Matrix A) const;
 
+    public:
+        
         /// \brief Create an identity transformation
         Transform2D();
 
