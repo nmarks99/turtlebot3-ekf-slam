@@ -18,10 +18,8 @@ void display(std::vector<std::vector<double>> vec) {
 
 int main() {
 
-    turtlelib::Transform2D tf;
-    
-    std::cout << tf << std::endl;
-    std::cin >> tf;
-    std::cout << tf << std::endl;
+    turtlelib::Twist2D V;
+    std::cin >> V;
+    std::cout << "Twist = " << V << std::endl;
 
 }

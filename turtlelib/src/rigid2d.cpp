@@ -3,30 +3,9 @@
 #include <cassert>
 
 
-/*
-===========================
-Vector2D operator overloads
-===========================
-*/
-
-std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
-    
-    char ch = is.peek();
-    if (ch == '['){
-        is.get(); // pop [
-    }
-    
-    // First two chars should be v.x and v.y
-    is >> v.x;
-    is >> v.y;
-
-    return is;
-}
-
-
 /* 
 =========================
-Transform2D Class Methods
+Transform2D constructors 
 =========================
 */
 
@@ -91,6 +70,12 @@ turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
 }
 
 
+/* 
+============================
+Transform2D member functions
+============================
+*/
+
 turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) const {
     
     turtlelib::Vector2D res; 
@@ -154,17 +139,63 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform
 }
 
 
-
 /*
-=============================
-Additional operator overloads
-=============================
+===========================
+Vector2D operator overloads
+===========================
 */
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v) {
     os << "[" << v.x << " " << v.y << "]";
     return os;
 }
+
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
+    
+    char ch = is.peek();
+    if (ch == '['){
+        is.get(); // pop [
+    }
+    
+    // First two chars should be v.x and v.y
+    is >> v.x;
+    is >> v.y;
+
+    return is;
+}
+
+
+/*
+===========================
+Twist2D operator overloads
+===========================
+*/
+
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Twist2D &v){
+    os << "[" << v.thetadot << " " << v.xdot << " " << v.ydot << "]";
+    return os;
+}
+
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Twist2D &v) {
+    char ch = is.peek();
+    if (ch == '['){
+        is.get();
+    }
+
+    // First three chars should be thetadot, xdot, ydot
+    is >> v.thetadot;
+    is >> v.xdot;
+    is >> v.ydot;
+
+    return is;
+}
+
+
+/*
+==============================
+Transform2D operator overloads
+==============================
+*/
 
 std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf) {
     

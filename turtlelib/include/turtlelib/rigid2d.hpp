@@ -77,8 +77,6 @@ namespace turtlelib
 
     };
 
-    
-
 
     /// \brief output a 2 dimensional vector as [xcomponent ycomponent]
     /// os - stream to output to
@@ -105,6 +103,33 @@ namespace turtlelib
     /// When you call std::peek() it will wait for there to be at least one character in the buffer (e.g., the user types a character)
     /// HINT: this function can be written in under 20 lines and uses only std::peek(), std::get(), istream::operator>>() and a little logic
     std::istream & operator>>(std::istream & is, Vector2D & v);
+
+
+    /// \brief A 2-Dimensional Twist
+    struct Twist2D 
+    {
+        /// \brief angular velocity
+        double thetadot;
+
+        /// \brief x velocity
+        double xdot;
+
+        /// \brief y velocity
+        double ydot;
+
+    };
+
+    /// \brief output a 2 dimensional twist as [xcomponent ycomponent]
+    /// os - stream to output to
+    /// v - the twist to print
+    std::ostream &operator<<(std::ostream &os, const Twist2D &v);
+
+    /// \brief input a 2 dimensional vector
+    ///   You should be able to read vectors entered as follows:
+    ///   [x y] or x y
+    /// \param is - stream from which to read
+    /// \param v [out] - output vector
+    std::istream &operator>>(std::istream &is, Twist2D &v);
 
     /// \brief a rigid body transformation in 2 dimensions
     class Transform2D
@@ -189,8 +214,6 @@ namespace turtlelib
     /// \return the composition of the two transforms
     /// HINT: This function should be implemented in terms of *=
     Transform2D operator*(Transform2D lhs, const Transform2D & rhs);
-
-
 
 }
 
