@@ -8,9 +8,9 @@ int main() {
     turtlelib::Transform2D Tbc;
 
     // Prompt user to specify the transforms Tab and Tbc
-    std::cout << "Enter transform T_{a,b}" << std::endl;
+    std::cout << "Enter transform T_{a,b}:" << std::endl;
     std::cin >> Tab;
-    std::cout << "Enter transform T_{b,c}" << std::endl;
+    std::cout << "Enter transform T_{b,c}:" << std::endl;
     std::cin >> Tbc;
 
     // Compute the rest of the transforms we want
