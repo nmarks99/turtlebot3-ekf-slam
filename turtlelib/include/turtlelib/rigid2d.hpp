@@ -75,6 +75,10 @@ namespace turtlelib
         /// \brief the y coordinate
         double y = 0.0;
 
+        /// \brief computes the L2 norm of the 2D vector
+        /// \return the normalized vector
+        Vector2D normalize() const;
+
     };
 
 
@@ -95,13 +99,13 @@ namespace turtlelib
     struct Twist2D 
     {
         /// \brief angular velocity
-        double thetadot;
+        double thetadot = 0.0;
 
         /// \brief x velocity
-        double xdot;
+        double xdot = 0.0;
 
         /// \brief y velocity
-        double ydot;
+        double ydot = 0.0;
 
     };
 
@@ -169,6 +173,13 @@ namespace turtlelib
         /// \brief get the angular displacement of the transform
         /// \return the angular displacement, in radians
         double rotation() const;
+
+        /// \brief use the adjoint to find the representation of 
+        /// the given twist in another reference frame specified
+        /// by the transform described by the Transform2D object (T_ij)
+        /// \param V - a twist represented the j frame
+        /// \return a twist represented in the i frame
+        Twist2D map_twist(Twist2D V) const; 
 
         /// \brief \see operator<<(...) (declared outside this class)
         /// for a description

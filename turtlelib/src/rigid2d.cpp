@@ -116,6 +116,18 @@ turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Tran
     return *this;
 }
 
+turtlelib::Twist2D turtlelib::Transform2D::map_twist(turtlelib::Twist2D V) const {
+    turtlelib::Twist2D V_new;
+
+    // Result obtained from V_i = Adjoint_ij*V_j and plugging in 
+    // values for given V and current Transform2D
+    V_new.thetadot = V.thetadot;
+    V_new.xdot = p_vec.y*V.thetadot + V.xdot*cos(angle) - V.ydot*sin(angle);
+    V_new.ydot = -p_vec.x*V.thetadot + V.xdot*sin(angle) + V.ydot*cos(angle);
+
+    return V_new;
+}
+
 turtlelib::Vector2D turtlelib::Transform2D::translation() const {
     return p_vec;
 }
@@ -124,7 +136,6 @@ turtlelib::Vector2D turtlelib::Transform2D::translation() const {
 double turtlelib::Transform2D::rotation() const {
     return angle; 
 }
-
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
 {
@@ -163,6 +174,30 @@ std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
 
     return is;
 }
+
+
+/*
+================
+Vector2D methods
+================
+*/
+
+turtlelib::Vector2D turtlelib::Vector2D::normalize() const {
+    turtlelib::Vector2D v_norm;
+
+    if (x != 0 && y != 0) {
+        auto mag = sqrt(pow(x,2) + pow(y,2));
+        v_norm.x = x/mag;
+        v_norm.y = y/mag;
+    }
+    else {
+        v_norm.x = 0.0;
+        v_norm.y = 0.0;
+    }
+
+    return v_norm;
+}
+
 
 
 /*

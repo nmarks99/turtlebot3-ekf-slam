@@ -18,8 +18,14 @@ void display(std::vector<std::vector<double>> vec) {
 
 int main() {
 
-    turtlelib::Twist2D V;
-    std::cin >> V;
-    std::cout << "Twist = " << V << std::endl;
+    // turtlelib::Twist2D V{0,1,0};
+    // turtlelib::Vector2D vec{0,0};
+    // turtlelib::Transform2D tf(vec, M_PI/2);
+    // auto V_new = tf.map_twist(V);
+    // std::cout << V_new << std::endl;
+
+    turtlelib::Vector2D v{0,0};
+    auto v_norm = v.normalize();
+    std::cout << v_norm << std::endl;
 
 }
