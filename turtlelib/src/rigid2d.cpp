@@ -2,13 +2,40 @@
 #include <iostream>
 #include <cassert>
 
+
+/*
+===========================
+Vector2D operator overloads
+===========================
+*/
+
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v)
 {
-    os << "[" << v.x << ", " << v.y << "]";
+    os << "[" << v.x << " " << v.y << "]";
     return os;
 }
 
 
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
+    
+    char ch = is.peek();
+    if (ch == '['){
+        is.get(); // pop [
+    }
+    
+    // First two chars should be v.x and v.y
+    is >> v.x;
+    is >> v.y;
+
+    return is;
+}
+
+
+/* 
+=========================
+Transform2D Class Methods
+=========================
+*/
 
 turtlelib::Transform2D::Transform2D() {
 
@@ -75,38 +102,10 @@ turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) co
     
     turtlelib::Vector2D res; 
 
-    // std::vector<double> v_vec = {v.x, v.y, 1.0};
-    // std::vector<double> v_res = {0.0, 0.0, 0.0};
-    // double _row = 0;
-    // for (auto i = 0; i < 3; i++){
-        // for (auto j = 0; j < 3; j++){
-            // _row += v_vec.at(j) * turtlelib::Transform2D::tf_vec.at(i).at(j);
-        // }
-        // v_res[i] = _row;
-        // _row = 0;
-    // }
-    //
-    // res.x = v_res.at(0);
-    // res.y = v_res.at(1);
-    
     res.x = v.x*cos(rotation_rad) - v.y*sin(rotation_rad) + translation_vec.x;
     res.y = v.x*sin(rotation_rad) + v.y*cos(rotation_rad) + translation_vec.y;
         
     return res;
-}
-
-
-
-std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
-{
-    os<<
-        "deg:"<<
-        rad2deg(tf.rotation_rad)<<
-        " x:"<<
-        tf.translation_vec.x<<
-        " y:"<<
-        tf.translation_vec.y;
-    return os;
 }
 
 
@@ -125,6 +124,9 @@ turtlelib::Transform2D turtlelib::Transform2D::inv() const {
     
 }
 
+// Transform2D & operator*=(const Transform2D & rhs) {
+
+// }
 
 turtlelib::Vector2D turtlelib::Transform2D::translation() const {
     return translation_vec;
@@ -136,8 +138,31 @@ double turtlelib::Transform2D::rotation() const {
 }
 
 
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
+{
+    os<<
+        "deg:"<<
+        rad2deg(tf.rotation_rad)<<
+        " x:"<<
+        tf.translation_vec.x<<
+        " y:"<<
+        tf.translation_vec.y;
+    return os;
+}
 
 
+
+/*
+=============================
+Additional operator overloads
+=============================
+*/
+
+std::ostream & turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D & tf);
+
+std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf);
+
+turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs);
 
 
 
