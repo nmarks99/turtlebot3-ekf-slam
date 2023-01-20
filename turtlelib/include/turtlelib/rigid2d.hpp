@@ -7,6 +7,9 @@
 #include <cstdlib>  // C standard library
 #include <vector>
 #include <cmath>
+#include <iostream>
+#include <cassert>
+
 
 namespace turtlelib
 {
@@ -130,7 +133,7 @@ namespace turtlelib
         
         double angle;
         Vector2D p_vec; 
-        std::vector<std::vector<double>> tf_vec; // probably not needed
+        // std::vector<std::vector<double>> tf_vec; // probably not needed
 
     public:
         

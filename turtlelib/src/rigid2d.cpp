@@ -1,23 +1,21 @@
 #include "turtlelib/rigid2d.hpp"
-#include <iostream>
-#include <cassert>
 
 
 /* 
-=========================
-Transform2D constructors 
-=========================
+============
+Transform2D
+============
 */
 
 turtlelib::Transform2D::Transform2D() {
 
-    std::vector<std::vector<double>> _tf
-    {
-        {1.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0},
-        {0.0, 0.0, 1.0}
-    };
-    tf_vec = _tf;
+    // std::vector<std::vector<double>> _tf
+    // {
+    //     {1.0, 0.0, 0.0},
+    //     {0.0, 1.0, 0.0},
+    //     {0.0, 0.0, 1.0}
+    // };
+    // tf_vec = _tf;
    
     angle = 0.0;
 }
@@ -25,13 +23,13 @@ turtlelib::Transform2D::Transform2D() {
 
 turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
     
-    std::vector<std::vector<double>> _tf
-    {
-        {1.0, 0.0, trans.x},
-        {0.0, 1.0, trans.y},
-        {0.0, 0.0, 1.0}
-    };
-    tf_vec = _tf;
+    // std::vector<std::vector<double>> _tf
+    // {
+    //     {1.0, 0.0, trans.x},
+    //     {0.0, 1.0, trans.y},
+    //     {0.0, 0.0, 1.0}
+    // };
+    // tf_vec = _tf;
     
     p_vec = trans;
 
@@ -40,14 +38,14 @@ turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
 
 turtlelib::Transform2D::Transform2D(double radians) {
 
-    std::vector<std::vector<double>> _tf
-    {
-        {cos(radians), -sin(radians), 0.0},
-        {sin(radians), cos(radians), 0.0},
-        {0.0, 0.0, 1.0}
-    };
+    // std::vector<std::vector<double>> _tf
+    // {
+    //     {cos(radians), -sin(radians), 0.0},
+    //     {sin(radians), cos(radians), 0.0},
+    //     {0.0, 0.0, 1.0}
+    // };
 
-    tf_vec = _tf;
+    // tf_vec = _tf;
 
     angle = radians;
 }
@@ -55,26 +53,19 @@ turtlelib::Transform2D::Transform2D(double radians) {
 
 turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
     
-    std::vector<std::vector<double>> _tf
-    {
-        {cos(radians), -sin(radians), trans.x},
-        {sin(radians), cos(radians), trans.y},
-        {0.0, 0.0, 1.0}
-    };
+    // std::vector<std::vector<double>> _tf
+    // {
+    //     {cos(radians), -sin(radians), trans.x},
+    //     {sin(radians), cos(radians), trans.y},
+    //     {0.0, 0.0, 1.0}
+    // };
 
-    tf_vec = _tf;
+    // tf_vec = _tf;
 
     angle = radians;
     p_vec = trans;
 
 }
-
-
-/* 
-============================
-Transform2D member functions
-============================
-*/
 
 turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) const {
     
@@ -105,12 +96,12 @@ turtlelib::Transform2D turtlelib::Transform2D::inv() const {
 
 turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Transform2D &rhs) {
     
+    // Set new translation vector
+    p_vec.x = p_vec.x + rhs.p_vec.x * cos(angle) - rhs.p_vec.y * sin(angle);
+    p_vec.y = p_vec.y + rhs.p_vec.x * sin(angle) + rhs.p_vec.y * cos(angle);
+
     // Set new rotation angle 
     angle = angle + rhs.angle;
-
-    // Set new translation vector
-    p_vec.x = p_vec.x + rhs.p_vec.x*cos(angle) - rhs.p_vec.y*sin(angle);
-    p_vec.y = p_vec.y + rhs.p_vec.x*cos(angle) + rhs.p_vec.y*cos(angle);
 
     // Return modified Transform2D object
     return *this;
@@ -149,11 +140,29 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform
     return os;
 }
 
+std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf) {
+    
+    double a;
+    double px, py;
+    is >> a >> px >> py;
+
+    tf.angle = deg2rad(a);
+    tf.p_vec.x = px;
+    tf.p_vec.y = py;
+
+    return is;
+
+}
+
+turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs){
+    return lhs *= rhs;
+}
+
 
 /*
-===========================
-Vector2D operator overloads
-===========================
+=========
+Vector2D
+=========
 */
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v) {
@@ -175,13 +184,6 @@ std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
     return is;
 }
 
-
-/*
-================
-Vector2D methods
-================
-*/
-
 turtlelib::Vector2D turtlelib::Vector2D::normalize() const {
     turtlelib::Vector2D v_norm;
 
@@ -199,11 +201,10 @@ turtlelib::Vector2D turtlelib::Vector2D::normalize() const {
 }
 
 
-
 /*
-===========================
-Twist2D operator overloads
-===========================
+========
+Twist2D 
+========
 */
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Twist2D &v){
@@ -223,31 +224,6 @@ std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Twist2D &v) {
     is >> v.ydot;
 
     return is;
-}
-
-
-/*
-==============================
-Transform2D operator overloads
-==============================
-*/
-
-std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf) {
-    
-    double a;
-    double px, py;
-    is >> a >> px >> py;
-
-    tf.angle = deg2rad(a);
-    tf.p_vec.x = px;
-    tf.p_vec.y = py;
-
-    return is;
-
-}
-
-turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs){
-    return lhs *= rhs;
 }
 
 
