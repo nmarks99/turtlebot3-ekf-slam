@@ -18,16 +18,10 @@ void display(std::vector<std::vector<double>> vec) {
 
 int main() {
 
-    double a1 = M_PI/2;
-    double a2 = M_PI/2;
-    turtlelib::Vector2D v{x: 0.0, y: 0.0};
-    turtlelib::Transform2D tf1(v, a1);
-    std::cout << tf1 << std::endl;
-    turtlelib::Transform2D tf2(v, a2);
-    tf1 *= tf2;
-    std::cout << tf1 << std::endl;
+    turtlelib::Transform2D tf;
     
-    
-
+    std::cout << tf << std::endl;
+    std::cin >> tf;
+    std::cout << tf << std::endl;
 
 }

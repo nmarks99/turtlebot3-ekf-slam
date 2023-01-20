@@ -9,13 +9,6 @@ Vector2D operator overloads
 ===========================
 */
 
-std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v)
-{
-    os << "[" << v.x << " " << v.y << "]";
-    return os;
-}
-
-
 std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
     
     char ch = is.peek();
@@ -168,11 +161,28 @@ Additional operator overloads
 =============================
 */
 
-std::ostream & turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D & tf);
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v) {
+    os << "[" << v.x << " " << v.y << "]";
+    return os;
+}
 
-std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf);
+std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf) {
+    
+    double a;
+    double px, py;
+    is >> a >> px >> py;
 
-turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs);
+    tf.angle = deg2rad(a);
+    tf.p_vec.x = px;
+    tf.p_vec.y = py;
+
+    return is;
+
+}
+
+turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs){
+    return lhs *= rhs;
+}
 
 
 

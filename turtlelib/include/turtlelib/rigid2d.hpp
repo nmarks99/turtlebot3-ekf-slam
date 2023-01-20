@@ -161,6 +161,10 @@ namespace turtlelib
         /// \brief \see operator<<(...) (declared outside this class)
         /// for a description
         friend std::ostream & operator<<(std::ostream & os, const Transform2D & tf);
+        
+        /// \brief \see operator>>(...) (declared outside this class)
+        /// for a description
+        friend std::istream & operator>>(std::istream & is, Transform2D & tf);
 
     };
 
