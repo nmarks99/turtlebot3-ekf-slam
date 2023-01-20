@@ -47,7 +47,7 @@ turtlelib::Transform2D::Transform2D() {
     };
     tf_vec = _tf;
    
-    rotation_rad = 0.0;
+    angle = 0.0;
 }
 
 
@@ -61,7 +61,7 @@ turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
     };
     tf_vec = _tf;
     
-    translation_vec = trans;
+    p_vec = trans;
 
 }
 
@@ -77,7 +77,7 @@ turtlelib::Transform2D::Transform2D(double radians) {
 
     tf_vec = _tf;
 
-    rotation_rad = radians;
+    angle = radians;
 }
 
 
@@ -92,8 +92,8 @@ turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
 
     tf_vec = _tf;
 
-    rotation_rad = radians;
-    translation_vec = trans;
+    angle = radians;
+    p_vec = trans;
 
 }
 
@@ -102,8 +102,8 @@ turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) co
     
     turtlelib::Vector2D res; 
 
-    res.x = v.x*cos(rotation_rad) - v.y*sin(rotation_rad) + translation_vec.x;
-    res.y = v.x*sin(rotation_rad) + v.y*cos(rotation_rad) + translation_vec.y;
+    res.x = v.x*cos(angle) - v.y*sin(angle) + p_vec.x;
+    res.y = v.x*sin(angle) + v.y*cos(angle) + p_vec.y;
         
     return res;
 }
@@ -112,29 +112,39 @@ turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) co
 turtlelib::Transform2D turtlelib::Transform2D::inv() const {
 
     turtlelib::Transform2D tf_out;
-    tf_out.rotation_rad = -rotation_rad;
 
-    tf_out.translation_vec.x =
-        -translation_vec.x * cos(rotation_rad) - translation_vec.y * sin(rotation_rad);
-    
-    tf_out.translation_vec.y =
-        translation_vec.x * sin(rotation_rad) - translation_vec.y * cos(rotation_rad);
+    // Set new rotation angle 
+    tf_out.angle = -angle;
 
-    return tf_out;
+    // Set new translation vector
+    tf_out.p_vec.x = -p_vec.x * cos(angle) - p_vec.y * sin(angle);
+    tf_out.p_vec.y = p_vec.x * sin(angle) - p_vec.y * cos(angle);
+
+    // Return new Transform2D object
+    return tf_out; 
     
 }
 
-// Transform2D & operator*=(const Transform2D & rhs) {
+turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Transform2D &rhs) {
+    
+    // Set new rotation angle 
+    angle = angle + rhs.angle;
 
-// }
+    // Set new translation vector
+    p_vec.x = p_vec.x + rhs.p_vec.x*cos(angle) - rhs.p_vec.y*sin(angle);
+    p_vec.y = p_vec.y + rhs.p_vec.x*cos(angle) + rhs.p_vec.y*cos(angle);
+
+    // Return modified Transform2D object
+    return *this;
+}
 
 turtlelib::Vector2D turtlelib::Transform2D::translation() const {
-    return translation_vec;
+    return p_vec;
 }
 
 
 double turtlelib::Transform2D::rotation() const {
-    return rotation_rad; 
+    return angle; 
 }
 
 
@@ -142,11 +152,11 @@ std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform
 {
     os<<
         "deg:"<<
-        rad2deg(tf.rotation_rad)<<
+        rad2deg(tf.angle)<<
         " x:"<<
-        tf.translation_vec.x<<
+        tf.p_vec.x<<
         " y:"<<
-        tf.translation_vec.y;
+        tf.p_vec.y;
     return os;
 }
 

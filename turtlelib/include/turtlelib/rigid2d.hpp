@@ -112,8 +112,8 @@ namespace turtlelib
 
     private:
         
-        double rotation_rad;
-        Vector2D translation_vec; 
+        double angle;
+        Vector2D p_vec; 
         std::vector<std::vector<double>> tf_vec; // probably not needed
 
     public:
