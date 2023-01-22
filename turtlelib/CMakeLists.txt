@@ -4,7 +4,7 @@ project(turtlelib)
 # create the turtlelib library
 add_library(turtlelib src/rigid2d.cpp)
 # The add_library function just added turtlelib as a "target"
-# a "target" is a name that CMake uses to refer to some type of output
+# A "target" is a name that CMake uses to refer to some type of output
 # In this case it is a library but it could also be an executable or some other items
 
 # Public include directories can be used by other targets that link against turtlelib
@@ -32,7 +32,7 @@ find_package(Doxygen)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md) # Use the readme in your doxygen docs
 doxygen_add_docs(doxygen include/ src/ README.md ALL)
 
-# Use the cmake testing functionality. a test is just an executable.
+# Use the cmake testing functionality. A test is just an executable.
 # We use the catch2 unit testing framework
 find_package(Catch2 3 REQUIRED)
 
