@@ -5,12 +5,17 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include <rclcpp/logging.hpp>
+
 #include "std_msgs/msg/u_int64.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include "nusim/srv/teleport.hpp"
+
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
+
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 
@@ -38,11 +43,14 @@ class Nusim : public rclcpp::Node {
             timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep",10);
 
             // Create reset service 
+            // resets the timestamp and teleports the robot to its starting pose
             reset_service = this->create_service<std_srvs::srv::Empty>(
                 "~/reset",
                 std::bind(&Nusim::reset_callback, this, _1, _2)
             );
 
+            // Create teleport service
+            // teleports the robot in the simulation to the specified pose
             teleport_service = this->create_service<nusim::srv::Teleport>(
                 "~/teleport",
                 std::bind(&Nusim::teleport_callback, this, _1, _2)
@@ -70,14 +78,15 @@ class Nusim : public rclcpp::Node {
 
 
     private:
-        // double _x0, _y0, _theta0;
         rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
         rclcpp::TimerBase::SharedPtr _timer;
+
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
         rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
+        
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+        
         uint64_t step;
-
         struct Pose2D {
             double x;
             double y;
@@ -89,7 +98,6 @@ class Nusim : public rclcpp::Node {
             const std::shared_ptr<std_srvs::srv::Empty::Request> request,
             std::shared_ptr<std_srvs::srv::Empty::Response> response)
         {
-            // empty request and response are unused
             UNUSED(request); 
             UNUSED(response);
 
