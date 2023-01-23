@@ -8,6 +8,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # find dependencies
+find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -26,6 +27,15 @@ ament_target_dependencies(
   tf2_ros
   geometry_msgs
 )
+
+rosidl_generate_interfaces(
+  ${PROJECT_NAME}_srv
+  "srv/Teleport.srv"
+  LIBRARY_NAME ${PROJECT_NAME}
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
+target_link_libraries(nusim "${cpp_typesupport_target}") 
 
 # install nodes
 install(TARGETS 

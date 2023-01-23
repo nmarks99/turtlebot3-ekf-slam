@@ -8,7 +8,7 @@
 #include "std_msgs/msg/u_int64.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_srvs/srv/empty.hpp"
-
+#include "nusim/srv/teleport.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "tf2/LinearMath/Quaternion.h"
@@ -43,6 +43,11 @@ class Nusim : public rclcpp::Node {
                 std::bind(&Nusim::reset_callback, this, _1, _2)
             );
 
+            teleport_service = this->create_service<nusim::srv::Teleport>(
+                "~/teleport",
+                std::bind(&Nusim::teleport_callback, this, _1, _2)
+            );
+
             // Create transform broadcaster
             tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
@@ -65,11 +70,11 @@ class Nusim : public rclcpp::Node {
 
 
     private:
-        double _x0, _y0, _theta0;
-        // const double  DEFAULT_X0, DEFAULT_Y0, DEFAULT_THETA0;
+        // double _x0, _y0, _theta0;
         rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
         rclcpp::TimerBase::SharedPtr _timer;
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
+        rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
         uint64_t step;
 
@@ -94,6 +99,16 @@ class Nusim : public rclcpp::Node {
             true_pose.theta = DEFAULT_THETA0;
         }
 
+        void teleport_callback(const std::shared_ptr<nusim::srv::Teleport::Request> request,
+            std::shared_ptr<nusim::srv::Teleport::Response> response)
+        {
+            UNUSED(response);
+
+            true_pose.x = request->x;
+            true_pose.y = request->y;
+            true_pose.theta = request->theta;
+        }
+
         void timer_callback() {
 
             // publish timestep
@@ -109,10 +124,9 @@ class Nusim : public rclcpp::Node {
 
             world_red_tf.transform.translation.x = true_pose.x;
             world_red_tf.transform.translation.y = true_pose.y;
-            world_red_tf.transform.translation.z = true_pose.theta;
 
             tf2::Quaternion q;
-            q.setRPY(0.0,0.0,0.0);
+            q.setRPY(0.0,0.0,true_pose.theta);
             world_red_tf.transform.rotation.x = q.x();
             world_red_tf.transform.rotation.y = q.y();
             world_red_tf.transform.rotation.z = q.z();
