@@ -28,6 +28,11 @@ using std::placeholders::_2;
 const double DEFAULT_X0 = 0.0;
 const double DEFAULT_Y0 = 0.0;
 const double DEFAULT_THETA0 = 0.0;
+const std::vector<double> DEFAULT_OBSTACLES_X;
+const std::vector<double> DEFAULT_OBSTACLES_Y;
+const double DEFAULT_OBSTACLES_R = 0.038;
+const double OBSTACLE_HEIGHT = 0.25;
+
 
 class Nusim : public rclcpp::Node {
 
@@ -38,6 +43,9 @@ class Nusim : public rclcpp::Node {
             this->declare_parameter<double>("x0",DEFAULT_X0);
             this->declare_parameter<double>("y0",DEFAULT_Y0);
             this->declare_parameter<double>("theta0",DEFAULT_THETA0);
+            this->declare_parameter<std::vector<double>>("obstacles/x", DEFAULT_OBSTACLES_X);
+            this->declare_parameter<std::vector<double>>("obstacles/y", DEFAULT_OBSTACLES_Y);
+            this->declare_parameter<double>("obstacles/r", DEFAULT_OBSTACLES_R);
 
             // Create timestep publisher
             timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep",10);
@@ -78,50 +86,80 @@ class Nusim : public rclcpp::Node {
             true_pose.y = this->get_parameter("y0").get_value<double>();
             true_pose.theta = this->get_parameter("theta0").get_value<double>();
 
+            // Get the requested obstacle locations and size
+            obstacles_r = this->get_parameter("obstacles/r").get_value<double>();
+            obstacles_x = this->get_parameter("obstacles/x").get_value<std::vector<double>>();
+            obstacles_y = this->get_parameter("obstacles/y").get_value<std::vector<double>>();
+
             RCLCPP_INFO(this->get_logger(), "x0 = %lf", true_pose.x);
-            RCLCPP_INFO(this->get_logger(), "y0 = %lf", true_pose.x);
-            RCLCPP_INFO(this->get_logger(), "z0 = %lf", true_pose.x);
+            RCLCPP_INFO(this->get_logger(), "y0 = %lf", true_pose.y);
+            RCLCPP_INFO(this->get_logger(), "theta0 = %lf", true_pose.theta);
+            RCLCPP_INFO(this->get_logger(),"obstacles/x length = %ld", obstacles_x.size());
+            RCLCPP_INFO(this->get_logger(),"obstacles/y length = %ld", obstacles_y.size());
+            RCLCPP_INFO(this->get_logger(),"obstacles/r = %lf", obstacles_r);
 
+            assert(obstacles_x.size() == obstacles_y.size());
 
-            // testing out markers
-            mark1.header.frame_id = "nusim/world";
-            mark1.id = 0;
-            mark1.type = visualization_msgs::msg::Marker::CYLINDER;
-            mark1.action = visualization_msgs::msg::Marker::ADD;
-            mark1.scale.x = 0.1;
-            mark1.scale.y = 0.1;
-            mark1.scale.z = 0.25;
-            mark1.pose.position.x = 1.0;
-            mark1.pose.position.y = 0.5;
-            mark1.color.r = 0.0;
-            mark1.color.g = 1.0;
-            mark1.color.b = 0.0;
-            mark1.color.a = 1.0;
+            for (size_t i = 0; i < obstacles_x.size(); i++) {
+                mark1.header.frame_id = "nusim/world";
+                mark1.id = i;
+                mark1.type = visualization_msgs::msg::Marker::CYLINDER;
+                mark1.action = visualization_msgs::msg::Marker::ADD;
+                mark1.scale.x = obstacles_r;
+                mark1.scale.y = obstacles_r;
+                mark1.scale.z = OBSTACLE_HEIGHT;
+                mark1.pose.position.x = obstacles_x.at(i);
+                mark1.pose.position.y = obstacles_y.at(i);
+                mark1.color.r = 0.0;
+                mark1.color.g = 1.0;
+                mark1.color.b = 0.0;
+                mark1.color.a = 1.0;
 
-            mark2.header.frame_id = "nusim/world";
-            mark2.id = 1;
-            mark2.type = visualization_msgs::msg::Marker::CYLINDER;
-            mark2.action = visualization_msgs::msg::Marker::ADD;
-            mark2.scale.x = 0.1;
-            mark2.scale.y = 0.1;
-            mark2.scale.z = 0.25;
-            mark2.pose.position.x = -1.0;
-            mark2.pose.position.y = 0.5;
-            mark2.color.r = 0.0;
-            mark2.color.g = 1.0;
-            mark2.color.b = 0.0;
-            mark2.color.a = 1.0;
+                mark_arr.markers.push_back(mark1);
+            }
 
-            // Publish markers 
-            mark_arr.markers.push_back(mark1);
-            mark_arr.markers.push_back(mark2);
+            // // Define Markers
+            // mark1.header.frame_id = "nusim/world";
+            // mark1.id = 0;
+            // mark1.type = visualization_msgs::msg::Marker::CYLINDER;
+            // mark1.action = visualization_msgs::msg::Marker::ADD;
+            // mark1.scale.x = 0.1;
+            // mark1.scale.y = 0.1;
+            // mark1.scale.z = 0.25;
+            // mark1.pose.position.x = 1.0;
+            // mark1.pose.position.y = 0.5;
+            // mark1.color.r = 0.0;
+            // mark1.color.g = 1.0;
+            // mark1.color.b = 0.0;
+            // mark1.color.a = 1.0;
+
+            // mark2.header.frame_id = "nusim/world";
+            // mark2.id = 1;
+            // mark2.type = visualization_msgs::msg::Marker::CYLINDER;
+            // mark2.action = visualization_msgs::msg::Marker::ADD;
+            // mark2.scale.x = 0.1;
+            // mark2.scale.y = 0.1;
+            // mark2.scale.z = 0.25;
+            // mark2.pose.position.x = -1.0;
+            // mark2.pose.position.y = 0.5;
+            // mark2.color.r = 0.0;
+            // mark2.color.g = 1.0;
+            // mark2.color.b = 0.0;
+            // mark2.color.a = 1.0;
+
+            // mark_arr.markers.push_back(mark1);
+            // mark_arr.markers.push_back(mark2);
 
         }
 
 
     private:
+
+        std::vector<double> obstacles_x;
+        std::vector<double> obstacles_y;
+        double obstacles_r;
+
         rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
-        // rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
         rclcpp::TimerBase::SharedPtr _timer;
 
@@ -130,14 +168,12 @@ class Nusim : public rclcpp::Node {
         
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
-
         visualization_msgs::msg::MarkerArray mark_arr;
         visualization_msgs::msg::Marker mark1;
         visualization_msgs::msg::Marker mark2;
 
-
-        
         uint64_t step;
+
         struct Pose2D {
             double x;
             double y;
