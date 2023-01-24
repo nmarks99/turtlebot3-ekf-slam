@@ -14,6 +14,7 @@
 namespace turtlelib
 {
 
+    /// \brief Matrix: alias for std::vector<std::vector<double>>
     using Matrix = std::vector<std::vector<double>>;
 
     /// \brief PI.  Not in C++ standard until C++20.
@@ -30,7 +31,7 @@ namespace turtlelib
     /// if given a compile-time constant as input
     constexpr bool almost_equal(double d1, double d2, double epsilon=1.0e-12)
     {
-        if (std::abs(d1 - d2) <= epsilon) {
+        if (fabs(d1 - d2) < epsilon) {
             return true;
         } 
         else {
@@ -151,7 +152,7 @@ namespace turtlelib
         /// \brief Create a transformation with a translational and rotational
         /// component
         /// \param trans - the translation
-        /// \param rot - the rotation, in radians
+        /// \param radians - the rotation, in radians
         Transform2D(Vector2D trans, double radians);
 
         /// \brief apply a transformation to a Vector2D
