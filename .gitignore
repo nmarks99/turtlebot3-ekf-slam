@@ -5,6 +5,10 @@ log/
 .cache/
 .vscode/
 
+# Misc
+.vscode
+.cache
+
 # Prerequisites
 *.d
 

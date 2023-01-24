@@ -3,4 +3,6 @@
 * Winter 2022
 # Package List
 This repository consists of several ROS packages
-- <PACKAGE1> - <one sentence description>
+- nusim - A turtlebot simulation program using RVIZ
+- nuturtle_description - Defines the turtlebot's physical properties
+- turtlelib - A 2D rigid body transformation library
