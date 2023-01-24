@@ -42,6 +42,13 @@ class Nusim : public rclcpp::Node {
             // Create timestep publisher
             timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep",10);
 
+            // Create Marker publisher 
+            // marker_pub = this->create_publisher<visualization_msgs::msg::Marker>("~/obstacles",10);
+            marker_arr_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+                "~/obstacles",
+                10
+            );
+
             // Create reset service 
             // resets the timestamp and teleports the robot to its starting pose
             reset_service = this->create_service<std_srvs::srv::Empty>(
@@ -74,17 +81,61 @@ class Nusim : public rclcpp::Node {
             RCLCPP_INFO(this->get_logger(), "x0 = %lf", true_pose.x);
             RCLCPP_INFO(this->get_logger(), "y0 = %lf", true_pose.x);
             RCLCPP_INFO(this->get_logger(), "z0 = %lf", true_pose.x);
+
+
+            // testing out markers
+            mark1.header.frame_id = "nusim/world";
+            mark1.id = 0;
+            mark1.type = visualization_msgs::msg::Marker::CYLINDER;
+            mark1.action = visualization_msgs::msg::Marker::ADD;
+            mark1.scale.x = 0.1;
+            mark1.scale.y = 0.1;
+            mark1.scale.z = 0.25;
+            mark1.pose.position.x = 1.0;
+            mark1.pose.position.y = 0.5;
+            mark1.color.r = 0.0;
+            mark1.color.g = 1.0;
+            mark1.color.b = 0.0;
+            mark1.color.a = 1.0;
+
+            mark2.header.frame_id = "nusim/world";
+            mark2.id = 1;
+            mark2.type = visualization_msgs::msg::Marker::CYLINDER;
+            mark2.action = visualization_msgs::msg::Marker::ADD;
+            mark2.scale.x = 0.1;
+            mark2.scale.y = 0.1;
+            mark2.scale.z = 0.25;
+            mark2.pose.position.x = -1.0;
+            mark2.pose.position.y = 0.5;
+            mark2.color.r = 0.0;
+            mark2.color.g = 1.0;
+            mark2.color.b = 0.0;
+            mark2.color.a = 1.0;
+
+            // Publish markers 
+            mark_arr.markers.push_back(mark1);
+            mark_arr.markers.push_back(mark2);
+
         }
 
 
     private:
         rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
+        // rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
         rclcpp::TimerBase::SharedPtr _timer;
 
         rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
         rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
         
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+
+
+        visualization_msgs::msg::MarkerArray mark_arr;
+        visualization_msgs::msg::Marker mark1;
+        visualization_msgs::msg::Marker mark2;
+
+
         
         uint64_t step;
         struct Pose2D {
@@ -140,6 +191,10 @@ class Nusim : public rclcpp::Node {
             world_red_tf.transform.rotation.z = q.z();
             world_red_tf.transform.rotation.w = q.w();
             tf_broadcaster->sendTransform(world_red_tf);
+
+
+            marker_arr_pub->publish(mark_arr);
+
 
         }
 };
