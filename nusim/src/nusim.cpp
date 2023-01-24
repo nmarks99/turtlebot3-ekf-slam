@@ -65,7 +65,7 @@ class Nusim : public rclcpp::Node {
         Nusim() : Node("nusim"), step(0) {
             
             // Declare parameters
-            this->declare_parameter<int>("timer_freq",DEFAULT_TIMER_FREQ);
+            this->declare_parameter<int>("rate",DEFAULT_TIMER_FREQ);
             this->declare_parameter<double>("x0",DEFAULT_X0);
             this->declare_parameter<double>("y0",DEFAULT_Y0);
             this->declare_parameter<double>("theta0",DEFAULT_THETA0);
@@ -101,8 +101,8 @@ class Nusim : public rclcpp::Node {
             /// used to publish transform on the /tf topic
             tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
             
-            timer_freq = this->get_parameter("timer_freq").get_value<int>();
-            int period_ms = (int)(1000/timer_freq);
+            rate = this->get_parameter("rate").get_value<int>();
+            int period_ms = (int)(1000/rate);
             
             /// \brief Timer (frequency defined by node parameter)
             _timer = this->create_wall_timer(
@@ -175,7 +175,7 @@ class Nusim : public rclcpp::Node {
         std::vector<double> obstacles_y;
         double obstacles_r;
         double x0, y0, theta0;
-        int timer_freq;
+        int rate;
 
         uint64_t step;
         
