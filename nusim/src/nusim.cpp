@@ -73,10 +73,10 @@ class Nusim : public rclcpp::Node {
             this->declare_parameter<std::vector<double>>("obstacles/y", DEFAULT_OBSTACLES_Y);
             this->declare_parameter<double>("obstacles/r", DEFAULT_OBSTACLES_R);
 
-            // Create timestep publisher
+            /// \brief timestep publisher (std_msgs/msg/UInt64)
             timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep",10);
 
-            // Create Marker publisher 
+            /// \brief timestep publisher (visualization_msgs/msg/MarkerArray)
             marker_arr_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
                 "~/obstacles",
                 10
@@ -97,11 +97,13 @@ class Nusim : public rclcpp::Node {
                 std::bind(&Nusim::teleport_callback, this, _1, _2)
             );
 
-            // Create transform broadcaster
+            /// \brief transform broadcaster:
+            /// used to publish transform on the /tf topic
             tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
             
             timer_freq = this->get_parameter("timer_freq").get_value<int>();
             int period_ms = (int)(1000/timer_freq);
+            
             /// \brief Timer (frequency defined by node parameter)
             _timer = this->create_wall_timer(
                 std::chrono::milliseconds(period_ms),
