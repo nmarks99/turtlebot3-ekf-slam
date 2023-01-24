@@ -40,27 +40,32 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 
+/// \cond
 #define UNUSED(x) (void)(x) // used to suppress "unused-variable" warnings
+
+const double DEFAULT_X0 = 0.0;
+const double DEFAULT_Y0 = 0.0;
+const double DEFAULT_THETA0 = 0.0;
+const int DEFAULT_TIMER_FREQ = 200;
+const std::vector<double> DEFAULT_OBSTACLES_X;
+const std::vector<double> DEFAULT_OBSTACLES_Y;
+const double DEFAULT_OBSTACLES_R = 0.038;
+const double OBSTACLE_HEIGHT = 0.25;
+/// \endcond
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-const double DEFAULT_X0 = 0.0;
-const double DEFAULT_Y0 = 0.0;
-const double DEFAULT_THETA0 = 0.0;
-const std::vector<double> DEFAULT_OBSTACLES_X;
-const std::vector<double> DEFAULT_OBSTACLES_Y;
-const double DEFAULT_OBSTACLES_R = 0.038;
-const double OBSTACLE_HEIGHT = 0.25;
 
-
+/// \brief nusim turtlebot simulation node
 class Nusim : public rclcpp::Node {
 
     public:
         Nusim() : Node("nusim"), step(0) {
             
             // Declare parameters
+            this->declare_parameter<int>("timer_freq",DEFAULT_TIMER_FREQ);
             this->declare_parameter<double>("x0",DEFAULT_X0);
             this->declare_parameter<double>("y0",DEFAULT_Y0);
             this->declare_parameter<double>("theta0",DEFAULT_THETA0);
@@ -72,46 +77,52 @@ class Nusim : public rclcpp::Node {
             timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep",10);
 
             // Create Marker publisher 
-            // marker_pub = this->create_publisher<visualization_msgs::msg::Marker>("~/obstacles",10);
             marker_arr_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
                 "~/obstacles",
                 10
             );
 
-            // Create reset service 
-            // resets the timestamp and teleports the robot to its starting pose
-            reset_service = this->create_service<std_srvs::srv::Empty>(
+            /// \brief ~/reset service (std_srvs/srv/Empty)
+            /// resets the timestep variable to 0 and resets the turtlebot
+            /// pose to its initial location 
+            _reset_service = this->create_service<std_srvs::srv::Empty>(
                 "~/reset",
                 std::bind(&Nusim::reset_callback, this, _1, _2)
             );
 
-            // Create teleport service
-            // teleports the robot in the simulation to the specified pose
-            teleport_service = this->create_service<nusim::srv::Teleport>(
+            /// \brief ~/teleport service (nusim/srv/Teleport)
+            /// teleports the robot in the simulation to the specified pose
+            _teleport_service = this->create_service<nusim::srv::Teleport>(
                 "~/teleport",
                 std::bind(&Nusim::teleport_callback, this, _1, _2)
             );
 
             // Create transform broadcaster
             tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-
-            // Create timer
+            
+            timer_freq = this->get_parameter("timer_freq").get_value<int>();
+            int period_ms = (int)(1000/timer_freq);
+            /// \brief Timer (frequency defined by node parameter)
             _timer = this->create_wall_timer(
-                5ms,
+                std::chrono::milliseconds(period_ms),
                 std::bind(&Nusim::timer_callback, this)
             );
 
             // Ground truth pose of the robot known only to the simulator
             // Initial values are passed as parameters to the node
-            true_pose.x = this->get_parameter("x0").get_value<double>();
-            true_pose.y = this->get_parameter("y0").get_value<double>();
-            true_pose.theta = this->get_parameter("theta0").get_value<double>();
+            x0 = this->get_parameter("x0").get_value<double>();
+            y0 = this->get_parameter("y0").get_value<double>();
+            theta0 = this->get_parameter("theta0").get_value<double>();
+            true_pose.x = x0;
+            true_pose.y = y0;
+            true_pose.theta = theta0;
 
             // Get the requested obstacle locations and size
             obstacles_r = this->get_parameter("obstacles/r").get_value<double>();
             obstacles_x = this->get_parameter("obstacles/x").get_value<std::vector<double>>();
             obstacles_y = this->get_parameter("obstacles/y").get_value<std::vector<double>>();
 
+            // Debugging info on parameters
             RCLCPP_DEBUG(this->get_logger(), "x0 = %lf", true_pose.x);
             RCLCPP_DEBUG(this->get_logger(), "y0 = %lf", true_pose.y);
             RCLCPP_DEBUG(this->get_logger(), "theta0 = %lf", true_pose.theta);
@@ -146,31 +157,39 @@ class Nusim : public rclcpp::Node {
 
     private:
 
-        std::vector<double> obstacles_x;
-        std::vector<double> obstacles_y;
-        double obstacles_r;
-
         rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
         rclcpp::TimerBase::SharedPtr _timer;
 
-        rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
-        rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
+        rclcpp::Service<std_srvs::srv::Empty>::SharedPtr _reset_service;
+        rclcpp::Service<nusim::srv::Teleport>::SharedPtr _teleport_service;
         
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
         visualization_msgs::msg::MarkerArray obstacle_marker_arr;
         visualization_msgs::msg::Marker obstacle_marker;
 
-        uint64_t step;
+        std::vector<double> obstacles_x;
+        std::vector<double> obstacles_y;
+        double obstacles_r;
+        double x0, y0, theta0;
+        int timer_freq;
 
+        uint64_t step;
+        
+        /// \brief a 2D pose 
         struct Pose2D {
             double x;
             double y;
             double theta;
         } true_pose;
-        
 
+
+        /// \brief ~/reset service callback function:
+        /// resets the timestep variable to 0 and resets the 
+        /// turtlebot pose to its initial location 
+        /// \param request - std_srvs/srv/Empty request (unused)
+        /// \param response - std_srvs/srv/Emptry response (unused)
         void reset_callback(
             const std::shared_ptr<std_srvs::srv::Empty::Request> request,
             std::shared_ptr<std_srvs::srv::Empty::Response> response)
@@ -179,11 +198,16 @@ class Nusim : public rclcpp::Node {
             UNUSED(response);
 
             step = 0;
-            true_pose.x = DEFAULT_X0;
-            true_pose.y = DEFAULT_Y0;
-            true_pose.theta = DEFAULT_THETA0;
+            true_pose.x = x0;
+            true_pose.y = x0;
+            true_pose.theta = theta0;
         }
 
+        /// \brief ~/teleport service callback function:
+        /// teleports the robot to the desired pose by setting
+        /// true_pose equal to the input x,y,theta
+        /// \param request - nusim/srv/Teleport request which has x,y,theta fields (UInt64) 
+        /// \param response - nusim/srv/Teleport response which is empty (unused)
         void teleport_callback(const std::shared_ptr<nusim::srv::Teleport::Request> request,
             std::shared_ptr<nusim::srv::Teleport::Response> response)
         {
@@ -194,6 +218,9 @@ class Nusim : public rclcpp::Node {
             true_pose.theta = request->theta;
         }
 
+        /// \brief timer callback function:
+        /// publises the simulation timestep, updates the transform between
+        /// the nusim/world and red/base_footprint frames, and published obstacle MarkerArray
         void timer_callback() {
 
             // publish timestep
@@ -223,7 +250,7 @@ class Nusim : public rclcpp::Node {
         }
 };
 
-
+/// \brief the main function to run the nusim node
 int main(int argc, char *argv[]) {
     rclcpp::init(argc,argv);
     rclcpp::spin(std::make_shared<Nusim>());
