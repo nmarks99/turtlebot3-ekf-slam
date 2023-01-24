@@ -1,3 +1,24 @@
+/// \file
+/// \brief nusim node: a turtlebot simulation program
+///
+/// PARAMETERS:
+///     x0 (double): starting x location of the turtlebot in the simulator
+///     y0 (double): starting y location of the turtlebot in the simulator
+///     theta0 (double): starting yaw angle of the turtlebot in the simulator
+///     obstacles/x (std::vector<double>): Array of x locations of obstacles
+///     obstacles/y (std::vector<double>): Array of y locations of obstacles
+///     obstacles/r (double): Radius of the obtacles 
+/// PUBLISHES:
+///     ~/timestep (std_msgs/msg/UInt64): simulation timestep
+///     ~/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
+/// SUBSCRIBES:
+///     None
+/// SERVERS:
+///     ~/reset (std_srvs/srv/Empty): resets the simulation timestep and the robot to its initial pose
+///     ~/teleport (nusim/srv/Teleport): teleports the robot to a specified pose
+/// CLIENTS:
+///     None
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -91,65 +112,34 @@ class Nusim : public rclcpp::Node {
             obstacles_x = this->get_parameter("obstacles/x").get_value<std::vector<double>>();
             obstacles_y = this->get_parameter("obstacles/y").get_value<std::vector<double>>();
 
-            RCLCPP_INFO(this->get_logger(), "x0 = %lf", true_pose.x);
-            RCLCPP_INFO(this->get_logger(), "y0 = %lf", true_pose.y);
-            RCLCPP_INFO(this->get_logger(), "theta0 = %lf", true_pose.theta);
-            RCLCPP_INFO(this->get_logger(),"obstacles/x length = %ld", obstacles_x.size());
-            RCLCPP_INFO(this->get_logger(),"obstacles/y length = %ld", obstacles_y.size());
-            RCLCPP_INFO(this->get_logger(),"obstacles/r = %lf", obstacles_r);
-
+            RCLCPP_DEBUG(this->get_logger(), "x0 = %lf", true_pose.x);
+            RCLCPP_DEBUG(this->get_logger(), "y0 = %lf", true_pose.y);
+            RCLCPP_DEBUG(this->get_logger(), "theta0 = %lf", true_pose.theta);
+            RCLCPP_DEBUG(this->get_logger(),"obstacles/x length = %ld", obstacles_x.size());
+            RCLCPP_DEBUG(this->get_logger(),"obstacles/y length = %ld", obstacles_y.size());
+            RCLCPP_DEBUG(this->get_logger(),"obstacles/r = %lf", obstacles_r);
+            
+            // crashes if unequal number of x and y since they are ordered pairs
             assert(obstacles_x.size() == obstacles_y.size());
 
+            // creates a marker at each specified location
             for (size_t i = 0; i < obstacles_x.size(); i++) {
-                mark1.header.frame_id = "nusim/world";
-                mark1.id = i;
-                mark1.type = visualization_msgs::msg::Marker::CYLINDER;
-                mark1.action = visualization_msgs::msg::Marker::ADD;
-                mark1.scale.x = obstacles_r;
-                mark1.scale.y = obstacles_r;
-                mark1.scale.z = OBSTACLE_HEIGHT;
-                mark1.pose.position.x = obstacles_x.at(i);
-                mark1.pose.position.y = obstacles_y.at(i);
-                mark1.pose.position.z = OBSTACLE_HEIGHT/2;
-                mark1.color.r = 0.0;
-                mark1.color.g = 1.0;
-                mark1.color.b = 0.0;
-                mark1.color.a = 1.0;
-
-                mark_arr.markers.push_back(mark1);
+                obstacle_marker.header.frame_id = "nusim/world";
+                obstacle_marker.id = i;
+                obstacle_marker.type = visualization_msgs::msg::Marker::CYLINDER;
+                obstacle_marker.action = visualization_msgs::msg::Marker::ADD;
+                obstacle_marker.scale.x = obstacles_r;
+                obstacle_marker.scale.y = obstacles_r;
+                obstacle_marker.scale.z = OBSTACLE_HEIGHT;
+                obstacle_marker.pose.position.x = obstacles_x.at(i);
+                obstacle_marker.pose.position.y = obstacles_y.at(i);
+                obstacle_marker.pose.position.z = OBSTACLE_HEIGHT/2;
+                obstacle_marker.color.r = 0.0;
+                obstacle_marker.color.g = 1.0;
+                obstacle_marker.color.b = 0.0;
+                obstacle_marker.color.a = 1.0;
+                obstacle_marker_arr.markers.push_back(obstacle_marker); // pack Marker into MarkerArray
             }
-
-            // // Define Markers
-            // mark1.header.frame_id = "nusim/world";
-            // mark1.id = 0;
-            // mark1.type = visualization_msgs::msg::Marker::CYLINDER;
-            // mark1.action = visualization_msgs::msg::Marker::ADD;
-            // mark1.scale.x = 0.1;
-            // mark1.scale.y = 0.1;
-            // mark1.scale.z = 0.25;
-            // mark1.pose.position.x = 1.0;
-            // mark1.pose.position.y = 0.5;
-            // mark1.color.r = 0.0;
-            // mark1.color.g = 1.0;
-            // mark1.color.b = 0.0;
-            // mark1.color.a = 1.0;
-
-            // mark2.header.frame_id = "nusim/world";
-            // mark2.id = 1;
-            // mark2.type = visualization_msgs::msg::Marker::CYLINDER;
-            // mark2.action = visualization_msgs::msg::Marker::ADD;
-            // mark2.scale.x = 0.1;
-            // mark2.scale.y = 0.1;
-            // mark2.scale.z = 0.25;
-            // mark2.pose.position.x = -1.0;
-            // mark2.pose.position.y = 0.5;
-            // mark2.color.r = 0.0;
-            // mark2.color.g = 1.0;
-            // mark2.color.b = 0.0;
-            // mark2.color.a = 1.0;
-
-            // mark_arr.markers.push_back(mark1);
-            // mark_arr.markers.push_back(mark2);
 
         }
 
@@ -169,9 +159,8 @@ class Nusim : public rclcpp::Node {
         
         std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
-        visualization_msgs::msg::MarkerArray mark_arr;
-        visualization_msgs::msg::Marker mark1;
-        visualization_msgs::msg::Marker mark2;
+        visualization_msgs::msg::MarkerArray obstacle_marker_arr;
+        visualization_msgs::msg::Marker obstacle_marker;
 
         uint64_t step;
 
@@ -217,10 +206,8 @@ class Nusim : public rclcpp::Node {
             world_red_tf.header.stamp = this->get_clock()->now();
             world_red_tf.header.frame_id = "nusim/world";
             world_red_tf.child_frame_id = "red/base_footprint";
-
             world_red_tf.transform.translation.x = true_pose.x;
             world_red_tf.transform.translation.y = true_pose.y;
-
             tf2::Quaternion q;
             q.setRPY(0.0,0.0,true_pose.theta);
             world_red_tf.transform.rotation.x = q.x();
@@ -229,8 +216,8 @@ class Nusim : public rclcpp::Node {
             world_red_tf.transform.rotation.w = q.w();
             tf_broadcaster->sendTransform(world_red_tf);
 
-
-            marker_arr_pub->publish(mark_arr);
+            // publish MarkerArray of obstacles
+            marker_arr_pub->publish(obstacle_marker_arr);
 
 
         }
