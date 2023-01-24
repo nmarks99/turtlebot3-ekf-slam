@@ -60,7 +60,7 @@ install(
 # CMake also has the ability to generate doxygen documentation
 find_package(Doxygen)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md) # Use the readme in your doxygen docs
-doxygen_add_docs(doxygen include/ src/ README.md ALL)
+doxygen_add_docs(doxygen src/ README.md ALL)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
