@@ -110,6 +110,7 @@ class Nusim : public rclcpp::Node {
                 mark1.scale.z = OBSTACLE_HEIGHT;
                 mark1.pose.position.x = obstacles_x.at(i);
                 mark1.pose.position.y = obstacles_y.at(i);
+                mark1.pose.position.z = OBSTACLE_HEIGHT/2;
                 mark1.color.r = 0.0;
                 mark1.color.g = 1.0;
                 mark1.color.b = 0.0;
