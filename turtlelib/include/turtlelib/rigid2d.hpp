@@ -91,7 +91,11 @@ namespace turtlelib
         /// \brief computes the L2 norm of the 2D vector
         /// \return the normalized vector
         Vector2D normalize() const;
+
+        Vector2D &operator+=(const Vector2D &rhs);
     };
+
+    Vector2D operator+(Vector2D lhs, const Vector2D &rhs);
 
     /// \brief output a 2 dimensional vector as [xcomponent ycomponent]
     /// os - stream to output to

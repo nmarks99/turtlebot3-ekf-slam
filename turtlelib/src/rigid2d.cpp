@@ -1,13 +1,13 @@
 #include "turtlelib/rigid2d.hpp"
 
-
-/* 
+/*
 ============
 Transform2D
 ============
 */
 
-turtlelib::Transform2D::Transform2D() {
+turtlelib::Transform2D::Transform2D()
+{
 
     // std::vector<std::vector<double>> _tf
     // {
@@ -16,13 +16,13 @@ turtlelib::Transform2D::Transform2D() {
     //     {0.0, 0.0, 1.0}
     // };
     // tf_vec = _tf;
-   
+
     angle = 0.0;
 }
 
+turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans)
+{
 
-turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
-    
     // std::vector<std::vector<double>> _tf
     // {
     //     {1.0, 0.0, trans.x},
@@ -30,13 +30,12 @@ turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans){
     //     {0.0, 0.0, 1.0}
     // };
     // tf_vec = _tf;
-    
-    p_vec = trans;
 
+    p_vec = trans;
 }
 
-
-turtlelib::Transform2D::Transform2D(double radians) {
+turtlelib::Transform2D::Transform2D(double radians)
+{
 
     // std::vector<std::vector<double>> _tf
     // {
@@ -50,9 +49,9 @@ turtlelib::Transform2D::Transform2D(double radians) {
     angle = radians;
 }
 
+turtlelib::Transform2D::Transform2D(Vector2D trans, double radians)
+{
 
-turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
-    
     // std::vector<std::vector<double>> _tf
     // {
     //     {cos(radians), -sin(radians), trans.x},
@@ -64,25 +63,25 @@ turtlelib::Transform2D::Transform2D(Vector2D trans, double radians) {
 
     angle = radians;
     p_vec = trans;
-
 }
 
-turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) const {
-    
-    turtlelib::Vector2D res; 
+turtlelib::Vector2D turtlelib::Transform2D::operator()(turtlelib::Vector2D v) const
+{
 
-    res.x = v.x*cos(angle) - v.y*sin(angle) + p_vec.x;
-    res.y = v.x*sin(angle) + v.y*cos(angle) + p_vec.y;
-        
+    turtlelib::Vector2D res;
+
+    res.x = v.x * cos(angle) - v.y * sin(angle) + p_vec.x;
+    res.y = v.x * sin(angle) + v.y * cos(angle) + p_vec.y;
+
     return res;
 }
 
-
-turtlelib::Transform2D turtlelib::Transform2D::inv() const {
+turtlelib::Transform2D turtlelib::Transform2D::inv() const
+{
 
     turtlelib::Transform2D tf_out;
 
-    // Set new rotation angle 
+    // Set new rotation angle
     tf_out.angle = -angle;
 
     // Set new translation vector
@@ -90,58 +89,55 @@ turtlelib::Transform2D turtlelib::Transform2D::inv() const {
     tf_out.p_vec.y = p_vec.x * sin(angle) - p_vec.y * cos(angle);
 
     // Return new Transform2D object
-    return tf_out; 
-    
+    return tf_out;
 }
 
-turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Transform2D &rhs) {
-    
+turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Transform2D &rhs)
+{
+
     // Set new translation vector
     p_vec.x = p_vec.x + rhs.p_vec.x * cos(angle) - rhs.p_vec.y * sin(angle);
     p_vec.y = p_vec.y + rhs.p_vec.x * sin(angle) + rhs.p_vec.y * cos(angle);
 
-    // Set new rotation angle 
+    // Set new rotation angle
     angle = angle + rhs.angle;
 
     // Return modified Transform2D object
     return *this;
 }
 
-turtlelib::Twist2D turtlelib::Transform2D::map_twist(turtlelib::Twist2D V) const {
+turtlelib::Twist2D turtlelib::Transform2D::map_twist(turtlelib::Twist2D V) const
+{
     turtlelib::Twist2D V_new;
 
-    // Result obtained from V_i = Adjoint_ij*V_j and plugging in 
+    // Result obtained from V_i = Adjoint_ij*V_j and plugging in
     // values for given V and current Transform2D
     V_new.thetadot = V.thetadot;
-    V_new.xdot = p_vec.y*V.thetadot + V.xdot*cos(angle) - V.ydot*sin(angle);
-    V_new.ydot = -p_vec.x*V.thetadot + V.xdot*sin(angle) + V.ydot*cos(angle);
+    V_new.xdot = p_vec.y * V.thetadot + V.xdot * cos(angle) - V.ydot * sin(angle);
+    V_new.ydot = -p_vec.x * V.thetadot + V.xdot * sin(angle) + V.ydot * cos(angle);
 
     return V_new;
 }
 
-turtlelib::Vector2D turtlelib::Transform2D::translation() const {
+turtlelib::Vector2D turtlelib::Transform2D::translation() const
+{
     return p_vec;
 }
 
-
-double turtlelib::Transform2D::rotation() const {
-    return angle; 
+double turtlelib::Transform2D::rotation() const
+{
+    return angle;
 }
 
 std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Transform2D &tf)
 {
-    os<<
-        "deg:"<<
-        rad2deg(tf.angle)<<
-        " x:"<<
-        tf.p_vec.x<<
-        " y:"<<
-        tf.p_vec.y;
+    os << "deg:" << rad2deg(tf.angle) << " x:" << tf.p_vec.x << " y:" << tf.p_vec.y;
     return os;
 }
 
-std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf) {
-    
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &tf)
+{
+
     double a;
     double px, py;
     is >> a >> px >> py;
@@ -151,13 +147,12 @@ std::istream & turtlelib::operator>>(std::istream &is, turtlelib::Transform2D &t
     tf.p_vec.y = py;
 
     return is;
-
 }
 
-turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs){
+turtlelib::Transform2D turtlelib::operator*(turtlelib::Transform2D lhs, const turtlelib::Transform2D &rhs)
+{
     return lhs *= rhs;
 }
-
 
 /*
 =========
@@ -165,18 +160,21 @@ Vector2D
 =========
 */
 
-std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v) {
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Vector2D &v)
+{
     os << "[" << v.x << " " << v.y << "]";
     return os;
 }
 
-std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
-    
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D &v)
+{
+
     char ch = is.peek();
-    if (ch == '['){
+    if (ch == '[')
+    {
         is.get(); // pop [
     }
-    
+
     // First two chars should be v.x and v.y
     is >> v.x;
     is >> v.y;
@@ -184,15 +182,18 @@ std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Vector2D & v) {
     return is;
 }
 
-turtlelib::Vector2D turtlelib::Vector2D::normalize() const {
+turtlelib::Vector2D turtlelib::Vector2D::normalize() const
+{
     turtlelib::Vector2D v_norm;
 
-    if (x != 0 && y != 0) {
-        auto mag = sqrt(pow(x,2) + pow(y,2));
-        v_norm.x = x/mag;
-        v_norm.y = y/mag;
+    if (x != 0 && y != 0)
+    {
+        auto mag = sqrt(pow(x, 2) + pow(y, 2));
+        v_norm.x = x / mag;
+        v_norm.y = y / mag;
     }
-    else {
+    else
+    {
         v_norm.x = 0.0;
         v_norm.y = 0.0;
     }
@@ -200,21 +201,35 @@ turtlelib::Vector2D turtlelib::Vector2D::normalize() const {
     return v_norm;
 }
 
+turtlelib::Vector2D &turtlelib::Vector2D::operator+=(const turtlelib::Vector2D &rhs)
+{
+    x = x + rhs.x;
+    y = y + rhs.y;
+    return *this;
+}
+
+turtlelib::Vector2D turtlelib::operator+(turtlelib::Vector2D lhs, const turtlelib::Vector2D &rhs)
+{
+    return lhs += rhs;
+}
 
 /*
 ========
-Twist2D 
+Twist2D
 ========
 */
 
-std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Twist2D &v){
+std::ostream &turtlelib::operator<<(std::ostream &os, const turtlelib::Twist2D &v)
+{
     os << "[" << v.thetadot << " " << v.xdot << " " << v.ydot << "]";
     return os;
 }
 
-std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Twist2D &v) {
+std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Twist2D &v)
+{
     char ch = is.peek();
-    if (ch == '['){
+    if (ch == '[')
+    {
         is.get();
     }
 
@@ -225,7 +240,3 @@ std::istream &turtlelib::operator>>(std::istream &is, turtlelib::Twist2D &v) {
 
     return is;
 }
-
-
-
-

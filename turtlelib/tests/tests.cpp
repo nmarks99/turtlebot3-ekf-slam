@@ -152,6 +152,23 @@ TEST_CASE("normalize()", "[Vector2D]")
     REQUIRE(almost_equal(norm_v.y, 0.5547002, 1e-4));
 }
 
+TEST_CASE("operator+=", "[Vector2D]")
+{
+    turtlelib::Vector2D v1{1.0, 2.0};
+    turtlelib::Vector2D v2{1.0, 2.0};
+    v1 += v2;
+    REQUIRE(turtlelib::almost_equal(v1.x, 2.0));
+    REQUIRE(turtlelib::almost_equal(v1.y, 4.0));
+}
+
+TEST_CASE("operator+", "[Vector2D]")
+{
+    turtlelib::Vector2D v1{1.0, 2.0};
+    turtlelib::Vector2D v2{1.0, 2.0};
+    REQUIRE(turtlelib::almost_equal((v1 + v2).x, 2.0));
+    REQUIRE(turtlelib::almost_equal((v1 + v2).y, 4.0));
+}
+
 TEST_CASE("operator<<", "[Twist2D]")
 { // Nick, Marks
     turtlelib::Twist2D V{4, 8, 3};
