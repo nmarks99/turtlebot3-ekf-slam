@@ -1,42 +1,42 @@
 <launch>
 
   <node pkg="rviz2" exec="rviz2" name="rviz2"
-    args="-d $(find-pkg-share nuturtle_description)/config/basic_all.rviz"/>
-  
-  <node pkg="tf2_ros" exec="static_transform_publisher" 
-    args="--frame-id nusim/world --child-frame-id purple/base_footprint --y -1.0"/>
-    
-  <node pkg="tf2_ros" exec="static_transform_publisher" 
-    args="--frame-id nusim/world --child-frame-id red/base_footprint --x 0.25"/>
-    
-  <node pkg="tf2_ros" exec="static_transform_publisher" 
-    args="--frame-id nusim/world --child-frame-id blue/base_footprint --x -0.75"/>
+    args="-d $(find-pkg-share nuturtle_description)/config/basic_all.rviz" />
 
-  <node pkg="tf2_ros" exec="static_transform_publisher" 
-    args="--frame-id nusim/world --child-frame-id green/base_footprint --y 0.5"/>
+  <node pkg="tf2_ros" exec="static_transform_publisher"
+    args="--frame-id nusim/world --child-frame-id purple/base_footprint --y -1.0" />
+
+  <node pkg="tf2_ros" exec="static_transform_publisher"
+    args="--frame-id nusim/world --child-frame-id red/base_footprint --x 0.25" />
+
+  <node pkg="tf2_ros" exec="static_transform_publisher"
+    args="--frame-id nusim/world --child-frame-id blue/base_footprint --x -0.75" />
+
+  <node pkg="tf2_ros" exec="static_transform_publisher"
+    args="--frame-id nusim/world --child-frame-id green/base_footprint --y 0.5" />
 
   <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
-    <arg name="color" value="red"/>
-    <arg name="use_rviz" value="false"/>
-    <arg name="use_jsp" value="true"/>
+    <arg name="color" value="red" />
+    <arg name="use_rviz" value="false" />
+    <arg name="use_jsp" value="true" />
   </include>
 
   <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
-    <arg name="color" value="green"/>
-    <arg name="use_rviz" value="false"/>
-    <arg name="use_jsp" value="true"/>
+    <arg name="color" value="green" />
+    <arg name="use_rviz" value="false" />
+    <arg name="use_jsp" value="true" />
   </include>
 
   <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
-    <arg name="color" value="blue"/>
-    <arg name="use_rviz" value="false"/>
-    <arg name="use_jsp" value="true"/>
+    <arg name="color" value="blue" />
+    <arg name="use_rviz" value="false" />
+    <arg name="use_jsp" value="true" />
   </include>
 
   <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
-    <arg name="color" value="purple"/>
-    <arg name="use_rviz" value="false"/>
-    <arg name="use_jsp" value="true"/>
+    <arg name="color" value="purple" />
+    <arg name="use_rviz" value="false" />
+    <arg name="use_jsp" value="true" />
   </include>
 
 </launch>
