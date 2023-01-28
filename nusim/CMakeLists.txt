@@ -37,10 +37,10 @@ rosidl_generate_interfaces(
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
-target_link_libraries(nusim "${cpp_typesupport_target}") 
+target_link_libraries(nusim "${cpp_typesupport_target}")
 
 # install nodes
-install(TARGETS 
+install(TARGETS
   nusim
   DESTINATION lib/${PROJECT_NAME}
 )
@@ -60,13 +60,15 @@ install(
 # CMake also has the ability to generate doxygen documentation
 find_package(Doxygen)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md) # Use the readme in your doxygen docs
-doxygen_add_docs(doxygen include/ src/ README.md ALL)
+doxygen_add_docs(doxygen src/ README.md ALL)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
+
   # the following line skips cpplint (only works in a git repo)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
