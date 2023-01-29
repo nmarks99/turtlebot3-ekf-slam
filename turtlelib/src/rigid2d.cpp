@@ -8,59 +8,21 @@ Transform2D
 
 turtlelib::Transform2D::Transform2D()
 {
-
-    // std::vector<std::vector<double>> _tf
-    // {
-    //     {1.0, 0.0, 0.0},
-    //     {0.0, 1.0, 0.0},
-    //     {0.0, 0.0, 1.0}
-    // };
-    // tf_vec = _tf;
-
     angle = 0.0;
 }
 
 turtlelib::Transform2D::Transform2D(turtlelib::Vector2D trans)
 {
-
-    // std::vector<std::vector<double>> _tf
-    // {
-    //     {1.0, 0.0, trans.x},
-    //     {0.0, 1.0, trans.y},
-    //     {0.0, 0.0, 1.0}
-    // };
-    // tf_vec = _tf;
-
     p_vec = trans;
 }
 
 turtlelib::Transform2D::Transform2D(double radians)
 {
-
-    // std::vector<std::vector<double>> _tf
-    // {
-    //     {cos(radians), -sin(radians), 0.0},
-    //     {sin(radians), cos(radians), 0.0},
-    //     {0.0, 0.0, 1.0}
-    // };
-
-    // tf_vec = _tf;
-
     angle = radians;
 }
 
 turtlelib::Transform2D::Transform2D(Vector2D trans, double radians)
 {
-
-    // std::vector<std::vector<double>> _tf
-    // {
-    //     {cos(radians), -sin(radians), trans.x},
-    //     {sin(radians), cos(radians), trans.y},
-    //     {0.0, 0.0, 1.0}
-    // };
-
-    // tf_vec = _tf;
-
     angle = radians;
     p_vec = trans;
 }
