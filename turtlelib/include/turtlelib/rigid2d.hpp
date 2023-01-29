@@ -92,10 +92,62 @@ namespace turtlelib
         /// \return the normalized vector
         Vector2D normalize() const;
 
+        /// \brief computes the dot product of the vector and another vector
+        /// \param rhs - the right hand operand
+        /// \return the dot product of the two vectors
+        double dot(const Vector2D &rhs) const;
+
+        /// \brief computes the magnitude of the vector and returns the result
+        /// \return the magnitude of the vector
+        double magnitude() const;
+
+        /// \brief computes the angle between the vector and another vector
+        /// \param rhs - the right hand operand
+        /// \return the angle between the two vectors
+        double angle(const Vector2D &rhs) const;
+
+        /// \brief add this vector with another and store the result
+        /// in this object
+        /// \param rhs - the vector to add to
+        /// \return a reference to the vector after addition
         Vector2D &operator+=(const Vector2D &rhs);
+
+        /// \brief subtract this vector with another and store the result
+        /// in this object
+        /// \param rhs - the vector to subtract
+        /// \return a reference to the vector after subtraction
+        Vector2D &operator-=(const Vector2D &rhs);
+
+        /// \brief multiply this vector by a scalar and store the result
+        /// in this object
+        /// \param scalar - the scalar to multiply by
+        /// \return a reference to the vector after multiplication
+        Vector2D &operator*=(double scalar);
     };
 
+    /// \brief add two vectors together, returning their sum
+    /// \param lhs - the left hand operand
+    /// \param rhs - the right hand operand
+    /// \return the sum of the two transforms
     Vector2D operator+(Vector2D lhs, const Vector2D &rhs);
+
+    /// \brief subtract two vectors, returning their difference
+    /// \param lhs - the left hand operand
+    /// \param rhs - the right hand operand
+    /// \return the difference of the two transforms
+    Vector2D operator-(Vector2D lhs, const Vector2D &rhs);
+
+    /// \brief  multiply a vector and a scalar, returning the result
+    /// \param lhs - the vector
+    /// \param scalar - the scalar
+    /// \return product of the vector and scalar
+    Vector2D operator*(Vector2D lhs, double scalar);
+
+    // /// \brief multiply a vector by a scalar, returning the new vector
+    // /// \param v - the vector
+    // /// \param scalar - the scalar
+    // /// \return the difference of the two transforms
+    // Vector2D operator*(Vector2D v, double scalar);
 
     /// \brief output a 2 dimensional vector as [xcomponent ycomponent]
     /// os - stream to output to

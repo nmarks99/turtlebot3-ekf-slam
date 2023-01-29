@@ -201,6 +201,24 @@ turtlelib::Vector2D turtlelib::Vector2D::normalize() const
     return v_norm;
 }
 
+double turtlelib::Vector2D::dot(const turtlelib::Vector2D &rhs) const
+{
+    double result = (x * rhs.x) + (y * rhs.y);
+    return result;
+}
+
+double turtlelib::Vector2D::magnitude() const
+{
+    return sqrt(x * x + y * y);
+}
+
+double turtlelib::Vector2D::angle(const turtlelib::Vector2D &rhs) const
+{
+    auto dot_prod = this->dot(rhs);
+    auto prod_of_mag = this->magnitude() * rhs.magnitude();
+    return acos(dot_prod / prod_of_mag);
+}
+
 turtlelib::Vector2D &turtlelib::Vector2D::operator+=(const turtlelib::Vector2D &rhs)
 {
     x = x + rhs.x;
@@ -211,6 +229,30 @@ turtlelib::Vector2D &turtlelib::Vector2D::operator+=(const turtlelib::Vector2D &
 turtlelib::Vector2D turtlelib::operator+(turtlelib::Vector2D lhs, const turtlelib::Vector2D &rhs)
 {
     return lhs += rhs;
+}
+
+turtlelib::Vector2D &turtlelib::Vector2D::operator-=(const turtlelib::Vector2D &rhs)
+{
+    x = x - rhs.x;
+    y = y - rhs.y;
+    return *this;
+}
+
+turtlelib::Vector2D turtlelib::operator-(turtlelib::Vector2D lhs, const turtlelib::Vector2D &rhs)
+{
+    return lhs -= rhs;
+}
+
+turtlelib::Vector2D &turtlelib::Vector2D::operator*=(double scalar)
+{
+    x = x * scalar;
+    y = y * scalar;
+    return *this;
+}
+
+turtlelib::Vector2D turtlelib::operator*(turtlelib::Vector2D v, double scalar)
+{
+    return v *= scalar;
 }
 
 /*

@@ -152,8 +152,28 @@ TEST_CASE("normalize()", "[Vector2D]")
     REQUIRE(almost_equal(norm_v.y, 0.5547002, 1e-4));
 }
 
+TEST_CASE("dot()", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{2, 2};
+    turtlelib::Vector2D v2{5, 5};
+    REQUIRE(almost_equal(v1.dot(v2), 20));
+}
+
+TEST_CASE("magnitude()", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{2, 2};
+    REQUIRE(almost_equal(v1.magnitude(), sqrt(8)));
+}
+
+TEST_CASE("angle()", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{1, 0};
+    turtlelib::Vector2D v2{0, 1};
+    REQUIRE(almost_equal(v1.angle(v2), M_PI / 2));
+}
+
 TEST_CASE("operator+=", "[Vector2D]")
-{
+{ // Nick, Marks
     turtlelib::Vector2D v1{1.0, 2.0};
     turtlelib::Vector2D v2{1.0, 2.0};
     v1 += v2;
@@ -162,11 +182,44 @@ TEST_CASE("operator+=", "[Vector2D]")
 }
 
 TEST_CASE("operator+", "[Vector2D]")
-{
+{ // Nick, Marks
     turtlelib::Vector2D v1{1.0, 2.0};
     turtlelib::Vector2D v2{1.0, 2.0};
     REQUIRE(turtlelib::almost_equal((v1 + v2).x, 2.0));
     REQUIRE(turtlelib::almost_equal((v1 + v2).y, 4.0));
+}
+
+TEST_CASE("operator-=", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{3.0, 5.0};
+    turtlelib::Vector2D v2{5.0, 2.0};
+    v1 -= v2;
+    REQUIRE(turtlelib::almost_equal(v1.x, -2.0));
+    REQUIRE(turtlelib::almost_equal(v1.y, 3.0));
+}
+
+TEST_CASE("operator-", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{1.0, 2.0};
+    turtlelib::Vector2D v2{2.0, 2.0};
+    REQUIRE(turtlelib::almost_equal((v1 - v2).x, -1.0));
+    REQUIRE(turtlelib::almost_equal((v1 - v2).y, 0.0));
+}
+
+TEST_CASE("operator*=", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{2.0, 3.0};
+    v1 *= 2.0;
+    REQUIRE(almost_equal(v1.x, 4.0));
+    REQUIRE(almost_equal(v1.y, 6.0));
+}
+
+TEST_CASE("operator*", "[Vector2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D v1{1.0, 2.0};
+    auto result = v1 * 3.0;
+    REQUIRE(almost_equal(result.x, 3.0));
+    REQUIRE(almost_equal(result.y, 6.0));
 }
 
 TEST_CASE("operator<<", "[Twist2D]")
@@ -178,7 +231,7 @@ TEST_CASE("operator<<", "[Twist2D]")
 }
 
 TEST_CASE("operator>>", "[Twist2D]")
-{
+{ // Nick, Marks
     turtlelib::Twist2D V;
     std::istringstream in;
     in.str("3 3 2");
