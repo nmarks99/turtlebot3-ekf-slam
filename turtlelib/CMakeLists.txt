@@ -13,7 +13,7 @@ add_library(turtlelib src/rigid2d.cpp)
 target_include_directories(turtlelib PUBLIC include/)
 
 # enable C++ 17
-target_compile_features(turtlelib PUBLIC cxx_std_17) 
+target_compile_features(turtlelib PUBLIC cxx_std_17)
 
 # warnings are your friend!
 target_compile_options(turtlelib PUBLIC -Wall -Wextra -Wpedantic)

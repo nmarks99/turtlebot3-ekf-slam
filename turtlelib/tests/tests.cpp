@@ -6,10 +6,9 @@
 
 using turtlelib::almost_equal;
 
-TEST_CASE("normalize_anlge()", "[rigid2D]")
+TEST_CASE("normalize_angle()", "[rigid2D]")
 { // Nick, Marks
     REQUIRE(almost_equal(turtlelib::normalize_angle(M_PI), M_PI));
-    // REQUIRE(almost_equal(turtlelib::normalize_angle(-M_PI), M_PI));
     REQUIRE(almost_equal(turtlelib::normalize_angle(0), 0));
     REQUIRE(almost_equal(turtlelib::normalize_angle(-M_PI / 4), -M_PI / 4));
     REQUIRE(almost_equal(turtlelib::normalize_angle(3 * M_PI / 2), -M_PI / 2));
@@ -71,6 +70,38 @@ TEST_CASE("map_twist()", "[Transform2D]")
     REQUIRE(almost_equal(V_new.thetadot, 1.0, 1e-4));
     REQUIRE(almost_equal(V_new.xdot, 2.29289, 1e-4));
     REQUIRE(almost_equal(V_new.ydot, -4.46447, 1e-4));
+}
+
+TEST_CASE("integrate_twist()", "[Transform2D]")
+{
+    SECTION("Pure translation")
+    {
+        turtlelib::Transform2D tf;
+        turtlelib::Twist2D V{0, 1, 0};
+        auto tf_new = tf.integrate_twist(V);
+        REQUIRE(almost_equal(tf_new.translation().x, 1.0));
+        REQUIRE(almost_equal(tf_new.translation().y, 0.0));
+        REQUIRE(almost_equal(tf_new.rotation(), 0.0));
+    }
+    SECTION("Pure rotation")
+    {
+        turtlelib::Transform2D tf;
+        turtlelib::Twist2D V{M_PI, 0, 0};
+        auto tf_new = tf.integrate_twist(V);
+        REQUIRE(almost_equal(tf_new.translation().x, 0.0));
+        REQUIRE(almost_equal(tf_new.translation().y, 0.0));
+        REQUIRE(almost_equal(tf_new.rotation(), M_PI));
+    }
+    SECTION("Rotation and translation")
+    {
+        turtlelib::Transform2D tf;
+        turtlelib::Twist2D V{2 * M_PI, M_PI, M_PI};
+        auto tf_new = tf.integrate_twist(V);
+        std::cout << tf_new << std::endl;
+        REQUIRE(almost_equal(tf_new.translation().x, 0.0));
+        REQUIRE(almost_equal(tf_new.translation().y, 0.0));
+        REQUIRE(almost_equal(tf_new.rotation(), 2 * M_PI));
+    }
 }
 
 TEST_CASE("translation()", "[Transform2D]")

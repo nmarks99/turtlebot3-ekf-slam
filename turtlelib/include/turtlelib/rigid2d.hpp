@@ -241,7 +241,14 @@ namespace turtlelib
         /// by the transform described by the Transform2D object (T_ij)
         /// \param V - a twist represented the j frame
         /// \return a twist represented in the i frame
-        Twist2D map_twist(Twist2D V) const;
+        Twist2D map_twist(const Twist2D &V) const;
+
+        /// \brief computes the transform cooresponding to a rigid body
+        /// following a constant twist in its original body frame for
+        /// one time unit
+        /// \param V - a twist
+        /// \return the transform T_{B,B'} after following twist for t=1
+        Transform2D integrate_twist(const Twist2D &V) const;
 
         /// \brief \see operator<<(...) (declared outside this class)
         /// for a description

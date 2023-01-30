@@ -68,7 +68,7 @@ turtlelib::Transform2D &turtlelib::Transform2D::operator*=(const turtlelib::Tran
     return *this;
 }
 
-turtlelib::Twist2D turtlelib::Transform2D::map_twist(turtlelib::Twist2D V) const
+turtlelib::Twist2D turtlelib::Transform2D::map_twist(const turtlelib::Twist2D &V) const
 {
     turtlelib::Twist2D V_new;
 
@@ -79,6 +79,28 @@ turtlelib::Twist2D turtlelib::Transform2D::map_twist(turtlelib::Twist2D V) const
     V_new.ydot = -p_vec.x * V.thetadot + V.xdot * sin(angle) + V.ydot * cos(angle);
 
     return V_new;
+}
+
+turtlelib::Transform2D turtlelib::Transform2D::integrate_twist(const turtlelib::Twist2D &V) const
+{
+
+    turtlelib::Vector2D vec;
+
+    if (almost_equal(V.thetadot, 0.0))
+    {
+        vec.x = V.xdot;
+        vec.y = V.ydot;
+        turtlelib::Transform2D tf(vec, 0.0);
+        return tf;
+    }
+    else
+    {
+        double _angle = V.thetadot;
+        vec.x = (1 / _angle) * (-V.ydot + V.xdot * sin(_angle) + V.ydot * cos(_angle));
+        vec.y = (1 / _angle) * (V.xdot - V.xdot * cos(_angle) + V.ydot * sin(_angle));
+        turtlelib::Transform2D tf(vec, _angle);
+        return tf;
+    }
 }
 
 turtlelib::Vector2D turtlelib::Transform2D::translation() const
