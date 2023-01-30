@@ -10,7 +10,11 @@ add_library(turtlelib src/rigid2d.cpp)
 # Public include directories can be used by other targets that link against turtlelib
 # By adding include/ to the include path, this means that files in e.g., include/turtlelib
 # can be included with #include"turtlelib/file.hpp"
-target_include_directories(turtlelib PUBLIC include/)
+# target_include_directories(${PROJECT_NAME} PUBLIC include/)
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 
 # enable C++ 17
 target_compile_features(turtlelib PUBLIC cxx_std_17)
@@ -24,7 +28,28 @@ target_compile_options(turtlelib PUBLIC -Wall -Wextra -Wpedantic)
 # However, by creating a library (as we are doing here) the library files
 # can be compiled once and used
 add_executable(frame_main src/frame_main.cpp)
-target_link_libraries(frame_main turtlelib)
+target_link_libraries(frame_main ${PROJECT_NAME})
+
+# Install headers
+install(DIRECTORY include/turtlelib/ DESTINATION include/)
+
+# Install the targets and create a CMake Exported Target
+# The CMake Exported Target can be used to access this project
+# from other CMake projects, after installation
+# The targets will be installed to default locations
+install(TARGETS ${PROJECT_NAME} EXPORT project_name-targets)
+
+# The project_name-targets now also needs to be exported.
+# This call will generate a file called project_name-config.cmake
+# That contains the exported targets.
+# After installation this file will then be found when calling
+# find_package(project_name) from another cmake project
+# A user can then target_link_libraries(target project_name::library)
+# to use your library
+install(EXPORT project_name-targets
+        FILE project_name-config.cmake
+        NAMESPACE project_name::
+        DESTINATION lib/cmake/${PROJECT_NAME})
 
 
 # CMake also has the ability to generate doxygen documentation
