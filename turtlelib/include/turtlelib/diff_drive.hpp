@@ -47,14 +47,18 @@ namespace turtlelib
         // Pose2D pose() const;
 
         /// @brief create a DiffDrive object with Pose and phi all zero
+        /// @param wheel_radius - radius of the wheels on the robot
+        /// @param wheel_separation - center to center distance between the wheels
         DiffDrive(double wheel_radius, double wheel_separation);
 
         /// @brief computes the forward kinematics to find
         /// the new pose of robot given new wheel angles
+        /// @param phi_new - the new wheel angles
         Pose2D forward_kinematics(WheelState phi_new);
 
         /// @brief computes the inverse kinematics to find the wheel
         /// speeds required to achieve the desired body twist
+        /// @param V - the desired twist
         WheelState inverse_kinematics(Twist2D V);
     };
 
