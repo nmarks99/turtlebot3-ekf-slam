@@ -58,3 +58,18 @@ turtlelib::Pose2D turtlelib::DiffDrive::forward_kinematics(WheelState phi_new)
 
     return _pose;
 }
+
+turtlelib::Pose2D turtlelib::DiffDrive::pose() const
+{
+    return _pose;
+}
+
+turtlelib::WheelState turtlelib::DiffDrive::wheel_angles() const
+{
+    return _phi;
+}
+
+turtlelib::WheelState turtlelib::DiffDrive::wheel_speeds() const
+{
+    return _phidot;
+}

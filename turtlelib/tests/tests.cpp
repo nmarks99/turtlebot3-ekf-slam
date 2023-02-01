@@ -283,19 +283,102 @@ TEST_CASE("operator>>", "[Twist2D]")
 DiffDrive
 ==========
 */
+
+// These values are just for the tests
+const double D_TEST = 1;
+const double r_TEST = 1;
+
 TEST_CASE("inverse_kinematics()", "[DiffDrive]")
 {
-    turtlelib::DiffDrive turtlebot(0.1, 0.2);
-    turtlelib::Twist2D V{0, 1, 0};
-    turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+    SECTION("Robot drives forward")
+    {
+        turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
+        turtlelib::Twist2D V{0, 1, 0};
+        turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+        REQUIRE(almost_equal(speeds.left, 1.0));
+        REQUIRE(almost_equal(speeds.right, 1.0));
+    }
+
+    SECTION("Robot drive backwards")
+    {
+        turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
+        turtlelib::Twist2D V{0, -1, 0};
+        turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+        REQUIRE(almost_equal(speeds.left, -1.0));
+        REQUIRE(almost_equal(speeds.right, -1.0));
+    }
+
+    SECTION("Robot drives forwards and turns")
+    {
+        turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
+        turtlelib::Twist2D V{1.57, 1.57 * 2, 0};
+        turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+        REQUIRE(almost_equal(speeds.left, 0));
+        REQUIRE(almost_equal(speeds.right, 6.28));
+    }
+
+    // SECTION("Invalid requested body twist")
+    // {
+    //     turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
+    //     turtlelib::Twist2D V{0, 0, 1};
+    //     turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+    // }
 }
 
 TEST_CASE("forward_kinematics()", "[DiffDrive]")
 {
+    SECTION("Robot drives forwards")
+    {
+        turtlelib::DiffDrive bot(r_TEST, D_TEST * 2);
+        turtlelib::WheelState phi_new{1.57, 1.57};
+        auto new_pose = bot.forward_kinematics(phi_new);
+        REQUIRE(almost_equal(new_pose.x, 1.57));
+        REQUIRE(almost_equal(new_pose.y, 0));
+        REQUIRE(almost_equal(new_pose.theta, 0));
+    }
+
+    SECTION("Robot drives backwards")
+    {
+        turtlelib::DiffDrive bot(r_TEST, D_TEST * 2);
+        turtlelib::WheelState phi_new{-1.57, -1.57};
+        auto new_pose = bot.forward_kinematics(phi_new);
+        REQUIRE(almost_equal(new_pose.x, -1.57));
+        REQUIRE(almost_equal(new_pose.y, 0));
+        REQUIRE(almost_equal(new_pose.theta, 0));
+    }
+
+    SECTION("Robot drives forwards and turns")
+    {
+        turtlelib::DiffDrive bot(r_TEST, D_TEST * 2);
+        turtlelib::WheelState phi_new{M_PI, 0};
+        auto new_pose = bot.forward_kinematics(phi_new);
+        REQUIRE(almost_equal(new_pose.x, 1.0));
+        REQUIRE(almost_equal(new_pose.y, 1.0));
+        REQUIRE(almost_equal(new_pose.theta, M_PI / 2));
+    }
+}
+
+TEST_CASE("pose()", "[DiffDrive]")
+{
     turtlelib::DiffDrive bot(0.1, 0.2);
-    turtlelib::WheelState phi_new{1.57, 1.57};
-    auto new_pose = bot.forward_kinematics(phi_new);
-    std::cout << new_pose.x << std::endl;
-    std::cout << new_pose.y << std::endl;
-    std::cout << new_pose.theta << std::endl;
+    turtlelib::Pose2D q = bot.pose();
+    REQUIRE(almost_equal(q.x, 0));
+    REQUIRE(almost_equal(q.y, 0));
+    REQUIRE(almost_equal(q.theta, 0));
+}
+
+TEST_CASE("wheel_angles()", "[DiffDrive]")
+{
+    turtlelib::DiffDrive bot(0.1, 0.2);
+    turtlelib::WheelState angles = bot.wheel_angles();
+    REQUIRE(almost_equal(angles.left, 0.0));
+    REQUIRE(almost_equal(angles.right, 0.0));
+}
+
+TEST_CASE("wheel_speeds()", "[DiffDrive]")
+{
+    turtlelib::DiffDrive bot(0.1, 0.2);
+    turtlelib::WheelState speeds = bot.wheel_speeds();
+    REQUIRE(almost_equal(speeds.left, 0.0));
+    REQUIRE(almost_equal(speeds.right, 0.0));
 }

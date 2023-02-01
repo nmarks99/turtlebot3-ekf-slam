@@ -42,10 +42,7 @@ namespace turtlelib
         double WHEEL_SEPARATION;
 
     public:
-        /// @brief returns the current robot configuration
-        /// @return a Pose2D representing the current robot configuration
-        // Pose2D pose() const;
-
+        //
         /// @brief create a DiffDrive object with Pose and phi all zero
         /// @param wheel_radius - radius of the wheels on the robot
         /// @param wheel_separation - center to center distance between the wheels
@@ -60,6 +57,18 @@ namespace turtlelib
         /// speeds required to achieve the desired body twist
         /// @param V - the desired twist
         WheelState inverse_kinematics(Twist2D V);
+
+        /// @brief returns the current robot configuration
+        /// @return a Pose2D representing the current robot configuration
+        Pose2D pose() const;
+
+        /// @brief returns the current wheel angles as a WheelState
+        /// @return the current wheel angles as a WheelState object
+        WheelState wheel_angles() const;
+
+        /// @brief returns the current wheel speeds
+        /// @return the current wheel speeds as a WheelState object
+        WheelState wheel_speeds() const;
     };
 
 }
