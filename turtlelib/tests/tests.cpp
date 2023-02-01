@@ -1,10 +1,17 @@
 #include <catch2/catch_test_macros.hpp>
 #include "turtlelib/rigid2d.hpp"
+#include "turtlelib/diff_drive.hpp"
 #include <iostream>
 #include <cmath>
 #include <sstream>
 
 using turtlelib::almost_equal;
+
+/*
+=======
+rigid2D
+=======
+*/
 
 TEST_CASE("normalize_angle()", "[rigid2D]")
 { // Nick, Marks
@@ -97,7 +104,6 @@ TEST_CASE("integrate_twist()", "[Transform2D]")
         turtlelib::Transform2D tf;
         turtlelib::Twist2D V{2 * M_PI, M_PI, M_PI};
         auto tf_new = tf.integrate_twist(V);
-        std::cout << tf_new << std::endl;
         REQUIRE(almost_equal(tf_new.translation().x, 0.0));
         REQUIRE(almost_equal(tf_new.translation().y, 0.0));
         REQUIRE(almost_equal(tf_new.rotation(), 2 * M_PI));
@@ -270,4 +276,26 @@ TEST_CASE("operator>>", "[Twist2D]")
     REQUIRE(almost_equal(V.thetadot, 3.0));
     REQUIRE(almost_equal(V.xdot, 3.0));
     REQUIRE(almost_equal(V.ydot, 2.0));
+}
+
+/*
+==========
+DiffDrive
+==========
+*/
+TEST_CASE("inverse_kinematics()", "[DiffDrive]")
+{
+    turtlelib::DiffDrive turtlebot(0.1, 0.2);
+    turtlelib::Twist2D V{0, 1, 0};
+    turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
+}
+
+TEST_CASE("forward_kinematics()", "[DiffDrive]")
+{
+    turtlelib::DiffDrive bot(0.1, 0.2);
+    turtlelib::WheelState phi_new{1.57, 1.57};
+    auto new_pose = bot.forward_kinematics(phi_new);
+    std::cout << new_pose.x << std::endl;
+    std::cout << new_pose.y << std::endl;
+    std::cout << new_pose.theta << std::endl;
 }
