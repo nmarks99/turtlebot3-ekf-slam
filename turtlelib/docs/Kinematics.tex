@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[a4paper, total={6in, 9in}]{geometry}
+
+\begin{document}
+\section*{Kinematics of a Differential Drive Robot}
+\subsection*{Forward Kinematics}
+We will begin by solving the forward kinematics problem.
+Providing we know the pose of the robot at time $t$,
+Given the wheel angles at a time $t+1$,
+the forward kinematics allow us to find the pose of the
+robot at $t+1$. Here we are assuming the robot follows a body twist for $t=1$
+in arbitrary time units, so we are solving the forward kinematics
+for 1 timestep.
+
+In terms of transformations, with the world frame given as $T_W$ and
+the body frame of the robot at time $t$ known to be $T_{WB}$,
+we will use forward kinematics to find $T_{WB'}$ at time $t+1$
+\\
+\\
+$D$ : half the distance between the wheel centers \\
+\vspace{1mm}
+$r$ : wheel radius \\
+\vspace{1mm}
+$\phi$ : wheel angle \\
+\vspace{1mm}
+$\dot V_{x_l}$ : velocity of the left wheel \\
+\vspace{1mm}
+$\dot V_{x_r}$ : velocity of the right wheel \\
+\vspace{1mm}
+$\dot \theta$ : $\theta$ component of the body twist \\
+\vspace{1mm}
+$\dot V_{x}$ : x component of the body twist \\
+\vspace{1mm}
+$\dot V_{y}$ : y component of the body twist \\
+
+\noindent
+Equations \ref{eq_left} and \ref{eq_right} descibe the relation
+between the body twist and the wheel velocities for the left and
+right wheels respectively
+
+
+\begin{gather}
+   \label{eq_left}
+    \begin{bmatrix} \dot \theta \\ \dot V_{x_l} \\ \dot V_{y_l} \end{bmatrix}
+        =
+        \begin{bmatrix}
+            1 & 0 & 0 \\
+            -D & 1 & 0 \\
+            0 & 0 & 1 \\
+        \end{bmatrix}
+        \begin{bmatrix} \dot \theta \\ \dot V_x \\ \dot V_y \end{bmatrix}
+        =
+    \begin{bmatrix} \dot \theta \\ -D \dot \theta + V_x \\ 0 \end{bmatrix}
+\end{gather}
+
+\begin{gather}
+   \label{eq_right}
+    \begin{bmatrix} \dot \theta \\ \dot V_{x_r} \\ \dot V_{y_r} \end{bmatrix}
+        =
+        \begin{bmatrix}
+            1 & 0 & 0 \\
+            D & 1 & 0 \\
+            0 & 0 & 1 \\
+        \end{bmatrix}
+        \begin{bmatrix} \dot \theta \\ \dot V_x \\ \dot V_y \end{bmatrix}
+        =
+    \begin{bmatrix} \dot \theta \\ -D \dot \theta + V_x \\ 0 \end{bmatrix}
+\end{gather}
+\\
+\\
+\noindent
+Since we are using traditional wheels that can only spin
+forward or backward (no mecanum wheels or omniwheels) and we
+are assuming that there is no slipping, $V_y = 0$. Furthermore,
+the linear distance travelled by a wheel is given as $r \phi$. Since
+here we consider that the robot follows the body twist for $t = 1$,
+the wheel speed in this case is simply the difference in wheel angles,
+$\Delta \phi_l = \dot \phi_l$ and $\Delta \phi_r = \dot \phi_r$.
+Therefore, $V_{x_l} = r \dot \phi_l $, and $V_{x_r} = r \dot \phi_r$ measured
+in radians per unit time.
+Now solving Equations
+\ref{eq_left} and \ref{eq_right} for $\dot \phi_l$ and $\dot \phi_r$
+we get:
+
+\begin{equation} \label{eq_fk1}
+   \begin{split}
+      \dot \phi_l & = \frac{-D \dot \theta + V_x}{r} \\
+      \dot \phi_r & = \frac{D \dot \theta + V_x}{r} \\
+   \end{split}
+\end{equation}
+
+\noindent
+Now we will want to find the body twist that brings the robot
+from its starting configuration to the new configuration, or in
+other words we want the transformation $T_{BB'}$. For this we need
+the body twist in which we can find from Equations \ref{eq_fk1}.
+Solving for $\dot \theta$, then for $V_x$, and finally recalling
+that since we assert there be no slipping, $V_y = 0$, we obtain
+the following equations for the three components of the body twist.
+\begin{equation}
+   \begin{split}
+      \dot \theta & = \frac{r}{2D} \left(\dot \phi_r - \dot \phi_l\right) \\[10pt]
+      \mathcal{V}_x & = r \dot \phi_r - D \dot \theta \\[10pt]
+      \mathcal{V}_y & = 0
+   \end{split}
+\end{equation}
+
+\noindent
+Finally, we can integrate this twist using the \emph{rigid2D} library
+to obtain $T_{BB'}$, and from there we obtain $T_{WB'} = T_{WB} \cdot T_{BB'}$.
+The pose of the robot can now be easily obtained from $T_{WB'}$.
+
+\subsection*{Inverse Kinematics}
+Given some desired body twist, solving the inverse kinematics problem
+allows us to determine the wheel velocities needed to achieve that twist.
+Assumptions regarding slipping and only considering a unit time step as in
+the forward kinematics problem hold here as well.
+
+\begin{gather}
+   \label{eq_ik}
+    \begin{bmatrix} \dot \phi_l \\ \dot \phi_r \end{bmatrix}
+        =
+        \frac{1}{r}
+        \begin{bmatrix}
+            -D & 1 & 0 \\
+            D & 1 & 1 \\
+        \end{bmatrix}
+         \begin{bmatrix} \dot \theta \\ \dot V_x \\ \dot V_y \end{bmatrix}
+        \\[10pt]
+   \label{eq_ik2}
+    \begin{bmatrix} \dot \phi_l \\ \dot \phi_r \end{bmatrix}
+        =
+        \frac{1}{r}
+        \begin{bmatrix}
+            -D \dot \theta + V_x  \\
+            D \dot \theta + V_x + V_y \\
+        \end{bmatrix}
+\end{gather}
+
+\noindent
+Equation \ref{eq_ik2} shows the wheel velocities, $\dot \phi_l$ and $\dot \phi_r$
+needed to achieve the desired body twist. Note that as we have stated
+previously, for no slipping to occur, $V_y = 0$
+
+\end{document}
+
