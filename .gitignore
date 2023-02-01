@@ -2,12 +2,12 @@
 build/
 install/
 log/
-.cache/
-.vscode/
 
 # Misc
-.vscode
-.cache
+.vscode/
+.cache/
+*.aux
+*.log
 
 # Prerequisites
 *.d
