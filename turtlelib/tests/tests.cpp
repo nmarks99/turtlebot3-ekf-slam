@@ -317,12 +317,12 @@ TEST_CASE("inverse_kinematics()", "[DiffDrive]")
         REQUIRE(almost_equal(speeds.right, 6.28));
     }
 
-    // SECTION("Invalid requested body twist")
-    // {
-    //     turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
-    //     turtlelib::Twist2D V{0, 0, 1};
-    //     turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
-    // }
+    SECTION("Invalid requested body twist")
+    {
+        turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
+        turtlelib::Twist2D V{0, 0, 1};
+        REQUIRE_THROWS(turtlebot.inverse_kinematics(V));
+    }
 }
 
 TEST_CASE("forward_kinematics()", "[DiffDrive]")
