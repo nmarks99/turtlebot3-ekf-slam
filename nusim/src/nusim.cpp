@@ -63,7 +63,7 @@ class Nusim : public rclcpp::Node
 
 public:
   Nusim()
-  : Node("nusim"), step(0)
+      : Node("nusim"), step(0)
   {
 
     // Declare parameters
@@ -78,23 +78,23 @@ public:
     /// \brief timestep publisher (std_msgs/msg/UInt64)
     timestep_pub = this->create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
 
-    /// \brief timestep publisher (visualization_msgs/msg/MarkerArray)
+    /// \brief marker publisher (visualization_msgs/msg/MarkerArray)
     marker_arr_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-      "~/obstacles",
-      10);
+        "~/obstacles",
+        10);
 
     /// \brief ~/reset service (std_srvs/srv/Empty)
     /// resets the timestep variable to 0 and resets the turtlebot
     /// pose to its initial location
     _reset_service = this->create_service<std_srvs::srv::Empty>(
-      "~/reset",
-      std::bind(&Nusim::reset_callback, this, _1, _2));
+        "~/reset",
+        std::bind(&Nusim::reset_callback, this, _1, _2));
 
     /// \brief ~/teleport service (nusim/srv/Teleport)
     /// teleports the robot in the simulation to the specified pose
     _teleport_service = this->create_service<nusim::srv::Teleport>(
-      "~/teleport",
-      std::bind(&Nusim::teleport_callback, this, _1, _2));
+        "~/teleport",
+        std::bind(&Nusim::teleport_callback, this, _1, _2));
 
     /// \brief transform broadcaster:
     /// used to publish transform on the /tf topic
@@ -105,8 +105,8 @@ public:
 
     /// \brief Timer (frequency defined by node parameter)
     _timer = this->create_wall_timer(
-      std::chrono::milliseconds(period_ms),
-      std::bind(&Nusim::timer_callback, this));
+        std::chrono::milliseconds(period_ms),
+        std::bind(&Nusim::timer_callback, this));
 
     // Ground truth pose of the robot known only to the simulator
     // Initial values are passed as parameters to the node
@@ -134,7 +134,8 @@ public:
     assert(obstacles_x.size() == obstacles_y.size());
 
     // creates a marker at each specified location
-    for (size_t i = 0; i < obstacles_x.size(); i++) {
+    for (size_t i = 0; i < obstacles_x.size(); i++)
+    {
       obstacle_marker.header.frame_id = "nusim/world";
       obstacle_marker.id = i;
       obstacle_marker.type = visualization_msgs::msg::Marker::CYLINDER;
@@ -149,7 +150,7 @@ public:
       obstacle_marker.color.g = 1.0;
       obstacle_marker.color.b = 0.0;
       obstacle_marker.color.a = 1.0;
-      obstacle_marker_arr.markers.push_back(obstacle_marker);       // pack Marker into MarkerArray
+      obstacle_marker_arr.markers.push_back(obstacle_marker); // pack Marker into MarkerArray
     }
   }
 
@@ -188,8 +189,8 @@ private:
   /// \param request - std_srvs/srv/Empty request (unused)
   /// \param response - std_srvs/srv/Emptry response (unused)
   void reset_callback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response)
+      const std::shared_ptr<std_srvs::srv::Empty::Request> request,
+      std::shared_ptr<std_srvs::srv::Empty::Response> response)
   {
     UNUSED(request);
     UNUSED(response);
@@ -206,8 +207,8 @@ private:
   /// \param request - nusim/srv/Teleport request which has x,y,theta fields (UInt64)
   /// \param response - nusim/srv/Teleport response which is empty (unused)
   void teleport_callback(
-    const std::shared_ptr<nusim::srv::Teleport::Request> request,
-    std::shared_ptr<nusim::srv::Teleport::Response> response)
+      const std::shared_ptr<nusim::srv::Teleport::Request> request,
+      std::shared_ptr<nusim::srv::Teleport::Response> response)
   {
     UNUSED(response);
 
@@ -248,7 +249,7 @@ private:
 };
 
 /// \brief the main function to run the nusim node
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<Nusim>());
