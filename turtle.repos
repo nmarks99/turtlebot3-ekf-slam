@@ -1,0 +1,9 @@
+repositories:
+  nuturtle:
+    type: git
+    url: https://github.com/ME495-Navigation/nuturtle-nmarks99.git
+    version: task_E
+  nuturtlebot_msgs:
+    type: git
+    url: https://github.com/ME495-Navigation/nuturtlebot_msgs.git
+    version: main
