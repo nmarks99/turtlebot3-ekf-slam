@@ -36,7 +36,7 @@ public:
     _wheel_cmd_pub = this->create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
 
     /// @brief Timer
-    _timer = this->create_wall_timer(500ms, std::bind(&NuturtleControl::timer_callback, this));
+    // _timer = this->create_wall_timer(500ms, std::bind(&NuturtleControl::timer_callback, this));
     count = 0;
 
     turtlelib::DiffDrive turtlebot(WHEEL_RADIUS, WHEEL_SEPARATION);
@@ -65,14 +65,12 @@ private:
     wheel_cmd_msg.left_velocity = speeds.left;
     wheel_cmd_msg.right_velocity = speeds.right;
     _wheel_cmd_pub->publish(wheel_cmd_msg);
-
-    //
   }
 
-  void timer_callback()
-  {
-    count++;
-  }
+  // void timer_callback()
+  // {
+  //   // do nothing
+  // }
 };
 
 /// \brief the main function to run the nusim node
