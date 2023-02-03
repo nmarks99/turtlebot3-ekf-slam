@@ -1,5 +1,7 @@
 #include "turtlelib/diff_drive.hpp"
 
+turtlelib::DiffDrive::DiffDrive() {}
+
 turtlelib::DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
 {
     WHEEL_RADIUS = wheel_radius;

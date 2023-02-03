@@ -38,12 +38,18 @@ namespace turtlelib
         Pose2D _pose{0, 0, 0};    // x,y,theta position in meters, radians
         WheelState _phi{0, 0};    // wheel angles in radians
         WheelState _phidot{0, 0}; // wheel velocities in m/s
-        double WHEEL_RADIUS;
-        double WHEEL_SEPARATION;
+
+        // values default to turtlebot3 burger values
+        double WHEEL_RADIUS = 0.066;
+        double WHEEL_SEPARATION = 0.160;
 
     public:
-        //
-        /// @brief create a DiffDrive object with Pose and phi all zero
+        /// @brief create a DiffDrive object with a default wheel radius
+        /// and wheel separation. All other parameters are zero.
+        DiffDrive();
+
+        /// @brief create a DiffDrive object with given wheel radius and
+        /// wheel separation. All other parameters are zero.
         /// @param wheel_radius - radius of the wheels on the robot
         /// @param wheel_separation - center to center distance between the wheels
         DiffDrive(double wheel_radius, double wheel_separation);
