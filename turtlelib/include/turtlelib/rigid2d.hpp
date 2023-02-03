@@ -138,10 +138,10 @@ namespace turtlelib
     Vector2D operator-(Vector2D lhs, const Vector2D &rhs);
 
     /// \brief  multiply a vector and a scalar, returning the result
-    /// \param lhs - the vector
+    /// \param v - the vector
     /// \param scalar - the scalar
     /// \return product of the vector and scalar
-    Vector2D operator*(Vector2D lhs, double scalar);
+    Vector2D operator*(Vector2D v, double scalar);
 
     // /// \brief multiply a vector by a scalar, returning the new vector
     // /// \param v - the vector

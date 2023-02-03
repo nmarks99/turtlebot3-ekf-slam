@@ -17,8 +17,13 @@ namespace turtlelib
     /// @brief a 2D robot pose (configuration)
     struct Pose2D
     {
+        /// @brief the x position
         double x;
+
+        /// @brief the y position
         double y;
+
+        /// @brief the theta position
         double theta;
     };
 
@@ -26,7 +31,10 @@ namespace turtlelib
     /// Could be position, velocity, or whatever is desired
     struct WheelState
     {
+        /// @brief state of the right wheel
         double right;
+
+        /// @brief state of the left wheel
         double left;
     };
 
