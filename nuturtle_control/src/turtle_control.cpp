@@ -55,6 +55,7 @@ public:
     /// @brief Timer
     // _timer = this->create_wall_timer(500ms, std::bind(&NuturtleControl::timer_callback, this));
 
+    // defines the turtlebot robot as a DiffDrive object
     turtlelib::DiffDrive turtlebot(wheel_radius, track_width);
   }
 
@@ -86,15 +87,17 @@ private:
     wheel_cmd_pub->publish(wheel_cmd_msg);
   }
 
-  void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_msg)
+  void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
   {
-    // TODO: find angle in radians and velocity of the wheels
-  }
 
-  // void timer_callback()
-  // {
-  //   // do nothing
-  // }
+    // Get wheel angles
+    sensor_msgs::msg::JointState js_msg;
+    js_msg.header.stamp = sensor_data.stamp;
+    js_msg.position.push_back(sensor_data.left_encoder);
+    js_msg.position.push_back(sensor_data.right_encoder);
+
+    // TODO: Get wheel velocities
+  }
 };
 
 /// \brief the main function to run the nusim node
