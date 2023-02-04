@@ -10,13 +10,15 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
+#include "nuturtlebot_msgs/msg/sensor_data.hpp"
 #include "turtlelib/diff_drive.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-const double WHEEL_RADIUS = 0.066;
+const double WHEEL_RADIUS = 0.033;
 const double WHEEL_SEPARATION = 0.160;
 
 /// \brief nusim turtlebot simulation node
@@ -28,25 +30,33 @@ public:
   {
 
     /// @brief Subscriber to cmd_vel topic
-    _cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+    cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel", 10,
         std::bind(&NuturtleControl::cmd_vel_callback, this, _1));
 
+    /// @brief Subscriber to sensor_data topic
+    sensor_data_sub = this->create_subscription<nuturtlebot_msgs::msg::SensorData>(
+        "sensor_data", 10,
+        std::bind(&NuturtleControl::sensor_data_callback, this, _1));
+
     /// @brief Publisher to wheel_cmd topic
-    _wheel_cmd_pub = this->create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
+    wheel_cmd_pub = this->create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
+
+    //// @brief Publisher to joint_states topic
+    joint_states_pub = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
     /// @brief Timer
     // _timer = this->create_wall_timer(500ms, std::bind(&NuturtleControl::timer_callback, this));
-    count = 0;
 
     turtlelib::DiffDrive turtlebot(WHEEL_RADIUS, WHEEL_SEPARATION);
   }
 
 private:
-  uint16_t count;
   rclcpp::TimerBase::SharedPtr _timer;
-  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _cmd_vel_sub;
-  rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr _wheel_cmd_pub;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub;
+  rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_sub;
+  rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_pub;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub;
   turtlelib::DiffDrive turtlebot;
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
@@ -64,7 +74,12 @@ private:
     nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
     wheel_cmd_msg.left_velocity = speeds.left;
     wheel_cmd_msg.right_velocity = speeds.right;
-    _wheel_cmd_pub->publish(wheel_cmd_msg);
+    wheel_cmd_pub->publish(wheel_cmd_msg);
+  }
+
+  void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_msg)
+  {
+    // TODO: find angle in radians and velocity of the wheels
   }
 
   // void timer_callback()

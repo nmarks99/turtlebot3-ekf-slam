@@ -16,6 +16,8 @@ find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nuturtlebot_msgs REQUIRED)
 find_package(turtlelib REQUIRED)
+find_package(sensor_msgs REQUIRED)
+
 
 add_executable(nuturtle_control src/turtle_control.cpp)
 ament_target_dependencies(${PROJECT_NAME}
@@ -23,6 +25,7 @@ ament_target_dependencies(${PROJECT_NAME}
   std_msgs
   std_srvs
   geometry_msgs
+  sensor_msgs
   nuturtlebot_msgs
 )
 
