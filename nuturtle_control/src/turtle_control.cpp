@@ -18,8 +18,10 @@ using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-const double WHEEL_RADIUS = 0.033;
-const double WHEEL_SEPARATION = 0.160;
+/// @cond
+const double DEFAULT_WHEEL_RADIUS = 0.033;
+const double DEFAULT_TRACK_WIDTH = 0.160;
+/// @endcond
 
 /// \brief nusim turtlebot simulation node
 class NuturtleControl : public rclcpp::Node
@@ -28,6 +30,11 @@ class NuturtleControl : public rclcpp::Node
 public:
   NuturtleControl() : Node("nuturtle_control")
   {
+
+    this->declare_parameter<double>("wheel_radius", DEFAULT_WHEEL_RADIUS);
+    this->declare_parameter<double>("track_width", DEFAULT_TRACK_WIDTH);
+    wheel_radius = this->get_parameter("wheel_radius").get_value<double>();
+    track_width = this->get_parameter("track_width").get_value<double>();
 
     /// @brief Subscriber to cmd_vel topic
     cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -48,7 +55,7 @@ public:
     /// @brief Timer
     // _timer = this->create_wall_timer(500ms, std::bind(&NuturtleControl::timer_callback, this));
 
-    turtlelib::DiffDrive turtlebot(WHEEL_RADIUS, WHEEL_SEPARATION);
+    turtlelib::DiffDrive turtlebot(wheel_radius, track_width);
   }
 
 private:
@@ -58,6 +65,8 @@ private:
   rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_pub;
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub;
   turtlelib::DiffDrive turtlebot;
+  double wheel_radius;
+  double track_width;
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
   {
