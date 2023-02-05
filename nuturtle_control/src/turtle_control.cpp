@@ -33,7 +33,6 @@
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
-using std::placeholders::_2;
 
 /// \brief nusim turtlebot simulation node
 class NuturtleControl : public rclcpp::Node
