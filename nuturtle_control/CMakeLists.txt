@@ -17,10 +17,13 @@ find_package(geometry_msgs REQUIRED)
 find_package(nuturtlebot_msgs REQUIRED)
 find_package(turtlelib REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(nav_msgs REQUIRED)
 
-
+# nuturtle_control node
 add_executable(nuturtle_control src/turtle_control.cpp)
-ament_target_dependencies(${PROJECT_NAME}
+ament_target_dependencies(nuturtle_control
   rclcpp
   std_msgs
   std_srvs
@@ -28,12 +31,35 @@ ament_target_dependencies(${PROJECT_NAME}
   sensor_msgs
   nuturtlebot_msgs
 )
-
 target_link_libraries(nuturtle_control turtlelib::turtlelib)
+
+
+# odometry node
+add_executable(odometry src/odometry.cpp)
+ament_target_dependencies(odometry
+  rclcpp
+  std_msgs
+  std_srvs
+  geometry_msgs
+  tf2
+  tf2_ros
+  nav_msgs
+  sensor_msgs
+  nuturtlebot_msgs
+)
+target_link_libraries(odometry turtlelib::turtlelib)
+
+# install service definitions
+# rosidl_generate_interfaces(
+#   ${PROJECT_NAME}_srv
+#   "srv/initial_pose.srv"
+#   LIBRARY_NAME ${PROJECT_NAME}
+# )
 
 # install nodes
 install(TARGETS
   nuturtle_control
+  odometry
   DESTINATION lib/${PROJECT_NAME}
 )
 
