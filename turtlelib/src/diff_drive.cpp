@@ -61,6 +61,16 @@ turtlelib::Pose2D turtlelib::DiffDrive::forward_kinematics(WheelState phi_new)
     return _pose;
 }
 
+turtlelib::Twist2D turtlelib::DiffDrive::body_twist(turtlelib::WheelState phi_dot)
+{
+    // See Equation 6 in docs/Kinematics.pdf for where these equations come from
+    turtlelib::Twist2D Vb;
+    Vb.thetadot = (WHEEL_RADIUS / 2 * WHEEL_SEPARATION) * (phi_dot.right - phi_dot.left);
+    Vb.xdot = (WHEEL_RADIUS / 2) * (phi_dot.left + phi_dot.right);
+    Vb.ydot = 0.0; // no slipping
+    return Vb;
+}
+
 turtlelib::Pose2D turtlelib::DiffDrive::pose() const
 {
     return _pose;

@@ -67,6 +67,11 @@ namespace turtlelib
         /// @param phi_new - the new wheel angles
         Pose2D forward_kinematics(WheelState phi_new);
 
+        /// @brief computes the current body twist given wheel velocities
+        /// @param phi_dot - WheelState of current wheel velocities
+        /// @return the body twist of the robot as a Twist2D
+        Twist2D body_twist(WheelState phi_dot);
+
         /// @brief computes the inverse kinematics to find the wheel
         /// speeds required to achieve the desired body twist
         /// @param V - the desired twist

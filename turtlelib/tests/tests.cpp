@@ -382,3 +382,11 @@ TEST_CASE("wheel_speeds()", "[DiffDrive]")
     REQUIRE(almost_equal(speeds.left, 0.0));
     REQUIRE(almost_equal(speeds.right, 0.0));
 }
+
+TEST_CASE("body_twist()", "[DiffDrive]")
+{
+    turtlelib::DiffDrive bot;
+    turtlelib::WheelState phi_dot{1.0, 1.0};
+    turtlelib::Twist2D V = bot.body_twist(phi_dot);
+    REQUIRE(almost_equal(V.xdot, 0.066));
+}
