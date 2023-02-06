@@ -163,6 +163,9 @@ private:
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;
 		last_encoder_right = sensor_data.right_encoder;
+
+		// publish joint states
+		joint_states_pub->publish(js_msg);
 	}
 };
 
