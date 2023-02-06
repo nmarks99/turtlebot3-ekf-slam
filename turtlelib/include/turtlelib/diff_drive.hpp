@@ -31,11 +31,11 @@ namespace turtlelib
     /// Could be position, velocity, or whatever is desired
     struct WheelState
     {
-        /// @brief state of the right wheel
-        double right;
-
         /// @brief state of the left wheel
         double left;
+
+        /// @brief state of the right wheel
+        double right;
     };
 
     /// @brief models the kinematics of a differential drive robot
@@ -55,6 +55,11 @@ namespace turtlelib
         /// @brief create a DiffDrive object with a default wheel radius
         /// and wheel separation. All other parameters are zero.
         DiffDrive();
+
+        /// @brief create a DiffDrive object with provided pose and wheel angles
+        /// @param config - a Pose2D representing the current configuration of the robot
+        /// @param phi - a WheelState of the current wheel angles in radians
+        DiffDrive(const Pose2D &config, const WheelState &phi);
 
         /// @brief create a DiffDrive object with given wheel radius and
         /// wheel separation. All other parameters are zero.

@@ -288,6 +288,18 @@ DiffDrive
 const double D_TEST = 1;
 const double r_TEST = 1;
 
+TEST_CASE("DiffDrive(config,phi)", "[DiffDrive]")
+{
+    turtlelib::Pose2D p{1.0, 2.0, 3.0};
+    turtlelib::WheelState ws{5.0, 7.0};
+    turtlelib::DiffDrive ddrive(p, ws);
+    REQUIRE(almost_equal(ddrive.pose().x, 1.0));
+    REQUIRE(almost_equal(ddrive.pose().y, 2.0));
+    REQUIRE(almost_equal(ddrive.pose().theta, 3.0));
+    REQUIRE(almost_equal(ddrive.wheel_angles().left, 5.0));
+    REQUIRE(almost_equal(ddrive.wheel_angles().right, 7.0));
+}
+
 TEST_CASE("inverse_kinematics()", "[DiffDrive]")
 {
     SECTION("Robot drives forward")
@@ -353,8 +365,8 @@ TEST_CASE("forward_kinematics()", "[DiffDrive]")
         turtlelib::WheelState phi_new{M_PI, 0};
         auto new_pose = bot.forward_kinematics(phi_new);
         REQUIRE(almost_equal(new_pose.x, 1.0));
-        REQUIRE(almost_equal(new_pose.y, 1.0));
-        REQUIRE(almost_equal(new_pose.theta, M_PI / 2));
+        REQUIRE(almost_equal(new_pose.y, -1.0));
+        REQUIRE(almost_equal(new_pose.theta, -M_PI / 2));
     }
 }
 
