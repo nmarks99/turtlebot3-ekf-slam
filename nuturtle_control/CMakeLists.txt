@@ -63,6 +63,18 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# install launchfiles
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# install configuration files
+install(
+  DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
+
 find_package(Doxygen)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md) # Use the readme in your doxygen docs
 doxygen_add_docs(doxygen src/ README.md ALL)

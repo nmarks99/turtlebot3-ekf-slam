@@ -70,16 +70,16 @@ public:
 			RCLCPP_ERROR_STREAM(get_logger(), "body_id parameter not specified");
 			throw std::runtime_error("body_id parameter not specified");
 		}
-		// if (wheel_right.empty())
-		// {
-		// 	RCLCPP_ERROR_STREAM(get_logger(), "wheel_right parameter not specified");
-		// 	throw std::runtime_error("wheel_right parameter not specified");
-		// }
-		// if (wheel_left.empty())
-		// {
-		// 	RCLCPP_ERROR_STREAM(get_logger(), "left_right parameter not specified");
-		// 	throw std::runtime_error("left_right parameter not specified");
-		// }
+		if (wheel_right.empty())
+		{
+			RCLCPP_ERROR_STREAM(get_logger(), "wheel_right parameter not specified");
+			throw std::runtime_error("wheel_right parameter not specified");
+		}
+		if (wheel_left.empty())
+		{
+			RCLCPP_ERROR_STREAM(get_logger(), "left_right parameter not specified");
+			throw std::runtime_error("left_right parameter not specified");
+		}
 
 		/// @brief Publisher to the odom topic
 		odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
