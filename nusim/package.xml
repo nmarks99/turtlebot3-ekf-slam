@@ -8,13 +8,15 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  
+
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>tf2</depend>
+  <depend>turtlelib</depend>
+  <depend>nuturtlebot_msgs</depend>
   <depend>tf2_ros</depend>
 
   <test_depend>ament_lint_auto</test_depend>
