@@ -143,6 +143,9 @@ private:
 		wheel_cmd_msg.left_velocity = speeds.left;
 		wheel_cmd_msg.right_velocity = speeds.right;
 		wheel_cmd_pub->publish(wheel_cmd_msg);
+		// RCLCPP_INFO_STREAM(
+		// 	get_logger(),
+		// 	"wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity);
 	}
 
 	void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)

@@ -26,6 +26,7 @@
         <!-- start the nusim node with basic_world.yaml config file -->
         <node pkg="nusim" exec="nusim" name="nusim">
             <param from="$(find-pkg-share nusim)/config/basic_world.yaml"/>
+            <remap from="/red/wheel_cmd" to="/wheel_cmd"/>
         </node>
 
         <!-- start odometry node for red robot-->
