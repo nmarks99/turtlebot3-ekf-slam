@@ -151,6 +151,8 @@ private:
 		// Create the JointState message and timestamp it
 		sensor_msgs::msg::JointState js_msg;
 		js_msg.header.stamp = sensor_data.stamp;
+		js_msg.name.push_back("red/wheel_left_joint");
+		js_msg.name.push_back("red/wheel_right_joint");
 
 		// Update wheel angles
 		js_msg.position.push_back(sensor_data.left_encoder * encoder_ticks_per_rad);
