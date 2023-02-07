@@ -72,6 +72,11 @@ namespace turtlelib
         /// @param phi_new - the new wheel angles
         Pose2D forward_kinematics(WheelState phi_new);
 
+        /// @brief computes the forward kinematics to find
+        /// the new pose of robot given new wheel angles
+        /// @param phi_new - the new wheel angles
+        Pose2D forward_kinematics(const Pose2D &config, const WheelState &phi_new);
+
         /// @brief computes the current body twist given wheel velocities
         /// @param phi_dot - WheelState of current wheel velocities
         /// @return the body twist of the robot as a Twist2D

@@ -66,6 +66,48 @@ namespace turtlelib
         return _pose;
     }
 
+    Pose2D DiffDrive::forward_kinematics(const Pose2D &config, const WheelState &phi_new)
+    {
+        // define _phi and the config passed to the function
+        _pose = config;
+
+        // Define D and r so equations are shorter
+        auto D = WHEEL_SEPARATION / 2;
+        auto r = WHEEL_RADIUS;
+
+        // Compute the new wheel speeds, which for t=1 are just
+        // equal to the change in angle
+        _phidot.left = (phi_new.left - _phi.left);
+        _phidot.right = (phi_new.right - _phi.right);
+
+        // Compute the body twist
+        // Derivations for these equations can be found in docs/Kinematics.pdf
+        Twist2D body_twist;
+        body_twist.thetadot = (r / 2 * D) * (_phidot.right - _phidot.left);
+        body_twist.xdot = (r * _phidot.right) - (D * body_twist.thetadot);
+        body_twist.ydot = 0.0;
+
+        // Define transform between world and B frame
+        // B is the body frame before achieving the new wheel angles phi_new
+        Vector2D xy_B{_pose.x, _pose.y};
+        Transform2D Twb(xy_B, _pose.theta);
+
+        // The transform between the B frame and the B' frame can be obtained
+        // by integrating the twist. B' is the body frame once the robot has
+        // achieved phi_new
+        auto Tb_bprime = Twb.integrate_twist(body_twist);
+
+        // Get the B' frame in the world frame by composing the transforms
+        auto Tw_bprime = Twb * Tb_bprime;
+
+        // Get the new pose from the Tw_bprime transform and return it
+        _pose.theta = Tw_bprime.rotation();
+        _pose.x = Tw_bprime.translation().x;
+        _pose.y = Tw_bprime.translation().y;
+
+        return _pose;
+    }
+
     Twist2D DiffDrive::body_twist(WheelState phi_dot)
     {
         // See Equation 6 in docs/Kinematics.pdf for where these equations come from
