@@ -95,8 +95,12 @@ public:
 		rate_hz = 200;
 
 		/// \brief Timer (frequency defined by node parameter)
+		// _timer = create_wall_timer(
+		// 	std::chrono::milliseconds((int)(1000 / rate_hz)),
+		// 	std::bind(&Odometry::timer_callback, this));
+
 		_timer = create_wall_timer(
-			std::chrono::milliseconds((int)(1000 / rate_hz)),
+			5ms,
 			std::bind(&Odometry::timer_callback, this));
 	}
 
@@ -117,6 +121,7 @@ private:
 	turtlelib::WheelState wheel_angles_now;
 	turtlelib::WheelState wheel_speeds_now;
 	turtlelib::Twist2D Vb_now;
+	tf2::Quaternion q;
 
 	// Declare messages
 	nav_msgs::msg::Odometry odom_msg;
@@ -147,12 +152,12 @@ private:
 
 		// Update current pose of the robot with forward kinematics
 		pose_now = ddrive.forward_kinematics(wheel_angles_now);
+		// RCLCPP_INFO_STREAM(get_logger(), "joint_states_callback");
 	}
 
 	void timer_callback()
 	{
 		// Define quaternion for current rotation
-		tf2::Quaternion q;
 		q.setRPY(0.0, 0.0, pose_now.theta);
 
 		// Fill in Odometry message

@@ -97,6 +97,11 @@ public:
 		//// @brief Publisher to joint_states topic
 		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
+		// timer callback
+		_timer = create_wall_timer(
+			5ms,
+			std::bind(&NuturtleControl::timer_callback, this));
+
 		/// @brief turtlebot robot as a DiffDrive object
 		/// @param wheel_radius - radius of the wheels passed as a parameter to the node
 		/// @param track_width - width of the track/robot passed as a parameter to the node
@@ -120,8 +125,13 @@ private:
 	rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_pub;
 	rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub;
 
+	// Timer callback
+	rclcpp::TimerBase::SharedPtr _timer;
+
 	// Declare turtlebot DiffDrive object
 	turtlelib::DiffDrive turtlebot;
+
+	sensor_msgs::msg::JointState js_msg;
 
 	// Encoder values at the last timestep
 	double last_encoder_left = 0;
@@ -143,6 +153,7 @@ private:
 		wheel_cmd_msg.left_velocity = speeds.left;
 		wheel_cmd_msg.right_velocity = speeds.right;
 		wheel_cmd_pub->publish(wheel_cmd_msg);
+		// RCLCPP_INFO_STREAM(get_logger(), "cmd_vel_callback");
 		// RCLCPP_INFO_STREAM(
 		// 	get_logger(),
 		// 	"wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity);
@@ -152,10 +163,10 @@ private:
 	{
 
 		// Create the JointState message and timestamp it
-		sensor_msgs::msg::JointState js_msg;
-		js_msg.header.stamp = sensor_data.stamp;
-		js_msg.name.push_back("red/wheel_left_joint");
-		js_msg.name.push_back("red/wheel_right_joint");
+		// sensor_msgs::msg::JointState js_msg;
+		// js_msg.header.stamp = sensor_data.stamp;
+		js_msg.name.push_back("/red/wheel_left_joint");
+		js_msg.name.push_back("/red/wheel_right_joint");
 
 		// Update wheel angles
 		js_msg.position.push_back(sensor_data.left_encoder * encoder_ticks_per_rad);
@@ -168,9 +179,14 @@ private:
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;
 		last_encoder_right = sensor_data.right_encoder;
+	}
 
+	void timer_callback()
+	{
 		// publish joint states
+		js_msg.header.stamp = get_clock()->now();
 		joint_states_pub->publish(js_msg);
+		// RCLCPP_INFO_STREAM(get_logger(), "js pub");
 	}
 };
 

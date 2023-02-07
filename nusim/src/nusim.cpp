@@ -11,8 +11,9 @@
 /// PUBLISHES:
 ///     ~/timestep (std_msgs/msg/UInt64): simulation timestep
 ///     ~/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
+///		/red/sensor_data
 /// SUBSCRIBES:
-///     None
+///     /red/wheel_cmd
 /// SERVERS:
 ///     ~/reset (std_srvs/srv/Empty): resets the simulation timestep and the robot to its initial pose
 ///     ~/teleport (nusim/srv/Teleport): teleports the robot to a specified pose
@@ -66,7 +67,7 @@ class Nusim : public rclcpp::Node
 {
 
 public:
-	Nusim() : Node("nusim")
+	Nusim() : Node("nusim"), step(0)
 	{
 
 		// Declare parameters
@@ -77,6 +78,33 @@ public:
 		declare_parameter<std::vector<double>>("obstacles/x", DEFAULT_OBSTACLES_X);
 		declare_parameter<std::vector<double>>("obstacles/y", DEFAULT_OBSTACLES_Y);
 		declare_parameter<double>("obstacles/r", DEFAULT_OBSTACLES_R);
+
+		declare_parameter("motor_cmd_per_rad_sec", MOTOR_CMD_PER_RAD_SEC);
+		declare_parameter("motor_cmd_max", MOTOR_CMD_MAX);
+		declare_parameter("encoder_ticks_per_rad", ENCODER_TICKS_PER_RAD);
+		MOTOR_CMD_PER_RAD_SEC = get_parameter("motor_cmd_per_rad_sec").get_value<double>();
+		MOTOR_CMD_MAX = get_parameter("motor_cmd_max").get_value<int>();
+		ENCODER_TICKS_PER_RAD = get_parameter("encoder_ticks_per_rad").get_value<double>();
+
+		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
+		{
+			RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_per_rad_sec parameter missing");
+			throw std::runtime_error("motor_cmd_per_rad_sec parameter missing");
+		}
+
+		if (MOTOR_CMD_MAX == 0)
+		{
+			RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_max parameter missing");
+			throw std::runtime_error("motor_cmd_max parameter missing");
+		}
+
+		if (turtlelib::almost_equal(ENCODER_TICKS_PER_RAD, 0.0))
+		{
+			RCLCPP_ERROR_STREAM(get_logger(), "encoder_ticks_per_rad parameter missing");
+			throw std::runtime_error("encoder_ticks_per_rad parameter missing");
+		}
+
+		RCLCPP_INFO_STREAM(get_logger(), "motor_cmd_max = " << MOTOR_CMD_MAX);
 
 		/// \brief timestep publisher (std_msgs/msg/UInt64)
 		timestep_pub = create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
@@ -115,8 +143,12 @@ public:
 		int period_ms = (int)(1000 / rate);
 
 		/// \brief Timer (frequency defined by node parameter)
+		// _timer = this->create_wall_timer(
+		// 	std::chrono::milliseconds(period_ms),
+		// 	std::bind(&Nusim::timer_callback, this));
+
 		_timer = this->create_wall_timer(
-			std::chrono::milliseconds(period_ms),
+			5ms,
 			std::bind(&Nusim::timer_callback, this));
 
 		// Ground truth pose of the robot known only to the simulator
@@ -176,7 +208,17 @@ private:
 	double obstacles_r;
 	double x0, y0, theta0;
 	int rate;
+	double MOTOR_CMD_PER_RAD_SEC = 0.0;
+	double ENCODER_TICKS_PER_RAD = 0.0;
+	int MOTOR_CMD_MAX = 0;
 	uint64_t step;
+
+	tf2::Quaternion q;
+
+	turtlelib::WheelState wheel_speeds;
+	turtlelib::WheelState wheel_angles;
+	turtlelib::Pose2D true_pose;
+	turtlelib::DiffDrive ddrive;
 
 	// declare publishers
 	rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
@@ -198,21 +240,37 @@ private:
 
 	// declare messages we will use
 	geometry_msgs::msg::TransformStamped world_red_tf;
-	nuturtlebot_msgs::msg::SensorData sensor_data_msg;
+	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray obstacle_marker_arr;
 	visualization_msgs::msg::Marker obstacle_marker;
 
 	/// \brief a 2D pose
-	struct Pose2D
-	{
-		double x;
-		double y;
-		double theta;
-	} true_pose;
+	// struct Pose2D
+	// {
+	// 	double x;
+	// 	double y;
+	// 	double theta;
+	// } true_pose;
 
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
 		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
+
+		// compute wheel speeds from wheel command message
+		wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
+		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
+
+		// compute new wheel angles
+		wheel_angles.left = wheel_angles.left + wheel_speeds.left / rate;
+		wheel_angles.right = wheel_angles.right + wheel_speeds.right / rate;
+
+		// convert angle to encoder ticks to fill in sensor_data message
+		sensor_data.left_encoder = wheel_angles.left * ENCODER_TICKS_PER_RAD;
+		sensor_data.right_encoder = wheel_angles.right * ENCODER_TICKS_PER_RAD;
+
+		// use new wheel angles with forward kinematics to update transform
+		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_callback");
 	}
 
 	/// \brief ~/reset service callback function:
@@ -227,7 +285,6 @@ private:
 		UNUSED(request);
 		UNUSED(response);
 
-		step = 0;
 		true_pose.x = x0;
 		true_pose.y = x0;
 		true_pose.theta = theta0;
@@ -264,7 +321,6 @@ private:
 		world_red_tf.header.stamp = get_clock()->now();
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
-		tf2::Quaternion q;
 		q.setRPY(0.0, 0.0, true_pose.theta);
 		world_red_tf.transform.rotation.x = q.x();
 		world_red_tf.transform.rotation.y = q.y();
@@ -274,6 +330,8 @@ private:
 
 		// publish MarkerArray of obstacles
 		marker_arr_pub->publish(obstacle_marker_arr);
+		sensor_data_pub->publish(sensor_data);
+		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 };
 

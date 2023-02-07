@@ -10,12 +10,12 @@
     </node>
 
     <!-- start odometry node for blue robot-->
-    <node pkg="nuturtle_control" exec="odometry" name="odometry">
+    <!-- <node pkg="nuturtle_control" exec="odometry" name="odometry">
         <param name="body_id" value="blue/base_footprint"/>
         <param name="odom_id" value="odom"/>
         <param name="wheel_left" value="blue/wheel_left_link" />
         <param name="wheel_right" value="blue/wheel_right_link" />
-    </node>
+    </node> -->
 
     <!-- start tf2_ros static transform publisher -->
     <node pkg="tf2_ros" exec="static_transform_publisher" name="static_transform_publisher" args=" --frame-id nusim/world --child-frame-id odom"/>
@@ -26,16 +26,18 @@
         <!-- start the nusim node with basic_world.yaml config file -->
         <node pkg="nusim" exec="nusim" name="nusim">
             <param from="$(find-pkg-share nusim)/config/basic_world.yaml"/>
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
             <remap from="/red/wheel_cmd" to="/wheel_cmd"/>
+            <remap from="/red/sensor_data" to="/sensor_data"/>
         </node>
 
         <!-- start odometry node for red robot-->
-        <node pkg="nuturtle_control" exec="odometry" name="odometry">
+        <!-- <node pkg="nuturtle_control" exec="odometry" name="odometry">
             <param name="body_id" value="red/base_footprint"/>
             <param name="odom_id" value="odom"/>
             <param name="wheel_left" value="red/wheel_left_link" />
             <param name="wheel_right" value="red/wheel_right_link" />
-        </node>
+        </node> -->
 
         <!-- start rviz with nuturle_control.rviz configuration -->
         <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
@@ -45,15 +47,15 @@
             <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
                 <arg name="color" value="red"/>
                 <arg name="use_rviz" value="false"/>
-                <arg name="use_jsp" value="true"/>
+                <arg name="use_jsp" value="false"/>
             </include>
 
             <!-- load blue robot into rviz -->
-            <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
+            <!-- <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
                 <arg name="color" value="blue"/>
                 <arg name="use_rviz" value="false"/>
                 <arg name="use_jsp" value="true"/>
-            </include>
+            </include> -->
         </group>
 
     </group>
