@@ -7,6 +7,7 @@
     <!-- start nuturtle_control node with diff_params.yaml config file -->
     <node pkg="nuturtle_control" exec="nuturtle_control" name="nuturtle_control">
         <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
+        <remap from="/joint_states" to="/red/joint_states"/>
     </node>
 
     <!-- start odometry node for blue robot-->

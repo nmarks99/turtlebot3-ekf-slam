@@ -86,7 +86,7 @@ public:
 
 		/// @brief Subscriber to joint_states topic
 		joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
-			"joint_states", 10,
+			"/joint_states", 10,
 			std::bind(&Odometry::joint_states_callback, this, _1));
 
 		/// @brief transform broadcaster used to publish transforms on the /tf topic
@@ -152,7 +152,8 @@ private:
 
 		// Update current pose of the robot with forward kinematics
 		pose_now = ddrive.forward_kinematics(wheel_angles_now);
-		// RCLCPP_INFO_STREAM(get_logger(), "joint_states_callback");
+		// this pose_now I think is wrong
+		RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
 	}
 
 	void timer_callback()

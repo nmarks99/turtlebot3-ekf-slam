@@ -95,7 +95,7 @@ public:
 		wheel_cmd_pub = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
 
 		//// @brief Publisher to joint_states topic
-		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("/red/joint_states", 10);
+		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
 
 		// timer callback
 		_timer = create_wall_timer(
@@ -157,10 +157,34 @@ private:
 
 		// Publish wheel speeds to wheel_cmd topic
 		nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
-		wheel_cmd_msg.left_velocity = speeds.left;
-		wheel_cmd_msg.right_velocity = speeds.right;
+		wheel_cmd_msg.left_velocity = speeds.left / motor_cmd_per_rad_sec;
+		wheel_cmd_msg.right_velocity = speeds.right / motor_cmd_per_rad_sec;
+
+		// make sure wheel_cmd is within the limits
+		if (wheel_cmd_msg.left_velocity > motor_cmd_max)
+		{
+			RCLCPP_INFO_STREAM(get_logger(), "at max left");
+			wheel_cmd_msg.left_velocity = motor_cmd_max;
+		}
+		if (wheel_cmd_msg.left_velocity < -motor_cmd_max)
+		{
+			RCLCPP_INFO_STREAM(get_logger(), "at min left");
+			wheel_cmd_msg.left_velocity = -motor_cmd_max;
+		}
+		if (wheel_cmd_msg.right_velocity > motor_cmd_max)
+		{
+			RCLCPP_INFO_STREAM(get_logger(), "at max right");
+			wheel_cmd_msg.right_velocity = motor_cmd_max;
+		}
+		if (wheel_cmd_msg.right_velocity < -motor_cmd_max)
+		{
+			RCLCPP_INFO_STREAM(get_logger(), "at min right");
+			wheel_cmd_msg.right_velocity = -motor_cmd_max;
+		}
+
 		wheel_cmd_pub->publish(wheel_cmd_msg);
-		RCLCPP_INFO_STREAM(get_logger(), "cmd_vel_callback");
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd.left = " << wheel_cmd_msg.left_velocity);
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd.right = " << wheel_cmd_msg.right_velocity);
 		// RCLCPP_INFO_STREAM(
 		// 	get_logger(),
 		// 	"wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity);

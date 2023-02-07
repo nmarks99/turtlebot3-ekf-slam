@@ -49,6 +49,20 @@ ament_target_dependencies(odometry
 )
 target_link_libraries(odometry turtlelib::turtlelib)
 
+add_executable(circle src/circle.cpp)
+ament_target_dependencies(circle
+  rclcpp
+  std_msgs
+  std_srvs
+  geometry_msgs
+  tf2
+  tf2_ros
+  nav_msgs
+  sensor_msgs
+  nuturtlebot_msgs
+)
+target_link_libraries(circle turtlelib::turtlelib)
+
 # install service definitions
 # rosidl_generate_interfaces(
 #   ${PROJECT_NAME}_srv
@@ -60,6 +74,7 @@ target_link_libraries(odometry turtlelib::turtlelib)
 install(TARGETS
   nuturtle_control
   odometry
+  circle
   DESTINATION lib/${PROJECT_NAME}
 )
 
