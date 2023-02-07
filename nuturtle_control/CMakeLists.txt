@@ -63,12 +63,17 @@ ament_target_dependencies(circle
 )
 target_link_libraries(circle turtlelib::turtlelib)
 
-# install service definitions
-# rosidl_generate_interfaces(
-#   ${PROJECT_NAME}_srv
-#   "srv/initial_pose.srv"
-#   LIBRARY_NAME ${PROJECT_NAME}
-# )
+
+# install custom service definitions
+rosidl_generate_interfaces(
+  ${PROJECT_NAME}_srv
+  "srv/Control.srv"
+  LIBRARY_NAME ${PROJECT_NAME}
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
+target_link_libraries(circle "${cpp_typesupport_target}")
+# ament_export_dependencies(rosidl_default_runtime)
 
 # install nodes
 install(TARGETS

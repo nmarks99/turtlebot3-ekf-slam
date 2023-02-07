@@ -23,7 +23,9 @@
 #include "nuturtlebot_msgs/msg/sensor_data.hpp"
 #include "turtlelib/diff_drive.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+
 #include "std_srvs/srv/empty.hpp"
+#include "nuturtle_control/srv/control.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -52,6 +54,10 @@ public:
         _stop_service = this->create_service<std_srvs::srv::Empty>(
             "circle/stop",
             std::bind(&Circle::stop_callback, this, _1, _2));
+
+        _control_service = create_service<nuturtle_control::srv::Control>(
+            "circle/control",
+            std::bind(&Circle::control_callback, this, _1, _2));
     }
 
 private:
@@ -60,6 +66,7 @@ private:
     geometry_msgs::msg::Twist twist_msg;
 
     // Services
+    rclcpp::Service<nuturtle_control::srv::Control>::SharedPtr _control_service;
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr _reverse_service;
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr _stop_service;
 
@@ -67,6 +74,13 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
 
     rclcpp::TimerBase::SharedPtr _timer;
+
+    void control_callback(const std::shared_ptr<nuturtle_control::srv::Control::Request> request,
+                          std::shared_ptr<nuturtle_control::srv::Control::Response> response)
+    {
+        RCLCPP_INFO_STREAM(get_logger(), "velocity = " << request->velocity);
+        RCLCPP_INFO_STREAM(get_logger(), "radius = " << request->radius);
+    }
 
     void reverse_callback(const std::shared_ptr<std_srvs::srv::Empty::Request>,
                           std::shared_ptr<std_srvs::srv::Empty::Response>)
