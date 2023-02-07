@@ -253,8 +253,8 @@ private:
 		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
 
 		// compute new wheel angles
-		wheel_angles.left = wheel_angles.left + wheel_speeds.left / rate;
-		wheel_angles.right = wheel_angles.right + wheel_speeds.right / rate;
+		wheel_angles.left = wheel_angles.left + wheel_speeds.left;
+		wheel_angles.right = wheel_angles.right + wheel_speeds.right;
 
 		// convert angle to encoder ticks to fill in sensor_data message
 		sensor_data.left_encoder = wheel_angles.left * ENCODER_TICKS_PER_RAD;
