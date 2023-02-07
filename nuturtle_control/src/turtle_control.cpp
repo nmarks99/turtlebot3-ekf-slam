@@ -95,7 +95,7 @@ public:
 		wheel_cmd_pub = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
 
 		//// @brief Publisher to joint_states topic
-		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("/red/joint_states", 10);
 
 		// timer callback
 		_timer = create_wall_timer(
@@ -106,6 +106,13 @@ public:
 		/// @param wheel_radius - radius of the wheels passed as a parameter to the node
 		/// @param track_width - width of the track/robot passed as a parameter to the node
 		turtlelib::DiffDrive turtlebot(wheel_radius, track_width);
+
+		js_msg.name.push_back("wheel_left_joint");
+		js_msg.name.push_back("wheel_right_joint");
+		js_msg.position.push_back(0.0);
+		js_msg.position.push_back(0.0);
+		js_msg.velocity.push_back(0.0);
+		js_msg.velocity.push_back(0.0);
 	}
 
 private:
@@ -163,18 +170,16 @@ private:
 	{
 
 		// Create the JointState message and timestamp it
-		// sensor_msgs::msg::JointState js_msg;
-		// js_msg.header.stamp = sensor_data.stamp;
-		js_msg.name.push_back("/red/wheel_left_joint");
-		js_msg.name.push_back("/red/wheel_right_joint");
+		// js_msg.name.push_back("/red/wheel_left_joint");
+		// js_msg.name.push_back("/red/wheel_right_joint");
 
 		// Update wheel angles
-		js_msg.position.push_back(sensor_data.left_encoder * encoder_ticks_per_rad);
-		js_msg.position.push_back(sensor_data.right_encoder * encoder_ticks_per_rad);
+		js_msg.position[0] = sensor_data.left_encoder * encoder_ticks_per_rad;
+		js_msg.position[1] = sensor_data.right_encoder * encoder_ticks_per_rad;
 
 		// Update wheel velocities
-		js_msg.velocity.push_back((sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec);
-		js_msg.velocity.push_back((sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec);
+		js_msg.velocity[0] = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
+		js_msg.velocity[1] = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
 
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;
@@ -185,8 +190,8 @@ private:
 	{
 		// publish joint states
 		js_msg.header.stamp = get_clock()->now();
+		RCLCPP_INFO_STREAM(get_logger(), "js_msg.name[0] = " << js_msg.name[0]);
 		joint_states_pub->publish(js_msg);
-		// RCLCPP_INFO_STREAM(get_logger(), "js pub");
 	}
 };
 
