@@ -38,6 +38,10 @@ namespace turtlelib
         _phidot.left = (phi_new.left - _phi.left);
         _phidot.right = (phi_new.right - _phi.right);
 
+        // update angles to be the new ones
+        _phi.left = phi_new.left;
+        _phi.right = phi_new.right;
+
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
         Twist2D body_twist;
@@ -79,6 +83,10 @@ namespace turtlelib
         // equal to the change in angle
         _phidot.left = (phi_new.left - _phi.left);
         _phidot.right = (phi_new.right - _phi.right);
+
+        // update angles to be the new ones
+        _phi.left = phi_new.left;
+        _phi.right = phi_new.right;
 
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
