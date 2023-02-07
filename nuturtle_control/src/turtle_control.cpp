@@ -154,7 +154,7 @@ private:
 
 		// Inverse kinematics to get the required wheel speeds
 		turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
-
+		RCLCPP_INFO_STREAM(get_logger(), "ik speeds = " << speeds.left << "," << speeds.right);
 		// Publish wheel speeds to wheel_cmd topic
 		nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
 		wheel_cmd_msg.left_velocity = speeds.left / motor_cmd_per_rad_sec;
