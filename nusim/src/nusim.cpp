@@ -244,14 +244,6 @@ private:
 	visualization_msgs::msg::MarkerArray obstacle_marker_arr;
 	visualization_msgs::msg::Marker obstacle_marker;
 
-	/// \brief a 2D pose
-	// struct Pose2D
-	// {
-	// 	double x;
-	// 	double y;
-	// 	double theta;
-	// } true_pose;
-
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
 		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
@@ -271,6 +263,7 @@ private:
 		// use new wheel angles with forward kinematics to update transform
 		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
 		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_callback");
+		RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 
 	/// \brief ~/reset service callback function:

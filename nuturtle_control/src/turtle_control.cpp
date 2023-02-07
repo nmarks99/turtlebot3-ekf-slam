@@ -160,7 +160,7 @@ private:
 		wheel_cmd_msg.left_velocity = speeds.left;
 		wheel_cmd_msg.right_velocity = speeds.right;
 		wheel_cmd_pub->publish(wheel_cmd_msg);
-		// RCLCPP_INFO_STREAM(get_logger(), "cmd_vel_callback");
+		RCLCPP_INFO_STREAM(get_logger(), "cmd_vel_callback");
 		// RCLCPP_INFO_STREAM(
 		// 	get_logger(),
 		// 	"wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity);
@@ -190,7 +190,7 @@ private:
 	{
 		// publish joint states
 		js_msg.header.stamp = get_clock()->now();
-		RCLCPP_INFO_STREAM(get_logger(), "js_msg.name[0] = " << js_msg.name[0]);
+		// RCLCPP_INFO_STREAM(get_logger(), "js_msg.name[0] = " << js_msg.name[0]);
 		joint_states_pub->publish(js_msg);
 	}
 };
