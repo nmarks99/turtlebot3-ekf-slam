@@ -3,12 +3,10 @@
 /// \file
 /// \brief Two-dimensional rigid body transformations.
 
-#include <iosfwd>  // contains forward definitions for iostream objects
-#include <cstdlib> // C standard library
+#include <iosfwd> // contains forward definitions for iostream objects
 #include <vector>
 #include <cmath>
-#include <iostream>
-#include <cassert>
+// #include <cassert>
 
 namespace turtlelib
 {
@@ -27,14 +25,7 @@ namespace turtlelib
     /// if given a compile-time constant as input
     constexpr bool almost_equal(double d1, double d2, double epsilon = 1.0e-12)
     {
-        if (fabs(d1 - d2) < epsilon)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return (std::abs(d1 - d2) < epsilon);
     }
 
     /// \brief Normalizes angle to be in the interval (-pi,pi]
@@ -42,11 +33,14 @@ namespace turtlelib
     /// \return angle (radians) in (-pi,pi]
     constexpr double normalize_angle(double rad)
     {
-        if (turtlelib::almost_equal(-M_PI, rad))
+        if (turtlelib::almost_equal(-PI, rad))
         {
-            return M_PI;
+            return PI;
         }
-        return atan2(sin(rad), cos(rad));
+        else
+        {
+            return std::atan2(std::sin(rad), std::cos(rad));
+        }
     }
 
     /// \brief convert degrees to radians
@@ -54,8 +48,7 @@ namespace turtlelib
     /// \returns radians
     constexpr double deg2rad(double deg)
     {
-        double rad = deg * (PI / 180);
-        return rad;
+        return (deg * (PI / 180.0));
     }
 
     /// \brief convert radians to degrees
@@ -63,8 +56,7 @@ namespace turtlelib
     /// \returns the angle in degrees
     constexpr double rad2deg(double rad)
     {
-        double deg = rad * (180 / PI);
-        return deg;
+        return (rad * (180.0 / PI));
     }
 
     /// static_assertions test compile time assumptions.
@@ -77,7 +69,7 @@ namespace turtlelib
 
     static_assert(almost_equal(rad2deg(0.0), 0.0), "rad2deg) failed");
 
-    static_assert(almost_equal(deg2rad(rad2deg(2.1)), 2.1), "deg2rad failed");
+    static_assert(almost_equal(deg2rad(rad2deg(2.123)), 2.123), "deg2rad failed");
 
     /// \brief A 2-Dimensional Vector
     struct Vector2D
@@ -191,9 +183,8 @@ namespace turtlelib
     {
 
     private:
-        double angle;
-        Vector2D p_vec;
-        // std::vector<std::vector<double>> tf_vec; // probably not needed
+        double angle = 0.0;
+        Vector2D p_vec{0.0, 0.0};
 
     public:
         /// \brief Create an identity transformation
