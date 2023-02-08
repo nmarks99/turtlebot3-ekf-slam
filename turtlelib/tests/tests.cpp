@@ -372,10 +372,9 @@ TEST_CASE("forward_kinematics()", "[DiffDrive]")
     SECTION("Robot spins in place")
     {
         turtlelib::DiffDrive bot;
-        turtlelib::WheelState phi_new{M_PI, -M_PI};
+        turtlelib::WheelState phi_new{-M_PI, M_PI};
         turtlelib::Pose2D pose{0.0, 0.0};
         auto new_pose = bot.forward_kinematics(phi_new);
-        std::cout << new_pose.x << "," << new_pose.y << "," << new_pose.theta << std::endl;
         REQUIRE(almost_equal(new_pose.x, pose.x));
         REQUIRE(almost_equal(new_pose.y, pose.y));
     }
