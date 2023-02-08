@@ -139,7 +139,7 @@ public:
 		/// used to publish transform on the /tf topic
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-		rate = this->get_parameter("rate").get_value<int>();
+		rate = get_parameter("rate").get_value<int>();
 		int period_ms = (int)(1000 / rate);
 
 		/// \brief Timer (frequency defined by node parameter)
@@ -153,25 +153,25 @@ public:
 
 		// Ground truth pose of the robot known only to the simulator
 		// Initial values are passed as parameters to the node
-		x0 = this->get_parameter("x0").get_value<double>();
-		y0 = this->get_parameter("y0").get_value<double>();
-		theta0 = this->get_parameter("theta0").get_value<double>();
+		x0 = get_parameter("x0").get_value<double>();
+		y0 = get_parameter("y0").get_value<double>();
+		theta0 = get_parameter("theta0").get_value<double>();
 		true_pose.x = x0;
 		true_pose.y = y0;
 		true_pose.theta = theta0;
 
 		// Get the requested obstacle locations and size
-		obstacles_r = this->get_parameter("obstacles/r").get_value<double>();
-		obstacles_x = this->get_parameter("obstacles/x").get_value<std::vector<double>>();
-		obstacles_y = this->get_parameter("obstacles/y").get_value<std::vector<double>>();
+		obstacles_r = get_parameter("obstacles/r").get_value<double>();
+		obstacles_x = get_parameter("obstacles/x").get_value<std::vector<double>>();
+		obstacles_y = get_parameter("obstacles/y").get_value<std::vector<double>>();
 
 		// Debugging info on parameters
-		RCLCPP_DEBUG(this->get_logger(), "x0 = %lf", true_pose.x);
-		RCLCPP_DEBUG(this->get_logger(), "y0 = %lf", true_pose.y);
-		RCLCPP_DEBUG(this->get_logger(), "theta0 = %lf", true_pose.theta);
-		RCLCPP_DEBUG(this->get_logger(), "obstacles/x length = %ld", obstacles_x.size());
-		RCLCPP_DEBUG(this->get_logger(), "obstacles/y length = %ld", obstacles_y.size());
-		RCLCPP_DEBUG(this->get_logger(), "obstacles/r = %lf", obstacles_r);
+		RCLCPP_DEBUG(get_logger(), "x0 = %lf", true_pose.x);
+		RCLCPP_DEBUG(get_logger(), "y0 = %lf", true_pose.y);
+		RCLCPP_DEBUG(get_logger(), "theta0 = %lf", true_pose.theta);
+		RCLCPP_DEBUG(get_logger(), "obstacles/x length = %ld", obstacles_x.size());
+		RCLCPP_DEBUG(get_logger(), "obstacles/y length = %ld", obstacles_y.size());
+		RCLCPP_DEBUG(get_logger(), "obstacles/r = %lf", obstacles_r);
 
 		// crashes if unequal number of x and y since they are ordered pairs
 		assert(obstacles_x.size() == obstacles_y.size());
@@ -220,12 +220,12 @@ private:
 	turtlelib::Pose2D true_pose{0.0, 0.0, 0.0};
 	turtlelib::DiffDrive ddrive;
 
-	// declare publishers
+	// Publishers
 	rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
 	rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_pub;
 
-	// declare subscribers
+	// Subscribers
 	rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_sub;
 
 	// Timer
@@ -248,24 +248,24 @@ private:
 	{
 		RCLCPP_INFO_STREAM(get_logger(), "recieved wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
 
-		// compute wheel speeds (rad/s) from wheel command message
+		// Compute wheel speeds (rad/s) from wheel command message
 		wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
 		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
 		RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds (rad/s) = " << wheel_speeds.left << "," << wheel_speeds.right);
 
-		// compute new wheel angles (rad)
+		// Compute new wheel angles (rad)
 		wheel_angles.left = wheel_angles.left + wheel_speeds.left * 0.005;
 		wheel_angles.right = wheel_angles.right + wheel_speeds.right * 0.005;
 		RCLCPP_INFO_STREAM(get_logger(), "wheel_angles = " << wheel_angles.left << "," << wheel_angles.right);
 
-		// convert angle to encoder ticks to fill in sensor_data message
+		// Convert angle to encoder ticks to fill in sensor_data message
 		sensor_data.left_encoder = (int)(wheel_angles.left * ENCODER_TICKS_PER_RAD);
 		sensor_data.right_encoder = (int)(wheel_angles.right * ENCODER_TICKS_PER_RAD);
 		RCLCPP_INFO_STREAM(get_logger(), "sensor_data = " << sensor_data.left_encoder << "," << sensor_data.right_encoder);
 
-		// use new wheel angles with forward kinematics to update transform
+		// Use new wheel angles with forward kinematics to update transform
 		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
-		RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
+		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 
 	/// \brief ~/reset service callback function:
@@ -290,10 +290,8 @@ private:
 	/// \param response - nusim/srv/Teleport response which is empty (unused)
 	void teleport_callback(
 		const std::shared_ptr<nusim::srv::Teleport::Request> request,
-		std::shared_ptr<nusim::srv::Teleport::Response> response)
+		std::shared_ptr<nusim::srv::Teleport::Response>)
 	{
-		UNUSED(response);
-
 		true_pose.x = request->x;
 		true_pose.y = request->y;
 		true_pose.theta = request->theta;
@@ -305,26 +303,31 @@ private:
 	void timer_callback()
 	{
 
-		// publish timestep
+		// Publish timestep
 		auto timestep_message = std_msgs::msg::UInt64();
 		timestep_message.data = step++;
 		timestep_pub->publish(timestep_message);
 
-		// publish transform between nusim/world and red/base_footprint frames
-		world_red_tf.header.stamp = get_clock()->now();
+		// Set the translation
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
+
+		// Set the rotation
 		q.setRPY(0.0, 0.0, true_pose.theta);
 		world_red_tf.transform.rotation.x = q.x();
 		world_red_tf.transform.rotation.y = q.y();
 		world_red_tf.transform.rotation.z = q.z();
 		world_red_tf.transform.rotation.w = q.w();
+
+		// Stamp and broadcast the transform
+		world_red_tf.header.stamp = get_clock()->now();
 		tf_broadcaster->sendTransform(world_red_tf);
 
-		// publish MarkerArray of obstacles
+		// Publish MarkerArray of obstacles
 		marker_arr_pub->publish(obstacle_marker_arr);
+
+		// Publish sensor data
 		sensor_data_pub->publish(sensor_data);
-		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 };
 
