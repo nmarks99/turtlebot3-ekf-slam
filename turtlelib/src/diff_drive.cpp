@@ -10,7 +10,7 @@ namespace turtlelib
     DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
     {
         WHEEL_RADIUS = wheel_radius;
-        WHEEL_SEPARATION = wheel_separation;
+        TRACK_WIDTH = wheel_separation;
     }
 
     WheelState DiffDrive::inverse_kinematics(Twist2D V)
@@ -20,17 +20,22 @@ namespace turtlelib
             throw std::logic_error("Non-zero y component of body twist is not possible");
         }
 
+        // Define D and r so equations are shorter
+        // These are the same as in docs/Kinematics.pdf
+        static const auto D = TRACK_WIDTH / 2.0; // body radius
+        static const auto r = WHEEL_RADIUS;
+
         // Compute the wheel speeds needed to achieve the desired body twist
         // Derivations for these equations can found in docs/Kinematics.pdf
-        _phidot.left = (1 / WHEEL_RADIUS) * (-WHEEL_SEPARATION * V.thetadot + V.xdot);
-        _phidot.right = (1 / WHEEL_RADIUS) * (WHEEL_SEPARATION * V.thetadot + V.xdot + V.ydot);
+        _phidot.left = (1 / r) * (-D * V.thetadot + V.xdot);
+        _phidot.right = (1 / r) * (D * V.thetadot + V.xdot); // + V.ydot is ommitted
         return _phidot;
     }
 
     Pose2D DiffDrive::forward_kinematics(WheelState phi_new)
     {
         // Define D and r so equations are shorter
-        auto D = WHEEL_SEPARATION / 2;
+        auto D = TRACK_WIDTH / 2; // body radius
         auto r = WHEEL_RADIUS;
 
         // Compute the new wheel speeds, which for t=1 are just
@@ -76,7 +81,7 @@ namespace turtlelib
         _pose = config;
 
         // Define D and r so equations are shorter
-        auto D = WHEEL_SEPARATION / 2;
+        auto D = TRACK_WIDTH / 2;
         auto r = WHEEL_RADIUS;
 
         // Compute the new wheel speeds, which for t=1 are just
@@ -120,7 +125,7 @@ namespace turtlelib
     {
         // See Equation 6 in docs/Kinematics.pdf for where these equations come from
         Twist2D Vb;
-        Vb.thetadot = (WHEEL_RADIUS / 2 * WHEEL_SEPARATION) * (phi_dot.right - phi_dot.left);
+        Vb.thetadot = (WHEEL_RADIUS / 2 * TRACK_WIDTH) * (phi_dot.right - phi_dot.left);
         Vb.xdot = (WHEEL_RADIUS / 2) * (phi_dot.left + phi_dot.right);
         Vb.ydot = 0.0; // no slipping
         return Vb;

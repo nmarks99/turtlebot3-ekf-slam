@@ -18,24 +18,24 @@ namespace turtlelib
     struct Pose2D
     {
         /// @brief the x position
-        double x;
+        double x = 0.0;
 
         /// @brief the y position
-        double y;
+        double y = 0.0;
 
         /// @brief the theta position
-        double theta;
+        double theta = 0.0;
     };
 
-    /// @brief state of the left and right wheels.
-    /// Could be position, velocity, or whatever is desired
+    /// @brief generic state of the left and right wheels.
+    /// Could be position, velocity, or whatever
     struct WheelState
     {
         /// @brief state of the left wheel
-        double left;
+        double left = 0.0;
 
         /// @brief state of the right wheel
-        double right;
+        double right = 0.0;
     };
 
     /// @brief models the kinematics of a differential drive robot
@@ -43,13 +43,14 @@ namespace turtlelib
     {
 
     private:
-        Pose2D _pose{0, 0, 0};    // x,y,theta position in meters, radians
-        WheelState _phi{0, 0};    // wheel angles in radians
-        WheelState _phidot{0, 0}; // wheel velocities in m/s
+        Pose2D _pose{0.0, 0.0, 0.0};  // x,y,theta position in meters, radians
+        WheelState _phi{0.0, 0.0};    // wheel angles in radians
+        WheelState _phidot{0.0, 0.0}; // wheel velocities in m/s
 
         // values default to turtlebot3 burger values
-        double WHEEL_RADIUS = 0.066;
-        double WHEEL_SEPARATION = 0.160;
+        // r and 2*D as shown in docs/Kinematics.pdf
+        double WHEEL_RADIUS = 0.033; // r
+        double TRACK_WIDTH = 0.160;  // 2*D
 
     public:
         /// @brief create a DiffDrive object with a default wheel radius
@@ -74,6 +75,7 @@ namespace turtlelib
 
         /// @brief computes the forward kinematics to find
         /// the new pose of robot given new wheel angles
+        /// @param config - the current Pose2D of the robot
         /// @param phi_new - the new wheel angles
         Pose2D forward_kinematics(const Pose2D &config, const WheelState &phi_new);
 

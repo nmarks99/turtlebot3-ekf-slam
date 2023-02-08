@@ -285,8 +285,8 @@ DiffDrive
 */
 
 // These values are just for the tests
-const double D_TEST = 1;
-const double r_TEST = 1;
+static const double D_TEST = 1.0;
+static const double r_TEST = 1.0;
 
 TEST_CASE("DiffDrive(config,phi)", "[DiffDrive]")
 {
@@ -305,7 +305,7 @@ TEST_CASE("inverse_kinematics()", "[DiffDrive]")
     SECTION("Robot drives forward")
     {
         turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
-        turtlelib::Twist2D V{0, 1, 0};
+        turtlelib::Twist2D V{0.0, 1.0, 0.0};
         turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
         REQUIRE(almost_equal(speeds.left, 1.0));
         REQUIRE(almost_equal(speeds.right, 1.0));
@@ -325,8 +325,8 @@ TEST_CASE("inverse_kinematics()", "[DiffDrive]")
         turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
         turtlelib::Twist2D V{1.57, 1.57 * 2, 0};
         turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
-        REQUIRE(almost_equal(speeds.left, 0));
-        REQUIRE(almost_equal(speeds.right, 6.28));
+        REQUIRE(almost_equal(speeds.left, 1.57));
+        REQUIRE(almost_equal(speeds.right, 4.71));
     }
 
     SECTION("Invalid requested body twist")
@@ -409,5 +409,5 @@ TEST_CASE("body_twist()", "[DiffDrive]")
     turtlelib::DiffDrive bot;
     turtlelib::WheelState phi_dot{1.0, 1.0};
     turtlelib::Twist2D V = bot.body_twist(phi_dot);
-    REQUIRE(almost_equal(V.xdot, 0.066));
+    REQUIRE(almost_equal(V.xdot, 0.033));
 }
