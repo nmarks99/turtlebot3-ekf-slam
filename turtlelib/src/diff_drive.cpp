@@ -96,8 +96,9 @@ namespace turtlelib
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
         Twist2D body_twist;
-        body_twist.thetadot = (r / 2 * D) * (_phidot.right - _phidot.left);
-        body_twist.xdot = (r * _phidot.right) - (D * body_twist.thetadot);
+        body_twist.thetadot = (r / (2.0 * D)) * (_phidot.right - _phidot.left);
+        body_twist.xdot = (r / 2.0) * (_phidot.right + _phidot.left);
+        // body_twist.xdot = (r * _phidot.right) - (D * body_twist.thetadot);
         body_twist.ydot = 0.0;
 
         // Define transform between world and B frame

@@ -155,8 +155,8 @@ private:
 		// Inverse kinematics to get the required wheel speeds
 		turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
 
-		RCLCPP_INFO_STREAM(get_logger(), "Vb (m/s) = " << V);
-		RCLCPP_INFO_STREAM(get_logger(), "ik speeds (rad/s) = " << speeds.left << "," << speeds.right);
+		// RCLCPP_INFO_STREAM(get_logger(), "Vb (m/s) = " << V);
+		// RCLCPP_INFO_STREAM(get_logger(), "ik speeds (rad/s) = " << speeds.left << "," << speeds.right);
 
 		// Publish wheel speeds to wheel_cmd topic
 		nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
@@ -185,7 +185,7 @@ private:
 			wheel_cmd_msg.right_velocity = -motor_cmd_max;
 		}
 
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity << std::endl;);
+		// RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity << std::endl;);
 
 		wheel_cmd_pub->publish(wheel_cmd_msg);
 	}

@@ -213,12 +213,11 @@ private:
 	int MOTOR_CMD_MAX = 0;
 	uint64_t step;
 
-	tf2::Quaternion q;
-
 	turtlelib::WheelState wheel_speeds{0.0, 0.0};
 	turtlelib::WheelState wheel_angles{0.0, 0.0};
 	turtlelib::Pose2D true_pose{0.0, 0.0, 0.0};
 	turtlelib::DiffDrive ddrive;
+	tf2::Quaternion q;
 
 	// Publishers
 	rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
@@ -246,22 +245,22 @@ private:
 
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
-		RCLCPP_INFO_STREAM(get_logger(), "recieved wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
+		// RCLCPP_INFO_STREAM(get_logger(), "recieved wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
 
 		// Compute wheel speeds (rad/s) from wheel command message
 		wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
 		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds (rad/s) = " << wheel_speeds.left << "," << wheel_speeds.right);
+		// RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds (rad/s) = " << wheel_speeds.left << "," << wheel_speeds.right);
 
 		// Compute new wheel angles (rad)
 		wheel_angles.left = wheel_angles.left + wheel_speeds.left * 0.005;
 		wheel_angles.right = wheel_angles.right + wheel_speeds.right * 0.005;
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_angles = " << wheel_angles.left << "," << wheel_angles.right);
+		// RCLCPP_INFO_STREAM(get_logger(), "wheel_angles = " << wheel_angles.left << "," << wheel_angles.right);
 
 		// Convert angle to encoder ticks to fill in sensor_data message
 		sensor_data.left_encoder = (int)(wheel_angles.left * ENCODER_TICKS_PER_RAD);
 		sensor_data.right_encoder = (int)(wheel_angles.right * ENCODER_TICKS_PER_RAD);
-		RCLCPP_INFO_STREAM(get_logger(), "sensor_data = " << sensor_data.left_encoder << "," << sensor_data.right_encoder);
+		// RCLCPP_INFO_STREAM(get_logger(), "sensor_data = " << sensor_data.left_encoder << "," << sensor_data.right_encoder);
 
 		// Use new wheel angles with forward kinematics to update transform
 		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
@@ -309,6 +308,8 @@ private:
 		timestep_pub->publish(timestep_message);
 
 		// Set the translation
+		RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
+
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
 

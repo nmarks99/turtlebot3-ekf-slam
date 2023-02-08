@@ -380,14 +380,18 @@ TEST_CASE("forward_kinematics()", "[DiffDrive]")
     }
 }
 
-// TEST_CASE("forward_kinematics(config,new_phi)", "[DiffDrive]")
-// {
-//     turtlelib::Pose2D p{1.0, 1.0, 0.0};
-//     turtlelib::WheelState phi{0.0, 0.0};
-//     turtlelib::DiffDrive bot(p, phi);
-//     turtlelib::WheelState phi_new{1.57, 1.57};
-//     auto new_pose = bot.forward_kinematics(p, phi_new);
-// }
+TEST_CASE("forward_kinematics(config,new_phi)", "[DiffDrive]")
+{
+    SECTION("Robot spins in place")
+    {
+        turtlelib::Pose2D p{1.0, 1.0, 0.0};
+        turtlelib::WheelState phi{0.0, 0.0};
+        turtlelib::DiffDrive bot(p, phi);
+        turtlelib::WheelState phi_new{1.57, -1.57};
+        auto new_pose = bot.forward_kinematics(p, phi_new);
+        REQUIRE(almost_equal(new_pose.x, p.x));
+    }
+}
 
 TEST_CASE("pose()", "[DiffDrive]")
 {
