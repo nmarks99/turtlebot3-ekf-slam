@@ -83,22 +83,22 @@ namespace turtlelib
     Transform2D Transform2D::integrate_twist(const Twist2D &V) const
     {
 
-        Vector2D vec;
+        // Vector2D vec;
 
         if (almost_equal(V.thetadot, 0.0))
         {
-            vec.x = V.xdot;
-            vec.y = V.ydot;
-            Transform2D tf(vec, 0.0);
-            return tf;
+            // Vector2D{V.xdot, V.ydot};
+            // vec.x = V.xdot;
+            // vec.y = V.ydot;
+            return Transform2D(Vector2D{V.xdot, V.ydot}, 0.0);
         }
         else
         {
             double _angle = V.thetadot;
+            Vector2D vec;
             vec.x = (1 / _angle) * (-V.ydot + V.xdot * sin(_angle) + V.ydot * cos(_angle));
             vec.y = (1 / _angle) * (V.xdot - V.xdot * cos(_angle) + V.ydot * sin(_angle));
-            Transform2D tf(vec, _angle);
-            return tf;
+            return Transform2D(vec, _angle);
         }
     }
 
