@@ -92,16 +92,16 @@ private:
     {
         RCLCPP_INFO_STREAM(get_logger(), "velocity = " << request->velocity);
         RCLCPP_INFO_STREAM(get_logger(), "radius = " << request->radius);
+        RCLCPP_INFO_STREAM(get_logger(), "angular_vel = " << request->velocity / request->radius);
 
         // Set flag to enable publishing of cmd_vel messsages
         STOPPED = false;
 
-        // set linear x velocity to v*r so it moves in a circle
-        // of radius r with angular velocity v
-        twist_msg.linear.x = request->velocity * request->radius;
+        // set linear x velocity to v
+        twist_msg.linear.x = request->velocity;
 
-        // Set angular z to the requested angular velocity
-        twist_msg.angular.z = request->velocity;
+        // Set angular z to v/r so it moves in a circle
+        twist_msg.angular.z = request->velocity / request->radius;
 
         // all else zero
         twist_msg.linear.y = 0.0;

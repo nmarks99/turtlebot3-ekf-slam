@@ -146,15 +146,18 @@ private:
 
 	void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
 	{
-		// Convert the geometry_msg/Twist to a turtlelib/Twist2D
-		turtlelib::Twist2D V;
-		V.xdot = Vmsg.linear.x;
-		V.ydot = Vmsg.linear.y;
-		V.thetadot = Vmsg.angular.z;
+		// Store the geometry_msg/Twist in a turtlelib/Twist2D
+		turtlelib::Twist2D V{Vmsg.angular.z, Vmsg.linear.x, 0.0};
+		// V.xdot = Vmsg.linear.x;
+		// V.ydot = Vmsg.linear.y;
+		// V.thetadot = Vmsg.angular.z;
 
 		// Inverse kinematics to get the required wheel speeds
 		turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
-		RCLCPP_INFO_STREAM(get_logger(), "ik speeds = " << speeds.left << "," << speeds.right);
+
+		RCLCPP_INFO_STREAM(get_logger(), "Vb (m/s) = " << V);
+		RCLCPP_INFO_STREAM(get_logger(), "ik speeds (rad/s) = " << speeds.left << "," << speeds.right);
+
 		// Publish wheel speeds to wheel_cmd topic
 		nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
 		wheel_cmd_msg.left_velocity = speeds.left / motor_cmd_per_rad_sec;
@@ -182,28 +185,24 @@ private:
 			wheel_cmd_msg.right_velocity = -motor_cmd_max;
 		}
 
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity << std::endl;);
+
 		wheel_cmd_pub->publish(wheel_cmd_msg);
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd.left = " << wheel_cmd_msg.left_velocity);
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd.right = " << wheel_cmd_msg.right_velocity);
-		// RCLCPP_INFO_STREAM(
-		// 	get_logger(),
-		// 	"wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity);
 	}
 
 	void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
 	{
 
-		// Create the JointState message and timestamp it
-		// js_msg.name.push_back("/red/wheel_left_joint");
-		// js_msg.name.push_back("/red/wheel_right_joint");
-
 		// Update wheel angles
-		js_msg.position[0] = sensor_data.left_encoder * encoder_ticks_per_rad;
-		js_msg.position[1] = sensor_data.right_encoder * encoder_ticks_per_rad;
+		js_msg.position.at(0) = sensor_data.left_encoder * encoder_ticks_per_rad;
+		js_msg.position.at(1) = sensor_data.right_encoder * encoder_ticks_per_rad;
 
 		// Update wheel velocities
-		js_msg.velocity[0] = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
-		js_msg.velocity[1] = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
+		// Divide by dt???
+		js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * encoder_ticks_per_rad / 0.005;
+		js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * encoder_ticks_per_rad / 0.005;
+		// js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
+		// js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
 
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;

@@ -215,9 +215,9 @@ private:
 
 	tf2::Quaternion q;
 
-	turtlelib::WheelState wheel_speeds;
-	turtlelib::WheelState wheel_angles;
-	turtlelib::Pose2D true_pose;
+	turtlelib::WheelState wheel_speeds{0.0, 0.0};
+	turtlelib::WheelState wheel_angles{0.0, 0.0};
+	turtlelib::Pose2D true_pose{0.0, 0.0, 0.0};
 	turtlelib::DiffDrive ddrive;
 
 	// declare publishers
@@ -246,24 +246,29 @@ private:
 
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
+		RCLCPP_INFO_STREAM(get_logger(), "recieved wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
 
-		// compute wheel speeds from wheel command message
+		// compute wheel speeds (rad/s) from wheel command message
 		wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
 		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds (rad/s) = " << wheel_speeds.left << "," << wheel_speeds.right);
 
-		// compute new wheel angles
-		wheel_angles.left = wheel_angles.left + wheel_speeds.left;
-		wheel_angles.right = wheel_angles.right + wheel_speeds.right;
+		// compute new wheel angles (rad)
+		// divide by time
+		wheel_angles.left = wheel_angles.left + wheel_speeds.left * 0.005;
+		wheel_angles.right = wheel_angles.right + wheel_speeds.right * 0.005;
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_angles.left = " << wheel_angles.left);
+		RCLCPP_INFO_STREAM(get_logger(), "wheel_angles.right = " << wheel_angles.right);
 
 		// convert angle to encoder ticks to fill in sensor_data message
-		sensor_data.left_encoder = wheel_angles.left * ENCODER_TICKS_PER_RAD;
-		sensor_data.right_encoder = wheel_angles.right * ENCODER_TICKS_PER_RAD;
+		sensor_data.left_encoder = (int)(wheel_angles.left * ENCODER_TICKS_PER_RAD);
+		sensor_data.right_encoder = (int)(wheel_angles.right * ENCODER_TICKS_PER_RAD);
+		RCLCPP_INFO_STREAM(get_logger(), "sensor_data = " << sensor_data.left_encoder << "," << sensor_data.right_encoder);
 
 		// use new wheel angles with forward kinematics to update transform
 		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
-		RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_callback");
-		RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
+		// RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_callback");
+		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 
 	/// \brief ~/reset service callback function:
@@ -272,11 +277,9 @@ private:
 	/// \param request - std_srvs/srv/Empty request (unused)
 	/// \param response - std_srvs/srv/Emptry response (unused)
 	void reset_callback(
-		const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-		std::shared_ptr<std_srvs::srv::Empty::Response> response)
+		const std::shared_ptr<std_srvs::srv::Empty::Request>,
+		std::shared_ptr<std_srvs::srv::Empty::Response>)
 	{
-		UNUSED(request);
-		UNUSED(response);
 
 		true_pose.x = x0;
 		true_pose.y = x0;
