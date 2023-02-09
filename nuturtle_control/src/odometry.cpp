@@ -11,7 +11,7 @@
 /// SUBSCRIBES:
 ///		/joint_states (sensor_msgs::msg::JointStat): joint (wheel) states information
 /// SERVICES:
-///
+///		/initial_pose
 /// CLIENTS:
 ///
 
@@ -33,9 +33,11 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include "nuturtle_control/srv/initial_pose.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
+using std::placeholders::_2;
 
 /// @brief odometry node class
 class Odometry : public rclcpp::Node
@@ -86,8 +88,13 @@ public:
 
 		/// @brief Subscriber to joint_states topic
 		joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
-			"/joint_states", 10,
+			"/blue/joint_states", 10,
 			std::bind(&Odometry::joint_states_callback, this, _1));
+
+		/// @brief initial pose service that sets the initial pose of the robot
+		_init_pose_service = this->create_service<nuturtle_control::srv::InitialPose>(
+			"circle/initial_pose",
+			std::bind(&Odometry::init_pose_callback, this, _1, _2));
 
 		/// @brief transform broadcaster used to publish transforms on the /tf topic
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -117,10 +124,10 @@ private:
 	turtlelib::DiffDrive ddrive;
 
 	// Current robot state
-	turtlelib::Pose2D pose_now;
-	turtlelib::WheelState wheel_angles_now;
-	turtlelib::WheelState wheel_speeds_now;
-	turtlelib::Twist2D Vb_now;
+	turtlelib::Pose2D pose_now{0.0, 0.0, 0.0};
+	turtlelib::WheelState wheel_angles_now{0.0, 0.0};
+	turtlelib::WheelState wheel_speeds_now{0.0, 0.0};
+	turtlelib::Twist2D Vb_now{0.0, 0.0, 0.0};
 	tf2::Quaternion q;
 
 	// Declare messages
@@ -139,6 +146,17 @@ private:
 	// Declare publishers
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
 
+	// Services
+	rclcpp::Service<nuturtle_control::srv::InitialPose>::SharedPtr _init_pose_service;
+
+	void init_pose_callback(const std::shared_ptr<nuturtle_control::srv::InitialPose::Request> request,
+							std::shared_ptr<nuturtle_control::srv::InitialPose::Response>)
+	{
+		pose_now.x = request->x;
+		pose_now.y = request->y;
+		pose_now.theta = request->theta;
+	}
+
 	void joint_states_callback(sensor_msgs::msg::JointState js_data)
 	{
 		// Update velocities and positions of the wheels
@@ -151,13 +169,15 @@ private:
 		Vb_now = ddrive.body_twist(wheel_speeds_now);
 
 		// Update current pose of the robot with forward kinematics
-		pose_now = ddrive.forward_kinematics(wheel_angles_now);
+		pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
 		// this pose_now I think is wrong
 		RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
 	}
 
 	void timer_callback()
 	{
+		RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
+
 		// Define quaternion for current rotation
 		q.setRPY(0.0, 0.0, pose_now.theta);
 

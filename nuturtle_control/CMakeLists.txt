@@ -68,11 +68,13 @@ target_link_libraries(circle turtlelib::turtlelib)
 rosidl_generate_interfaces(
   ${PROJECT_NAME}_srv
   "srv/Control.srv"
+  "srv/InitialPose.srv"
   LIBRARY_NAME ${PROJECT_NAME}
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 target_link_libraries(circle "${cpp_typesupport_target}")
+target_link_libraries(odometry "${cpp_typesupport_target}")
 # ament_export_dependencies(rosidl_default_runtime)
 
 # install nodes

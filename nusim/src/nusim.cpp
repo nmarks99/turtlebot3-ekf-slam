@@ -308,7 +308,7 @@ private:
 		timestep_pub->publish(timestep_message);
 
 		// Set the translation
-		RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
+		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
