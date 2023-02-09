@@ -48,6 +48,8 @@ public:
 		declare_parameter<int>("motor_cmd_max", motor_cmd_max);
 		declare_parameter<double>("motor_cmd_per_rad_sec", motor_cmd_per_rad_sec);
 		declare_parameter<double>("encoder_ticks_per_rad", encoder_ticks_per_rad);
+		declare_parameter<int>("rate", RATE);
+		RATE = get_parameter("rate").get_value<int>();
 		wheel_radius = get_parameter("wheel_radius").get_value<double>();
 		track_width = get_parameter("track_width").get_value<double>();
 		motor_cmd_max = get_parameter("motor_cmd_max").get_value<int>();
@@ -97,9 +99,9 @@ public:
 		//// @brief Publisher to joint_states topic
 		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
 
-		/// @brief Timer callback
+		/// \brief Timer (frequency defined by node parameter)
 		_timer = create_wall_timer(
-			5ms,
+			std::chrono::milliseconds((int)(1000 / RATE)),
 			std::bind(&NuturtleControl::timer_callback, this));
 
 		// initialize joint states message
@@ -119,6 +121,7 @@ private:
 	int motor_cmd_max = 0;
 	double motor_cmd_per_rad_sec = 0.0;
 	double encoder_ticks_per_rad = 0.0;
+	int RATE = 200;
 
 	// Pubscriptions
 	rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub;
@@ -137,6 +140,11 @@ private:
 	double last_encoder_left = 0.0;
 	double last_encoder_right = 0.0;
 
+	/// @brief callback to cmd_vel subscriber which computes the
+	/// wheel speeds required to acheive the requested body twist
+	/// using inverse kinematics, then published a WheelCommands
+	/// message to /wheel_cmd to move the robot with the requested twist
+	/// @param Vmsg - (geometry_msgs/msg/Twist)
 	void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
 	{
 		// Store the geometry_msg/Twist in a turtlelib/Twist2D
@@ -176,6 +184,10 @@ private:
 		wheel_cmd_pub->publish(wheel_cmd_msg);
 	}
 
+	/// @brief  callback function to /sensor_data subscription
+	/// which computes joint positions and velcoties from encoder data
+	/// @note - something is incorrect here, joint angles and velocites are HUGE
+	/// @param sensor_data (nuturtlebot_msgs/msg/SensorData)
 	void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
 	{
 		// Update wheel angles
@@ -189,11 +201,9 @@ private:
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;
 		last_encoder_right = sensor_data.right_encoder;
-
-		RCLCPP_INFO_STREAM(get_logger(), "js_msg.position " << js_msg.position.at(0) << ", " << js_msg.position.at(1));
-		RCLCPP_INFO_STREAM(get_logger(), "js_msg.velocity " << js_msg.velocity.at(0) << ", " << js_msg.velocity.at(1));
 	}
 
+	/// @brief timer callback to publish joint states
 	void timer_callback()
 	{
 		// stamp and publish joint states

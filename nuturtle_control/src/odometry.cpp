@@ -99,12 +99,10 @@ public:
 		/// @brief transform broadcaster used to publish transforms on the /tf topic
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-		rate_hz = 200;
-
 		/// \brief Timer (frequency defined by node parameter)
-		// _timer = create_wall_timer(
-		// 	std::chrono::milliseconds((int)(1000 / rate_hz)),
-		// 	std::bind(&Odometry::timer_callback, this));
+		_timer = create_wall_timer(
+			std::chrono::milliseconds((int)(1000 / RATE)),
+			std::bind(&Odometry::timer_callback, this));
 
 		_timer = create_wall_timer(
 			5ms,
@@ -112,7 +110,7 @@ public:
 	}
 
 private:
-	uint64_t rate_hz = 200;
+	int RATE = 200;
 
 	// Parameters that can be passed to the node
 	std::string body_id;
@@ -149,6 +147,10 @@ private:
 	// Services
 	rclcpp::Service<nuturtle_control::srv::InitialPose>::SharedPtr _init_pose_service;
 
+	/// @brief Callback to odometry/initial_pose service which sets the starting
+	/// pose of the robot to begin odometry calculations at
+	/// @param request
+	/// @param
 	void init_pose_callback(const std::shared_ptr<nuturtle_control::srv::InitialPose::Request> request,
 							std::shared_ptr<nuturtle_control::srv::InitialPose::Response>)
 	{
@@ -168,18 +170,12 @@ private:
 		// Compute current body twist from given wheel velocities
 		Vb_now = ddrive.body_twist(wheel_speeds_now);
 
-		// RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds = " << wheel_speeds_now.left << "," << wheel_speeds_now.right);
-		// RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
 		// Update current pose of the robot with forward kinematics
 		pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
-		// this pose_now I think is wrong
-		// RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
 	}
 
 	void timer_callback()
 	{
-		// RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
-
 		// Define quaternion for current rotation
 		q.setRPY(0.0, 0.0, pose_now.theta);
 

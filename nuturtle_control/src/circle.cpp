@@ -49,9 +49,8 @@ public:
         cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 
         /// \brief Timer (frequency defined by node parameter)
-        int period_ms = (int)(1000 / RATE);
         _timer = create_wall_timer(
-            std::chrono::milliseconds(period_ms),
+            std::chrono::milliseconds((int)(1000 / RATE)),
             std::bind(&Circle::timer_callback, this));
 
         /// @brief reverse service that reverses the direction of the robot
