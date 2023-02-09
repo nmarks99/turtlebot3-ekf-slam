@@ -142,9 +142,8 @@ public:
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
 		/// \brief Timer (frequency defined by node parameter)
-		int period_ms = (int)(1000 / RATE);
 		_timer = this->create_wall_timer(
-			std::chrono::milliseconds(period_ms),
+			std::chrono::milliseconds((int)(1000 / RATE)),
 			std::bind(&Nusim::timer_callback, this));
 
 		// Ground truth pose of the robot known only to the simulator
