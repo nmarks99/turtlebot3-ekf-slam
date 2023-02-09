@@ -72,7 +72,8 @@ endif()
 # We use the catch2 unit testing framework
 find_package(Catch2 3 REQUIRED)
 
-enable_testing()
+# enable_testing()
+include(CTest)
 add_executable(turtlelib_test tests/tests.cpp)
 target_link_libraries(turtlelib_test turtlelib Catch2::Catch2WithMain)
 
