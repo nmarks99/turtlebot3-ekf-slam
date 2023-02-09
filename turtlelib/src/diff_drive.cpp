@@ -126,7 +126,7 @@ namespace turtlelib
     {
         // See Equation 6 in docs/Kinematics.pdf for where these equations come from
         Twist2D Vb;
-        Vb.thetadot = (WHEEL_RADIUS / 2 * TRACK_WIDTH) * (phi_dot.right - phi_dot.left);
+        Vb.thetadot = (WHEEL_RADIUS / TRACK_WIDTH) * (phi_dot.right - phi_dot.left);
         Vb.xdot = (WHEEL_RADIUS / 2) * (phi_dot.left + phi_dot.right);
         Vb.ydot = 0.0; // no slipping
         return Vb;
