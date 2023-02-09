@@ -19,5 +19,5 @@ the `teleop_twist_keyboard` program to attempt to move the robot back to where i
 started. Unfortunately, at the time of recording this video, my odometry was not 
 working correctly so I do not have a value for how far the turtlebot is from its starting
 configuration
-[https://user-images.githubusercontent.com/45540813/217746813-e4856ca9-38ba-4b2a-a826-e1defa4409de.mp4](https://user-images.githubusercontent.com/45540813/217746813-e4856ca9-38ba-4b2a-a826-e1defa4409de.mp4)
-<video src=https://user-images.githubusercontent.com/45540813/217746813-e4856ca9-38ba-4b2a-a826-e1defa4409de.mp4 width=180/>
+
+<video src=https://user-images.githubusercontent.com/45540813/217746813-e4856ca9-38ba-4b2a-a826-e1defa4409de.mp4 width=280/>
