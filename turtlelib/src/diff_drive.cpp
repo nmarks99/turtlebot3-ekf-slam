@@ -5,13 +5,11 @@ namespace turtlelib
 
     DiffDrive::DiffDrive() {}
 
-    DiffDrive::DiffDrive(const Pose2D &config, const WheelState &phi) : _pose(config), _phi(phi) {}
+    DiffDrive::DiffDrive(const Pose2D &config, const WheelState &phi)
+        : _pose(config), _phi(phi) {}
 
     DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
-    {
-        WHEEL_RADIUS = wheel_radius;
-        TRACK_WIDTH = wheel_separation;
-    }
+        : WHEEL_RADIUS(wheel_radius), TRACK_WIDTH(wheel_separation) {}
 
     WheelState DiffDrive::inverse_kinematics(Twist2D V)
     {
@@ -81,7 +79,7 @@ namespace turtlelib
         _pose = config;
 
         // Define D and r so equations are shorter
-        auto D = TRACK_WIDTH / 2;
+        auto D = TRACK_WIDTH / 2.0;
         auto r = WHEEL_RADIUS;
 
         // Compute the new wheel speeds, which for t=1 are just
@@ -127,7 +125,7 @@ namespace turtlelib
         // See Equation 6 in docs/Kinematics.pdf for where these equations come from
         Twist2D Vb;
         Vb.thetadot = (WHEEL_RADIUS / TRACK_WIDTH) * (phi_dot.right - phi_dot.left);
-        Vb.xdot = (WHEEL_RADIUS / 2) * (phi_dot.left + phi_dot.right);
+        Vb.xdot = (WHEEL_RADIUS / 2.0) * (phi_dot.left + phi_dot.right);
         Vb.ydot = 0.0; // no slipping
         return Vb;
     }
