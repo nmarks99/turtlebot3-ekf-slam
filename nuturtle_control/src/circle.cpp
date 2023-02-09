@@ -1,16 +1,16 @@
 /// \file
-/// \brief circl node: publishes to cmd_vel to drive the robot in a circle of a desired radius
+/// \brief circle node: publishes to cmd_vel to drive the robot in a circle of a desired radius
 ///
 /// PARAMETERS:
 ///
 /// PUBLISHES:
-///     /cmd_vel
+///     /cmd_vel (geoemtry_msgs/msg/Twist)
 /// SUBSCRIBES:
 ///     None
 /// SERVICES:
-///     circle/control
-///     circle/stop
-///     circle/reverse
+///     circle/control (nuturtle_control/srv/Control): defines the velocity and radius of motion
+///     circle/stop (std_srvs/srv/Empty): stops the robot
+///     circle/reverse (std_srvs/srv/Empty): reverse the direction of the robot
 /// CLIENTS:
 ///     None
 
@@ -35,8 +35,6 @@ using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-static const int DEFAULT_FREQUENCY = 100;
-
 /// \brief circle node that defines services to drive the robot in a circle
 class Circle : public rclcpp::Node
 {
@@ -44,14 +42,16 @@ class Circle : public rclcpp::Node
 public:
     Circle() : Node("circle")
     {
-        declare_parameter("frequency", DEFAULT_FREQUENCY); // TODO: get this param and use it
+        declare_parameter("frequency", RATE);
+        RATE = get_parameter("frequency").get_value<int>();
 
         /// @brief Publisher to cmd_vel topic
         cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 
-        /// @brief timer
+        /// \brief Timer (frequency defined by node parameter)
+        int period_ms = (int)(1000 / RATE);
         _timer = create_wall_timer(
-            10ms,
+            std::chrono::milliseconds(period_ms),
             std::bind(&Circle::timer_callback, this));
 
         /// @brief reverse service that reverses the direction of the robot
@@ -76,6 +76,7 @@ private:
 
     geometry_msgs::msg::Twist twist_msg;
     rclcpp::TimerBase::SharedPtr _timer;
+    int RATE = 100;
 
     // Services
     rclcpp::Service<nuturtle_control::srv::Control>::SharedPtr _control_service;
@@ -110,6 +111,7 @@ private:
         twist_msg.angular.y = 0.0;
     }
 
+    /// @brief reverses the direction of the robot's motion
     void reverse_callback(const std::shared_ptr<std_srvs::srv::Empty::Request>,
                           std::shared_ptr<std_srvs::srv::Empty::Response>)
     {
@@ -121,10 +123,11 @@ private:
         RCLCPP_INFO_STREAM(get_logger(), "Reversing");
     }
 
+    /// @brief stops the robot
     void stop_callback(const std::shared_ptr<std_srvs::srv::Empty::Request>,
                        std::shared_ptr<std_srvs::srv::Empty::Response>)
     {
-        RCLCPP_INFO_STREAM(get_logger(), "stop service");
+        RCLCPP_INFO_STREAM(get_logger(), "Stopping robot");
         STOPPED = true;
         twist_msg.linear.x = 0.0;
         twist_msg.linear.y = 0.0;
@@ -135,15 +138,12 @@ private:
         cmd_vel_pub->publish(twist_msg);
     }
 
+    /// @brief timer callback to publish the Twist messages on /cmd_vel
     void timer_callback()
     {
         if (!STOPPED)
         {
             cmd_vel_pub->publish(twist_msg);
-        }
-        else
-        {
-            RCLCPP_INFO_STREAM_ONCE(get_logger(), "I am stopped");
         }
     }
 };
