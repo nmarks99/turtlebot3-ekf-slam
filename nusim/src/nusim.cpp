@@ -1,5 +1,5 @@
 /// \file
-/// \brief nusim node: a turtlebot simulation program
+/// \brief nusim node: a turtlebot3 simulation program
 ///
 /// PARAMETERS:
 ///     x0 (double): starting x location of the turtlebot in the simulator
@@ -11,9 +11,9 @@
 /// PUBLISHES:
 ///     ~/timestep (std_msgs/msg/UInt64): simulation timestep
 ///     ~/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
-///		/red/sensor_data
+///		/red/sensor_data (nuturtlebot_msgs/msg/SensorData): wheel encoder values
 /// SUBSCRIBES:
-///     /red/wheel_cmd
+///     /red/wheel_cmd (nuturtlebot_msgs/msg/WheelCommands): integer valued wheel command speeds
 /// SERVERS:
 ///     ~/reset (std_srvs/srv/Empty): resets the simulation timestep and the robot to its initial pose
 ///     ~/teleport (nusim/srv/Teleport): teleports the robot to a specified pose
@@ -86,6 +86,7 @@ public:
 		X0 = get_parameter("x0").get_value<double>();
 		Y0 = get_parameter("y0").get_value<double>();
 		THETA0 = get_parameter("theta0").get_value<double>();
+		RATE = get_parameter("rate").get_value<int>();
 
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
 		{
@@ -105,10 +106,10 @@ public:
 			throw std::runtime_error("encoder_ticks_per_rad parameter missing");
 		}
 
-		/// \brief timestep publisher (std_msgs/msg/UInt64)
+		/// @brief timestep publisher (std_msgs/msg/UInt64)
 		timestep_pub = create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
 
-		/// \brief marker publisher (visualization_msgs/msg/MarkerArray)
+		/// @brief marker publisher (visualization_msgs/msg/MarkerArray)
 		marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
 			"~/obstacles", 10);
 
@@ -140,16 +141,10 @@ public:
 		/// used to publish transform on the /tf topic
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-		RATE = get_parameter("rate").get_value<int>();
-		int period_ms = (int)(1000 / RATE);
-
 		/// \brief Timer (frequency defined by node parameter)
-		// _timer = this->create_wall_timer(
-		// 	std::chrono::milliseconds(period_ms),
-		// 	std::bind(&Nusim::timer_callback, this));
-
+		int period_ms = (int)(1000 / RATE);
 		_timer = this->create_wall_timer(
-			5ms,
+			std::chrono::milliseconds(period_ms),
 			std::bind(&Nusim::timer_callback, this));
 
 		// Ground truth pose of the robot known only to the simulator
@@ -238,7 +233,6 @@ public:
 	}
 
 private:
-	// parameters
 	std::vector<double> obstacles_x;
 	std::vector<double> obstacles_y;
 	double obstacles_r = 0.0;
@@ -283,6 +277,10 @@ private:
 	visualization_msgs::msg::MarkerArray obstacle_marker_arr;
 	visualization_msgs::msg::Marker marker_msg;
 
+	/// @brief /wheel_cmd topic callback function that reads the integer value
+	/// WheelCommands, converts them to speeds in rad/s, computes the angles
+	/// at the next step, sensor encoder values, and finally the new pose of the
+	/// robot using forward kinematics.
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
 		// Compute wheel speeds (rad/s) from wheel command message
