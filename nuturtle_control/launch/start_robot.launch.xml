@@ -11,12 +11,12 @@
     </node>
 
     <!-- start odometry node for blue robot-->
-    <!-- <node pkg="nuturtle_control" exec="odometry" name="odometry">
+    <node pkg="nuturtle_control" exec="odometry" name="odometry">
         <param name="body_id" value="blue/base_footprint"/>
         <param name="odom_id" value="odom"/>
         <param name="wheel_left" value="blue/wheel_left_link" />
         <param name="wheel_right" value="blue/wheel_right_link" />
-    </node> -->
+    </node>
 
     <node pkg="nuturtle_control" exec="circle" name="circle"/>
 
@@ -46,11 +46,11 @@
             </include>
 
             <!-- load blue robot into rviz without jsp -->
-            <!-- <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
+            <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
                 <arg name="color" value="blue"/>
                 <arg name="use_rviz" value="false"/>
                 <arg name="use_jsp" value="false"/>
-            </include> -->
+            </include>
 
         </group>
 

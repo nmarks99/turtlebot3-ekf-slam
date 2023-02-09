@@ -42,7 +42,7 @@ public:
 	NuturtleControl() : Node("nuturtle_control")
 	{
 
-		// Declare parameters to the node
+		// Declare parameters to the node and get them
 		declare_parameter<double>("wheel_radius", wheel_radius);
 		declare_parameter<double>("track_width", track_width);
 		declare_parameter<int>("motor_cmd_max", motor_cmd_max);
@@ -97,16 +97,12 @@ public:
 		//// @brief Publisher to joint_states topic
 		joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
 
-		// timer callback
+		/// @brief Timer callback
 		_timer = create_wall_timer(
 			5ms,
 			std::bind(&NuturtleControl::timer_callback, this));
 
-		/// @brief turtlebot robot as a DiffDrive object
-		/// @param wheel_radius - radius of the wheels passed as a parameter to the node
-		/// @param track_width - width of the track/robot passed as a parameter to the node
-		turtlelib::DiffDrive turtlebot(wheel_radius, track_width);
-
+		// initialize joint states message
 		js_msg.name.push_back("wheel_left_joint");
 		js_msg.name.push_back("wheel_right_joint");
 		js_msg.position.push_back(0.0);
@@ -118,102 +114,90 @@ public:
 private:
 	// Parameters that can be passed to the node
 	// probably from diff_params.yaml in nuturtle_description
-	double wheel_radius = 0;
-	double track_width = 0;
+	double wheel_radius = 0.0;
+	double track_width = 0.0;
 	int motor_cmd_max = 0;
-	double motor_cmd_per_rad_sec = 0;
-	double encoder_ticks_per_rad = 0;
+	double motor_cmd_per_rad_sec = 0.0;
+	double encoder_ticks_per_rad = 0.0;
 
-	// Declare subscriptions
+	// Pubscriptions
 	rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub;
 	rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_sub;
 
-	// Declare publishers
+	// Publishers
 	rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_pub;
 	rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub;
 
-	// Timer callback
-	rclcpp::TimerBase::SharedPtr _timer;
-
-	// Declare turtlebot DiffDrive object
-	turtlelib::DiffDrive turtlebot;
-
-	sensor_msgs::msg::JointState js_msg;
+	// Other
+	rclcpp::TimerBase::SharedPtr _timer; // Timer
+	turtlelib::DiffDrive turtlebot;		 // DiffDrive object for IK and FK for turtlebot
+	sensor_msgs::msg::JointState js_msg; // JointStates message
 
 	// Encoder values at the last timestep
-	double last_encoder_left = 0;
-	double last_encoder_right = 0;
+	double last_encoder_left = 0.0;
+	double last_encoder_right = 0.0;
 
 	void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
 	{
 		// Store the geometry_msg/Twist in a turtlelib/Twist2D
 		turtlelib::Twist2D V{Vmsg.angular.z, Vmsg.linear.x, 0.0};
-		// V.xdot = Vmsg.linear.x;
-		// V.ydot = Vmsg.linear.y;
-		// V.thetadot = Vmsg.angular.z;
 
 		// Inverse kinematics to get the required wheel speeds
 		turtlelib::WheelState speeds = turtlebot.inverse_kinematics(V);
 
-		// RCLCPP_INFO_STREAM(get_logger(), "Vb (m/s) = " << V);
-		// RCLCPP_INFO_STREAM(get_logger(), "ik speeds (rad/s) = " << speeds.left << "," << speeds.right);
-
-		// Publish wheel speeds to wheel_cmd topic
+		// Convert to speeds to integer wheel command value
 		nuturtlebot_msgs::msg::WheelCommands wheel_cmd_msg;
 		wheel_cmd_msg.left_velocity = speeds.left / motor_cmd_per_rad_sec;
 		wheel_cmd_msg.right_velocity = speeds.right / motor_cmd_per_rad_sec;
 
-		// make sure wheel_cmd is within the limits
+		// Ensure wheel_cmd is within the allowable limits
 		if (wheel_cmd_msg.left_velocity > motor_cmd_max)
 		{
-			RCLCPP_INFO_STREAM(get_logger(), "at max left");
+			RCLCPP_DEBUG_STREAM(get_logger(), "at max left");
 			wheel_cmd_msg.left_velocity = motor_cmd_max;
 		}
 		if (wheel_cmd_msg.left_velocity < -motor_cmd_max)
 		{
-			RCLCPP_INFO_STREAM(get_logger(), "at min left");
+			RCLCPP_DEBUG_STREAM(get_logger(), "at min left");
 			wheel_cmd_msg.left_velocity = -motor_cmd_max;
 		}
 		if (wheel_cmd_msg.right_velocity > motor_cmd_max)
 		{
-			RCLCPP_INFO_STREAM(get_logger(), "at max right");
+			RCLCPP_DEBUG_STREAM(get_logger(), "at max right");
 			wheel_cmd_msg.right_velocity = motor_cmd_max;
 		}
 		if (wheel_cmd_msg.right_velocity < -motor_cmd_max)
 		{
-			RCLCPP_INFO_STREAM(get_logger(), "at min right");
+			RCLCPP_DEBUG_STREAM(get_logger(), "at min right");
 			wheel_cmd_msg.right_velocity = -motor_cmd_max;
 		}
 
-		// RCLCPP_INFO_STREAM(get_logger(), "wheel_cmd_msg = " << wheel_cmd_msg.left_velocity << "," << wheel_cmd_msg.right_velocity << std::endl;);
-
+		// Publish the wheel_cmd_msg on /wheel_cmd topic
 		wheel_cmd_pub->publish(wheel_cmd_msg);
 	}
 
 	void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
 	{
-
 		// Update wheel angles
 		js_msg.position.at(0) = sensor_data.left_encoder * encoder_ticks_per_rad;
 		js_msg.position.at(1) = sensor_data.right_encoder * encoder_ticks_per_rad;
 
 		// Update wheel velocities
-		// Divide by dt???
-		js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * encoder_ticks_per_rad / 0.005;
-		js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * encoder_ticks_per_rad / 0.005;
-		// js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
-		// js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
+		js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * encoder_ticks_per_rad;
+		js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * encoder_ticks_per_rad;
 
 		// Update last_encode values
 		last_encoder_left = sensor_data.left_encoder;
 		last_encoder_right = sensor_data.right_encoder;
+
+		RCLCPP_INFO_STREAM(get_logger(), "js_msg.position " << js_msg.position.at(0) << ", " << js_msg.position.at(1));
+		RCLCPP_INFO_STREAM(get_logger(), "js_msg.velocity " << js_msg.velocity.at(0) << ", " << js_msg.velocity.at(1));
 	}
 
 	void timer_callback()
 	{
-		// publish joint states
+		// stamp and publish joint states
 		js_msg.header.stamp = get_clock()->now();
-		// RCLCPP_INFO_STREAM(get_logger(), "js_msg.name[0] = " << js_msg.name[0]);
 		joint_states_pub->publish(js_msg);
 	}
 };

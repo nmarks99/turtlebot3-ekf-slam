@@ -93,7 +93,7 @@ public:
 
 		/// @brief initial pose service that sets the initial pose of the robot
 		_init_pose_service = this->create_service<nuturtle_control::srv::InitialPose>(
-			"circle/initial_pose",
+			"odometry/initial_pose",
 			std::bind(&Odometry::init_pose_callback, this, _1, _2));
 
 		/// @brief transform broadcaster used to publish transforms on the /tf topic
@@ -168,15 +168,17 @@ private:
 		// Compute current body twist from given wheel velocities
 		Vb_now = ddrive.body_twist(wheel_speeds_now);
 
+		// RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds = " << wheel_speeds_now.left << "," << wheel_speeds_now.right);
+		// RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
 		// Update current pose of the robot with forward kinematics
 		pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
 		// this pose_now I think is wrong
-		RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
+		// RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
 	}
 
 	void timer_callback()
 	{
-		RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
+		// RCLCPP_INFO_STREAM(get_logger(), "pose_now = " << pose_now.x << "," << pose_now.y << "," << pose_now.theta);
 
 		// Define quaternion for current rotation
 		q.setRPY(0.0, 0.0, pose_now.theta);
