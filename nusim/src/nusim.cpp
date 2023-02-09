@@ -45,18 +45,9 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 
-/// \cond
-#define UNUSED(x) (void)(x) // used to suppress "unused-variable" warnings
-
-const double DEFAULT_X0 = 0.0;
-const double DEFAULT_Y0 = 0.0;
-const double DEFAULT_THETA0 = 0.0;
-const int DEFAULT_TIMER_FREQ = 200;
-const std::vector<double> DEFAULT_OBSTACLES_X;
-const std::vector<double> DEFAULT_OBSTACLES_Y;
-const double DEFAULT_OBSTACLES_R = 0.038;
-const double OBSTACLE_HEIGHT = 0.25;
-/// \endcond
+static constexpr double OBSTACLE_HEIGHT = 0.25;
+static constexpr double WALL_HEIGHT = 0.25;
+static constexpr double WALL_WIDTH = 0.15;
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -71,20 +62,30 @@ public:
 	{
 
 		// Declare parameters
-		declare_parameter<int>("rate", DEFAULT_TIMER_FREQ);
-		declare_parameter<double>("x0", DEFAULT_X0);
-		declare_parameter<double>("y0", DEFAULT_Y0);
-		declare_parameter<double>("theta0", DEFAULT_THETA0);
-		declare_parameter<std::vector<double>>("obstacles/x", DEFAULT_OBSTACLES_X);
-		declare_parameter<std::vector<double>>("obstacles/y", DEFAULT_OBSTACLES_Y);
-		declare_parameter<double>("obstacles/r", DEFAULT_OBSTACLES_R);
-
+		declare_parameter<int>("rate", RATE);
+		declare_parameter<double>("x0", X0);
+		declare_parameter<double>("y0", Y0);
+		declare_parameter<double>("theta0", THETA0);
+		declare_parameter<std::vector<double>>("obstacles/x", obstacles_x);
+		declare_parameter<std::vector<double>>("obstacles/y", obstacles_y);
+		declare_parameter<double>("obstacles/r", obstacles_r);
 		declare_parameter("motor_cmd_per_rad_sec", MOTOR_CMD_PER_RAD_SEC);
 		declare_parameter("motor_cmd_max", MOTOR_CMD_MAX);
 		declare_parameter("encoder_ticks_per_rad", ENCODER_TICKS_PER_RAD);
+		declare_parameter("wall_x_length", X_LENGTH);
+		declare_parameter("wall_y_length", Y_LENGTH);
+
+		// Get parameters
+		obstacles_r = get_parameter("obstacles/r").get_value<double>();
+		obstacles_x = get_parameter("obstacles/x").get_value<std::vector<double>>();
+		obstacles_y = get_parameter("obstacles/y").get_value<std::vector<double>>();
+		assert(obstacles_x.size() == obstacles_y.size());
 		MOTOR_CMD_PER_RAD_SEC = get_parameter("motor_cmd_per_rad_sec").get_value<double>();
 		MOTOR_CMD_MAX = get_parameter("motor_cmd_max").get_value<int>();
 		ENCODER_TICKS_PER_RAD = get_parameter("encoder_ticks_per_rad").get_value<double>();
+		X0 = get_parameter("x0").get_value<double>();
+		Y0 = get_parameter("y0").get_value<double>();
+		THETA0 = get_parameter("theta0").get_value<double>();
 
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
 		{
@@ -104,8 +105,6 @@ public:
 			throw std::runtime_error("encoder_ticks_per_rad parameter missing");
 		}
 
-		RCLCPP_INFO_STREAM(get_logger(), "motor_cmd_max = " << MOTOR_CMD_MAX);
-
 		/// \brief timestep publisher (std_msgs/msg/UInt64)
 		timestep_pub = create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
 
@@ -113,10 +112,12 @@ public:
 		marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
 			"~/obstacles", 10);
 
-		/// @brief red/sensor data publisher
+		/// @brief red/sensor data publisher which publishes the encoder ticks of the wheels
 		sensor_data_pub = create_publisher<nuturtlebot_msgs::msg::SensorData>(
 			"red/sensor_data", 10);
 
+		/// @brief subscription ot wheel_cmd to get the commanded
+		/// integer values which detemines the wheel velocities
 		wheel_cmd_sub = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
 			"red/wheel_cmd",
 			10,
@@ -139,8 +140,8 @@ public:
 		/// used to publish transform on the /tf topic
 		tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-		rate = get_parameter("rate").get_value<int>();
-		int period_ms = (int)(1000 / rate);
+		RATE = get_parameter("rate").get_value<int>();
+		int period_ms = (int)(1000 / RATE);
 
 		/// \brief Timer (frequency defined by node parameter)
 		// _timer = this->create_wall_timer(
@@ -153,50 +154,85 @@ public:
 
 		// Ground truth pose of the robot known only to the simulator
 		// Initial values are passed as parameters to the node
-		x0 = get_parameter("x0").get_value<double>();
-		y0 = get_parameter("y0").get_value<double>();
-		theta0 = get_parameter("theta0").get_value<double>();
-		true_pose.x = x0;
-		true_pose.y = y0;
-		true_pose.theta = theta0;
+		true_pose.x = X0;
+		true_pose.y = Y0;
+		true_pose.theta = THETA0;
 
-		// Get the requested obstacle locations and size
-		obstacles_r = get_parameter("obstacles/r").get_value<double>();
-		obstacles_x = get_parameter("obstacles/x").get_value<std::vector<double>>();
-		obstacles_y = get_parameter("obstacles/y").get_value<std::vector<double>>();
-
-		// Debugging info on parameters
-		RCLCPP_DEBUG(get_logger(), "x0 = %lf", true_pose.x);
-		RCLCPP_DEBUG(get_logger(), "y0 = %lf", true_pose.y);
-		RCLCPP_DEBUG(get_logger(), "theta0 = %lf", true_pose.theta);
-		RCLCPP_DEBUG(get_logger(), "obstacles/x length = %ld", obstacles_x.size());
-		RCLCPP_DEBUG(get_logger(), "obstacles/y length = %ld", obstacles_y.size());
-		RCLCPP_DEBUG(get_logger(), "obstacles/r = %lf", obstacles_r);
-
-		// crashes if unequal number of x and y since they are ordered pairs
-		assert(obstacles_x.size() == obstacles_y.size());
-
-		// creates a marker at each specified location
-		for (size_t i = 0; i < obstacles_x.size(); i++)
+		// Creates a marker obstacle at each specified location
+		size_t i = 0;
+		for (i = 0; i < obstacles_x.size(); i++)
 		{
-			obstacle_marker.header.frame_id = "nusim/world";
-			obstacle_marker.id = i;
-			obstacle_marker.type = visualization_msgs::msg::Marker::CYLINDER;
-			obstacle_marker.action = visualization_msgs::msg::Marker::ADD;
-			obstacle_marker.scale.x = obstacles_r;
-			obstacle_marker.scale.y = obstacles_r;
-			obstacle_marker.scale.z = OBSTACLE_HEIGHT;
-			obstacle_marker.pose.position.x = obstacles_x.at(i);
-			obstacle_marker.pose.position.y = obstacles_y.at(i);
-			obstacle_marker.pose.position.z = OBSTACLE_HEIGHT / 2;
-			obstacle_marker.color.r = 0.0;
-			obstacle_marker.color.g = 1.0;
-			obstacle_marker.color.b = 0.0;
-			obstacle_marker.color.a = 1.0;
-			obstacle_marker_arr.markers.push_back(obstacle_marker); // pack Marker into MarkerArray
+			marker_msg.header.frame_id = "nusim/world";
+			marker_msg.id = i;
+			marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
+			marker_msg.action = visualization_msgs::msg::Marker::ADD;
+			marker_msg.scale.x = obstacles_r;
+			marker_msg.scale.y = obstacles_r;
+			marker_msg.scale.z = OBSTACLE_HEIGHT;
+			marker_msg.pose.position.x = obstacles_x.at(i);
+			marker_msg.pose.position.y = obstacles_y.at(i);
+			marker_msg.pose.position.z = OBSTACLE_HEIGHT / 2;
+			marker_msg.color.r = 0.0;
+			marker_msg.color.g = 1.0;
+			marker_msg.color.b = 0.0;
+			marker_msg.color.a = 1.0;
+			obstacle_marker_arr.markers.push_back(marker_msg); // pack Marker into MarkerArray
 		}
 
-		// define parent and child frame id's
+		// Creates the four walls
+		size_t last_id = i;
+		for (size_t i = 0; i < 4; i++)
+		{
+			marker_msg.header.frame_id = "nusim/world";
+			marker_msg.id = last_id + i;
+			marker_msg.type = visualization_msgs::msg::Marker::CUBE;
+			marker_msg.action = visualization_msgs::msg::Marker::ADD;
+			marker_msg.color.r = 1.0;
+			marker_msg.color.g = 1.0;
+			marker_msg.color.b = 1.0;
+			marker_msg.color.a = 1.0;
+			marker_msg.scale.x = WALL_WIDTH;
+			marker_msg.scale.z = WALL_HEIGHT;
+			marker_msg.pose.position.z = WALL_HEIGHT / 2.0;
+
+			if (i < 2)
+			{
+				marker_msg.scale.y = Y_LENGTH;
+				marker_msg.pose.position.y = 0.0;
+				if (i == 0)
+				{
+					marker_msg.pose.position.x = X_LENGTH / 2.0 + WALL_WIDTH / 2.0;
+				}
+				else
+				{
+					marker_msg.pose.position.x = -X_LENGTH / 2.0 - WALL_WIDTH / 2.0;
+				}
+			}
+
+			else
+			{
+				q.setRPY(0.0, 0.0, 1.57);
+				marker_msg.pose.orientation.x = q.x();
+				marker_msg.pose.orientation.y = q.y();
+				marker_msg.pose.orientation.z = q.z();
+				marker_msg.pose.orientation.w = q.w();
+				marker_msg.pose.position.x = 0.0;
+				marker_msg.scale.y = X_LENGTH;
+				if (i == 2)
+				{
+					marker_msg.pose.position.y = Y_LENGTH / 2.0 + WALL_WIDTH / 2.0;
+				}
+				else
+				{
+					marker_msg.pose.position.y = -Y_LENGTH / 2.0 - WALL_WIDTH / 2.0;
+				}
+			}
+
+			// Pack Markers into MarkerArray
+			obstacle_marker_arr.markers.push_back(marker_msg);
+		}
+
+		// Define parent and child frame id's
 		world_red_tf.header.frame_id = "nusim/world";
 		world_red_tf.child_frame_id = "red/base_footprint";
 	}
@@ -205,12 +241,16 @@ private:
 	// parameters
 	std::vector<double> obstacles_x;
 	std::vector<double> obstacles_y;
-	double obstacles_r;
-	double x0, y0, theta0;
-	int rate;
+	double obstacles_r = 0.0;
+	double X0 = 0.0;
+	double Y0 = 0.0;
+	double THETA0 = 0.0;
+	int RATE = 200;
 	double MOTOR_CMD_PER_RAD_SEC = 0.0;
 	double ENCODER_TICKS_PER_RAD = 0.0;
 	int MOTOR_CMD_MAX = 0;
+	double X_LENGTH = 5.0;
+	double Y_LENGTH = 5.0;
 	uint64_t step;
 
 	turtlelib::WheelState wheel_speeds{0.0, 0.0};
@@ -237,34 +277,28 @@ private:
 	// tf broadcaster
 	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
-	// declare messages we will use
+	// Declare messages
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray obstacle_marker_arr;
-	visualization_msgs::msg::Marker obstacle_marker;
+	visualization_msgs::msg::Marker marker_msg;
 
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
-		// RCLCPP_INFO_STREAM(get_logger(), "recieved wheel_cmd = " << wheel_cmd.left_velocity << "," << wheel_cmd.right_velocity);
-
 		// Compute wheel speeds (rad/s) from wheel command message
 		wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
 		wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
-		// RCLCPP_INFO_STREAM(get_logger(), "wheel_speeds (rad/s) = " << wheel_speeds.left << "," << wheel_speeds.right);
 
 		// Compute new wheel angles (rad)
 		wheel_angles.left = wheel_angles.left + wheel_speeds.left * 0.005;
 		wheel_angles.right = wheel_angles.right + wheel_speeds.right * 0.005;
-		// RCLCPP_INFO_STREAM(get_logger(), "wheel_angles = " << wheel_angles.left << "," << wheel_angles.right);
 
 		// Convert angle to encoder ticks to fill in sensor_data message
 		sensor_data.left_encoder = (int)(wheel_angles.left * ENCODER_TICKS_PER_RAD);
 		sensor_data.right_encoder = (int)(wheel_angles.right * ENCODER_TICKS_PER_RAD);
-		// RCLCPP_INFO_STREAM(get_logger(), "sensor_data = " << sensor_data.left_encoder << "," << sensor_data.right_encoder);
 
 		// Use new wheel angles with forward kinematics to update transform
 		true_pose = ddrive.forward_kinematics(true_pose, wheel_angles);
-		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
 	}
 
 	/// \brief ~/reset service callback function:
@@ -277,9 +311,9 @@ private:
 		std::shared_ptr<std_srvs::srv::Empty::Response>)
 	{
 
-		true_pose.x = x0;
-		true_pose.y = x0;
-		true_pose.theta = theta0;
+		true_pose.x = X0;
+		true_pose.y = Y0;
+		true_pose.theta = THETA0;
 	}
 
 	/// \brief ~/teleport service callback function:
@@ -301,15 +335,12 @@ private:
 	/// the nusim/world and red/base_footprint frames, and published obstacle MarkerArray
 	void timer_callback()
 	{
-
 		// Publish timestep
 		auto timestep_message = std_msgs::msg::UInt64();
 		timestep_message.data = step++;
 		timestep_pub->publish(timestep_message);
 
 		// Set the translation
-		// RCLCPP_INFO_STREAM(get_logger(), "true_pose = " << true_pose.x << "," << true_pose.y << "," << true_pose.theta);
-
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
 
