@@ -5,13 +5,13 @@ namespace turtlelib
 
     DiffDrive::DiffDrive() {}
 
+    DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
+        : WHEEL_RADIUS(wheel_radius), TRACK_WIDTH(wheel_separation) {}
+
     DiffDrive::DiffDrive(const Pose2D &pose) : _pose(pose) {}
 
     DiffDrive::DiffDrive(const Pose2D &pose, const WheelState &phi)
         : _pose(pose), _phi(phi) {}
-
-    DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
-        : WHEEL_RADIUS(wheel_radius), TRACK_WIDTH(wheel_separation) {}
 
     DiffDrive::DiffDrive(const Pose2D &pose, const WheelState &phi, const WheelState &phidot)
         : _pose(pose), _phi(phi), _phidot(phidot) {}
@@ -48,15 +48,10 @@ namespace turtlelib
 
         // update angles to be the new ones
         _phi = phi_new;
-        // _phi.left = phi_new.left;
-        // _phi.right = phi_new.right;
 
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
-        Twist2D body_twist;
-        body_twist.thetadot = (r / (2.0 * D)) * (_phidot.right - _phidot.left);
-        body_twist.xdot = (r / 2.0) * (_phidot.right + _phidot.left);
-        body_twist.ydot = 0.0;
+        auto body_twist = DiffDrive::body_twist(_phidot);
 
         // Define transform between world and B frame
         // B is the body frame before achieving the new wheel angles phi_new
@@ -95,15 +90,10 @@ namespace turtlelib
 
         // update angles to be the new ones
         _phi = phi_new;
-        // _phi.left = phi_new.left;
-        // _phi.right = phi_new.right;
 
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
-        Twist2D body_twist;
-        body_twist.thetadot = (r / (2.0 * D)) * (_phidot.right - _phidot.left);
-        body_twist.xdot = (r / 2.0) * (_phidot.right + _phidot.left);
-        body_twist.ydot = 0.0;
+        auto body_twist = DiffDrive::body_twist(_phidot);
 
         // Define transform between world and B frame
         // B is the body frame before achieving the new wheel angles phi_new
