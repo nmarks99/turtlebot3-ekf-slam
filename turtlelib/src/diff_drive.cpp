@@ -37,9 +37,6 @@ namespace turtlelib
 
     Pose2D DiffDrive::forward_kinematics(WheelState phi_new)
     {
-        // Define D and r so equations are shorter
-        auto D = TRACK_WIDTH / 2.0; // body radius
-        auto r = WHEEL_RADIUS;
 
         // Compute the new wheel speeds, which for t=1 are just
         // equal to the change in angle
@@ -78,10 +75,6 @@ namespace turtlelib
     {
         // define _pose as the pose passed to the function
         _pose = pose;
-
-        // Define D and r so equations are shorter
-        auto D = TRACK_WIDTH / 2.0;
-        auto r = WHEEL_RADIUS;
 
         // Compute the new wheel speeds, which for t=1 are just
         // equal to the change in angle
