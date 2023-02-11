@@ -7,11 +7,9 @@
 
 using turtlelib::almost_equal;
 
-/*
-=======
-rigid2D
-=======
-*/
+// =================
+//      rigid2D
+// =================
 
 TEST_CASE("normalize_angle()", "[rigid2D]")
 { // Nick, Marks
@@ -278,30 +276,54 @@ TEST_CASE("operator>>", "[Twist2D]")
     REQUIRE(almost_equal(V.ydot, 2.0));
 }
 
-/*
-==========
-DiffDrive
-==========
-*/
+// =================
+//     DiffDrive
+// =================
 
 // These values are just for the tests
 static const double D_TEST = 1.0;
 static const double r_TEST = 1.0;
 
-TEST_CASE("DiffDrive(config,phi)", "[DiffDrive]")
-{
-    turtlelib::Pose2D p{1.0, 2.0, 3.0};
-    turtlelib::WheelState ws{5.0, 7.0};
-    turtlelib::DiffDrive ddrive(p, ws);
-    REQUIRE(almost_equal(ddrive.pose().x, 1.0));
-    REQUIRE(almost_equal(ddrive.pose().y, 2.0));
-    REQUIRE(almost_equal(ddrive.pose().theta, 3.0));
-    REQUIRE(almost_equal(ddrive.wheel_angles().left, 5.0));
-    REQUIRE(almost_equal(ddrive.wheel_angles().right, 7.0));
+TEST_CASE("DiffDrive()", "[DiffDrive]")
+{ // Nick, Marks
+    SECTION("DiffDrive(pose)")
+    {
+        turtlelib::Pose2D pose{1.0, 2.0, 3.0};
+        turtlelib::DiffDrive ddrive(pose);
+        REQUIRE(almost_equal(ddrive.pose().x, 1.0));
+        REQUIRE(almost_equal(ddrive.pose().y, 2.0));
+        REQUIRE(almost_equal(ddrive.pose().theta, 3.0));
+    }
+    SECTION("DiffDrive(pose,phi)")
+    {
+        turtlelib::Pose2D pose{1.0, 2.0, 3.0};
+        turtlelib::WheelState phi{5.0, 7.0};
+        turtlelib::DiffDrive ddrive(pose, phi);
+        REQUIRE(almost_equal(ddrive.pose().x, 1.0));
+        REQUIRE(almost_equal(ddrive.pose().y, 2.0));
+        REQUIRE(almost_equal(ddrive.pose().theta, 3.0));
+        REQUIRE(almost_equal(ddrive.wheel_angles().left, 5.0));
+        REQUIRE(almost_equal(ddrive.wheel_angles().right, 7.0));
+    }
+
+    SECTION("DiffDrive(pose, phi, phidot)")
+    {
+        turtlelib::Pose2D pose{1.0, 2.0, 3.0};
+        turtlelib::WheelState phi{5.0, 7.0};
+        turtlelib::WheelState phidot{8.0, 9.0};
+        turtlelib::DiffDrive ddrive(pose, phi, phidot);
+        REQUIRE(almost_equal(ddrive.pose().x, 1.0));
+        REQUIRE(almost_equal(ddrive.pose().y, 2.0));
+        REQUIRE(almost_equal(ddrive.pose().theta, 3.0));
+        REQUIRE(almost_equal(ddrive.wheel_angles().left, 5.0));
+        REQUIRE(almost_equal(ddrive.wheel_angles().right, 7.0));
+        REQUIRE(almost_equal(ddrive.wheel_speeds().left, 8.0));
+        REQUIRE(almost_equal(ddrive.wheel_speeds().right, 9.0));
+    }
 }
 
 TEST_CASE("inverse_kinematics()", "[DiffDrive]")
-{
+{ // Nick, Marks
     SECTION("Robot drives forward")
     {
         turtlelib::DiffDrive turtlebot(r_TEST, D_TEST * 2);
@@ -338,7 +360,7 @@ TEST_CASE("inverse_kinematics()", "[DiffDrive]")
 }
 
 TEST_CASE("forward_kinematics()", "[DiffDrive]")
-{
+{ // Nick, Marks
     SECTION("Robot drives forwards")
     {
         turtlelib::DiffDrive bot(r_TEST, D_TEST * 2);
@@ -381,7 +403,7 @@ TEST_CASE("forward_kinematics()", "[DiffDrive]")
 }
 
 TEST_CASE("forward_kinematics(config,new_phi)", "[DiffDrive]")
-{
+{ // Nick, Marks
     SECTION("Robot spins in place")
     {
         turtlelib::Pose2D p{1.0, 1.0, 0.0};
@@ -394,7 +416,7 @@ TEST_CASE("forward_kinematics(config,new_phi)", "[DiffDrive]")
 }
 
 TEST_CASE("pose()", "[DiffDrive]")
-{
+{ // Nick, Marks
     turtlelib::DiffDrive bot(0.1, 0.2);
     turtlelib::Pose2D q = bot.pose();
     REQUIRE(almost_equal(q.x, 0));
@@ -403,7 +425,7 @@ TEST_CASE("pose()", "[DiffDrive]")
 }
 
 TEST_CASE("wheel_angles()", "[DiffDrive]")
-{
+{ // Nick, Marks
     turtlelib::DiffDrive bot(0.1, 0.2);
     turtlelib::WheelState angles = bot.wheel_angles();
     REQUIRE(almost_equal(angles.left, 0.0));
@@ -411,7 +433,7 @@ TEST_CASE("wheel_angles()", "[DiffDrive]")
 }
 
 TEST_CASE("wheel_speeds()", "[DiffDrive]")
-{
+{ // Nick, Marks
     turtlelib::DiffDrive bot(0.1, 0.2);
     turtlelib::WheelState speeds = bot.wheel_speeds();
     REQUIRE(almost_equal(speeds.left, 0.0));
@@ -419,7 +441,7 @@ TEST_CASE("wheel_speeds()", "[DiffDrive]")
 }
 
 TEST_CASE("body_twist()", "[DiffDrive]")
-{
+{ // Nick, Marks
     turtlelib::DiffDrive bot;
     turtlelib::WheelState phi_dot{1.0, 1.0};
     turtlelib::Twist2D V = bot.body_twist(phi_dot);

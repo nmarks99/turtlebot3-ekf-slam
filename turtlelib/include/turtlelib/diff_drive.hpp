@@ -57,16 +57,26 @@ namespace turtlelib
         /// and wheel separation. All other parameters are zero.
         DiffDrive();
 
-        /// @brief create a DiffDrive object with provided pose and wheel angles
-        /// @param config - a Pose2D representing the current configuration of the robot
-        /// @param phi - a WheelState of the current wheel angles in radians
-        DiffDrive(const Pose2D &config, const WheelState &phi);
-
         /// @brief create a DiffDrive object with given wheel radius and
         /// wheel separation. All other parameters are zero.
         /// @param wheel_radius - radius of the wheels on the robot
         /// @param wheel_separation - center to center distance between the wheels
         DiffDrive(double wheel_radius, double wheel_separation);
+
+        /// @brief create a DiffDrive object with the provided pose
+        /// @param pose - a Pose2D representing the current configuration of the robot
+        DiffDrive(const Pose2D &pose);
+
+        /// @brief create a DiffDrive object with provided pose and wheel angles
+        /// @param pose - a Pose2D representing the current configuration of the robot
+        /// @param phi - a WheelState of the current wheel angles in radians
+        DiffDrive(const Pose2D &pose, const WheelState &phi);
+
+        /// @brief create a DiffDrive object with provided pose, wheel angles, and velocities
+        /// @param pose - a Pose2D representing the current configuration of the robot
+        /// @param phi - a WheelState of the current wheel angles in radians
+        /// @param phidot - a WheelState of the current wheel speeds in rad/s
+        DiffDrive(const Pose2D &pose, const WheelState &phi, const WheelState &phidot);
 
         /// @brief computes the forward kinematics to find
         /// the new pose of robot given new wheel angles
@@ -75,9 +85,9 @@ namespace turtlelib
 
         /// @brief computes the forward kinematics to find
         /// the new pose of robot given new wheel angles
-        /// @param config - the current Pose2D of the robot
+        /// @param pose - the current Pose2D of the robot
         /// @param phi_new - the new wheel angles
-        Pose2D forward_kinematics(const Pose2D &config, const WheelState &phi_new);
+        Pose2D forward_kinematics(const Pose2D &pose, const WheelState &phi_new);
 
         /// @brief computes the current body twist given wheel velocities
         /// @param phi_dot - WheelState of current wheel velocities

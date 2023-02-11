@@ -5,11 +5,16 @@ namespace turtlelib
 
     DiffDrive::DiffDrive() {}
 
-    DiffDrive::DiffDrive(const Pose2D &config, const WheelState &phi)
-        : _pose(config), _phi(phi) {}
+    DiffDrive::DiffDrive(const Pose2D &pose) : _pose(pose) {}
+
+    DiffDrive::DiffDrive(const Pose2D &pose, const WheelState &phi)
+        : _pose(pose), _phi(phi) {}
 
     DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)
         : WHEEL_RADIUS(wheel_radius), TRACK_WIDTH(wheel_separation) {}
+
+    DiffDrive::DiffDrive(const Pose2D &pose, const WheelState &phi, const WheelState &phidot)
+        : _pose(pose), _phi(phi), _phidot(phidot) {}
 
     WheelState DiffDrive::inverse_kinematics(Twist2D V)
     {
@@ -42,8 +47,9 @@ namespace turtlelib
         _phidot.right = (phi_new.right - _phi.right);
 
         // update angles to be the new ones
-        _phi.left = phi_new.left;
-        _phi.right = phi_new.right;
+        _phi = phi_new;
+        // _phi.left = phi_new.left;
+        // _phi.right = phi_new.right;
 
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
@@ -73,10 +79,10 @@ namespace turtlelib
         return _pose;
     }
 
-    Pose2D DiffDrive::forward_kinematics(const Pose2D &config, const WheelState &phi_new)
+    Pose2D DiffDrive::forward_kinematics(const Pose2D &pose, const WheelState &phi_new)
     {
-        // define _phi and the config passed to the function
-        _pose = config;
+        // define _pose as the pose passed to the function
+        _pose = pose;
 
         // Define D and r so equations are shorter
         auto D = TRACK_WIDTH / 2.0;
@@ -88,15 +94,15 @@ namespace turtlelib
         _phidot.right = (phi_new.right - _phi.right);
 
         // update angles to be the new ones
-        _phi.left = phi_new.left;
-        _phi.right = phi_new.right;
+        _phi = phi_new;
+        // _phi.left = phi_new.left;
+        // _phi.right = phi_new.right;
 
         // Compute the body twist
         // Derivations for these equations can be found in docs/Kinematics.pdf
         Twist2D body_twist;
         body_twist.thetadot = (r / (2.0 * D)) * (_phidot.right - _phidot.left);
         body_twist.xdot = (r / 2.0) * (_phidot.right + _phidot.left);
-        // body_twist.xdot = (r * _phidot.right) - (D * body_twist.thetadot);
         body_twist.ydot = 0.0;
 
         // Define transform between world and B frame
