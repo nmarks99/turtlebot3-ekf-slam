@@ -61,15 +61,11 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-# CMake also has the ability to generate doxygen documentation
-
-
+# Only use doxygen if not cross-compiling
 if(NOT CMAKE_CROSSCOMPILING)
-
 find_package(Doxygen)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md) # Use the readme in your doxygen docs
 doxygen_add_docs(doxygen src/ README.md ALL)
-
 endif()
 
 if(BUILD_TESTING)

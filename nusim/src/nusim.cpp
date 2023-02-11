@@ -59,7 +59,7 @@ class Nusim : public rclcpp::Node
 
 public:
   Nusim()
-  : Node("nusim"), step(0)
+      : Node("nusim"), step(0)
   {
 
     // Declare parameters
@@ -70,11 +70,11 @@ public:
     declare_parameter<std::vector<double>>("obstacles/x", obstacles_x);
     declare_parameter<std::vector<double>>("obstacles/y", obstacles_y);
     declare_parameter<double>("obstacles/r", obstacles_r);
-    declare_parameter("motor_cmd_per_rad_sec", MOTOR_CMD_PER_RAD_SEC);
-    declare_parameter("motor_cmd_max", MOTOR_CMD_MAX);
-    declare_parameter("encoder_ticks_per_rad", ENCODER_TICKS_PER_RAD);
-    declare_parameter("wall_x_length", X_LENGTH);
-    declare_parameter("wall_y_length", Y_LENGTH);
+    declare_parameter<double>("motor_cmd_per_rad_sec", MOTOR_CMD_PER_RAD_SEC);
+    declare_parameter<int>("motor_cmd_max", MOTOR_CMD_MAX);
+    declare_parameter<double>("encoder_ticks_per_rad", ENCODER_TICKS_PER_RAD);
+    declare_parameter<double>("wall_x_length", X_LENGTH);
+    declare_parameter<double>("wall_y_length", Y_LENGTH);
 
     // Get parameters
     obstacles_r = get_parameter("obstacles/r").get_value<double>();
@@ -89,17 +89,21 @@ public:
     THETA0 = get_parameter("theta0").get_value<double>();
     RATE = get_parameter("rate").get_value<int>();
 
-    if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0)) {
+    // Check for required parameters
+    if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
+    {
       RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_per_rad_sec parameter missing");
       throw std::runtime_error("motor_cmd_per_rad_sec parameter missing");
     }
 
-    if (MOTOR_CMD_MAX == 0) {
+    if (MOTOR_CMD_MAX == 0)
+    {
       RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_max parameter missing");
       throw std::runtime_error("motor_cmd_max parameter missing");
     }
 
-    if (turtlelib::almost_equal(ENCODER_TICKS_PER_RAD, 0.0)) {
+    if (turtlelib::almost_equal(ENCODER_TICKS_PER_RAD, 0.0))
+    {
       RCLCPP_ERROR_STREAM(get_logger(), "encoder_ticks_per_rad parameter missing");
       throw std::runtime_error("encoder_ticks_per_rad parameter missing");
     }
@@ -109,40 +113,40 @@ public:
 
     /// @brief marker publisher (visualization_msgs/msg/MarkerArray)
     marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
-      "~/obstacles", 10);
+        "~/obstacles", 10);
 
     /// @brief red/sensor data publisher which publishes the encoder ticks of the wheels
     sensor_data_pub = create_publisher<nuturtlebot_msgs::msg::SensorData>(
-      "red/sensor_data", 10);
+        "red/sensor_data", 10);
 
     /// @brief subscription ot wheel_cmd to get the commanded
     /// integer values which detemines the wheel velocities
     wheel_cmd_sub = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
-      "red/wheel_cmd",
-      10,
-      std::bind(&Nusim::wheel_cmd_callback, this, _1));
+        "red/wheel_cmd",
+        10,
+        std::bind(&Nusim::wheel_cmd_callback, this, _1));
 
     /// \brief ~/reset service (std_srvs/srv/Empty)
     /// resets the timestep variable to 0 and resets the turtlebot
     /// pose to its initial location
-    _reset_service = this->create_service<std_srvs::srv::Empty>(
-      "~/reset",
-      std::bind(&Nusim::reset_callback, this, _1, _2));
+    _reset_service = create_service<std_srvs::srv::Empty>(
+        "~/reset",
+        std::bind(&Nusim::reset_callback, this, _1, _2));
 
     /// \brief ~/teleport service (nusim/srv/Teleport)
     /// teleports the robot in the simulation to the specified pose
-    _teleport_service = this->create_service<nusim::srv::Teleport>(
-      "~/teleport",
-      std::bind(&Nusim::teleport_callback, this, _1, _2));
+    _teleport_service = create_service<nusim::srv::Teleport>(
+        "~/teleport",
+        std::bind(&Nusim::teleport_callback, this, _1, _2));
 
     /// \brief transform broadcaster:
     /// used to publish transform on the /tf topic
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
     /// \brief Timer (frequency defined by node parameter)
-    _timer = this->create_wall_timer(
-      std::chrono::milliseconds((int)(1000 / RATE)),
-      std::bind(&Nusim::timer_callback, this));
+    _timer = create_wall_timer(
+        std::chrono::milliseconds((int)(1000 / RATE)),
+        std::bind(&Nusim::timer_callback, this));
 
     // Ground truth pose of the robot known only to the simulator
     // Initial values are passed as parameters to the node
@@ -152,7 +156,8 @@ public:
 
     // Creates a marker obstacle at each specified location
     size_t i = 0;
-    for (i = 0; i < obstacles_x.size(); i++) {
+    for (i = 0; i < obstacles_x.size(); i++)
+    {
       marker_msg.header.frame_id = "nusim/world";
       marker_msg.id = i;
       marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
@@ -167,12 +172,13 @@ public:
       marker_msg.color.g = 1.0;
       marker_msg.color.b = 0.0;
       marker_msg.color.a = 1.0;
-      obstacle_marker_arr.markers.push_back(marker_msg);                   // pack Marker into MarkerArray
+      obstacle_marker_arr.markers.push_back(marker_msg); // pack Marker into MarkerArray
     }
 
     // Creates the four walls
     size_t last_id = i;
-    for (size_t i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++)
+    {
       marker_msg.header.frame_id = "nusim/world";
       marker_msg.id = last_id + i;
       marker_msg.type = visualization_msgs::msg::Marker::CUBE;
@@ -185,15 +191,21 @@ public:
       marker_msg.scale.z = WALL_HEIGHT;
       marker_msg.pose.position.z = WALL_HEIGHT / 2.0;
 
-      if (i < 2) {
+      if (i < 2)
+      {
         marker_msg.scale.y = Y_LENGTH;
         marker_msg.pose.position.y = 0.0;
-        if (i == 0) {
+        if (i == 0)
+        {
           marker_msg.pose.position.x = X_LENGTH / 2.0 + WALL_WIDTH / 2.0;
-        } else {
+        }
+        else
+        {
           marker_msg.pose.position.x = -X_LENGTH / 2.0 - WALL_WIDTH / 2.0;
         }
-      } else {
+      }
+      else
+      {
         q.setRPY(0.0, 0.0, 1.57);
         marker_msg.pose.orientation.x = q.x();
         marker_msg.pose.orientation.y = q.y();
@@ -201,9 +213,12 @@ public:
         marker_msg.pose.orientation.w = q.w();
         marker_msg.pose.position.x = 0.0;
         marker_msg.scale.y = X_LENGTH;
-        if (i == 2) {
+        if (i == 2)
+        {
           marker_msg.pose.position.y = Y_LENGTH / 2.0 + WALL_WIDTH / 2.0;
-        } else {
+        }
+        else
+        {
           marker_msg.pose.position.y = -Y_LENGTH / 2.0 - WALL_WIDTH / 2.0;
         }
       }
@@ -266,7 +281,7 @@ private:
   /// WheelCommands, converts them to speeds in rad/s, computes the angles
   /// at the next step, sensor encoder values, and finally the new pose of the
   /// robot using forward kinematics.
-  void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands & wheel_cmd)
+  void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
   {
     // Compute wheel speeds (rad/s) from wheel command message
     wheel_speeds.left = wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC;
@@ -287,11 +302,9 @@ private:
   /// \brief ~/reset service callback function:
   /// resets the timestep variable to 0 and resets the
   /// turtlebot pose to its initial location
-  /// \param request - std_srvs/srv/Empty request (unused)
-  /// \param response - std_srvs/srv/Emptry response (unused)
   void reset_callback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request>,
-    std::shared_ptr<std_srvs::srv::Empty::Response>)
+      const std::shared_ptr<std_srvs::srv::Empty::Request>,
+      std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
 
     true_pose.x = X0;
@@ -303,11 +316,11 @@ private:
   /// teleports the robot to the desired pose by setting
   /// true_pose equal to the input x,y,theta
   /// \param request - nusim/srv/Teleport request which has x,y,theta fields (UInt64)
-  /// \param response - nusim/srv/Teleport response which is empty (unused)
   void teleport_callback(
-    const std::shared_ptr<nusim::srv::Teleport::Request> request,
-    std::shared_ptr<nusim::srv::Teleport::Response>)
+      const std::shared_ptr<nusim::srv::Teleport::Request> request,
+      std::shared_ptr<nusim::srv::Teleport::Response>)
   {
+    // Teleports the robot by redefining the current pose
     true_pose.x = request->x;
     true_pose.y = request->y;
     true_pose.theta = request->theta;
@@ -347,7 +360,7 @@ private:
 };
 
 /// \brief the main function to run the nusim node
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<Nusim>());
