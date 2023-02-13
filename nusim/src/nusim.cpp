@@ -11,7 +11,7 @@
 /// PUBLISHES:
 ///     ~/timestep (std_msgs/msg/UInt64): simulation timestep
 ///     ~/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
-///		/red/sensor_data (nuturtlebot_msgs/msg/SensorData): wheel encoder values
+///		  /red/sensor_data (nuturtlebot_msgs/msg/SensorData): wheel encoder values
 /// SUBSCRIBES:
 ///     /red/wheel_cmd (nuturtlebot_msgs/msg/WheelCommands): integer valued wheel command speeds
 /// SERVERS:
@@ -214,8 +214,8 @@ private:
     wheel_speeds.right = wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC;
 
     // Compute new wheel angles (rad)
-    wheel_angles.left = wheel_angles.left + wheel_speeds.left * 0.005;
-    wheel_angles.right = wheel_angles.right + wheel_speeds.right * 0.005;
+    wheel_angles.left = wheel_angles.left + wheel_speeds.left * (1.0 / RATE);
+    wheel_angles.right = wheel_angles.right + wheel_speeds.right * (1.0 / RATE);
 
     // Convert angle to encoder ticks to fill in sensor_data message
     sensor_data.left_encoder = (int)(wheel_angles.left * ENCODER_TICKS_PER_RAD);
