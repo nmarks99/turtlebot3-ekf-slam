@@ -37,17 +37,13 @@
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
-#include "visualization_msgs/msg/marker.hpp"
-#include "visualization_msgs/msg/marker_array.hpp"
 
 #include "turtlelib/diff_drive.hpp"
 
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 
-static constexpr double OBSTACLE_HEIGHT = 0.25;
-static constexpr double WALL_HEIGHT = 0.25;
-static constexpr double WALL_WIDTH = 0.15;
+#include "nusim/markers.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -154,78 +150,9 @@ public:
     true_pose.y = Y0;
     true_pose.theta = THETA0;
 
-    // Creates a marker obstacle at each specified location
-    size_t i = 0;
-    for (i = 0; i < obstacles_x.size(); i++)
-    {
-      marker_msg.header.frame_id = "nusim/world";
-      marker_msg.id = i;
-      marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
-      marker_msg.action = visualization_msgs::msg::Marker::ADD;
-      marker_msg.scale.x = obstacles_r;
-      marker_msg.scale.y = obstacles_r;
-      marker_msg.scale.z = OBSTACLE_HEIGHT;
-      marker_msg.pose.position.x = obstacles_x.at(i);
-      marker_msg.pose.position.y = obstacles_y.at(i);
-      marker_msg.pose.position.z = OBSTACLE_HEIGHT / 2;
-      marker_msg.color.r = 0.0;
-      marker_msg.color.g = 1.0;
-      marker_msg.color.b = 0.0;
-      marker_msg.color.a = 1.0;
-      obstacle_marker_arr.markers.push_back(marker_msg); // pack Marker into MarkerArray
-    }
-
-    // Creates the four walls
-    size_t last_id = i;
-    for (size_t i = 0; i < 4; i++)
-    {
-      marker_msg.header.frame_id = "nusim/world";
-      marker_msg.id = last_id + i;
-      marker_msg.type = visualization_msgs::msg::Marker::CUBE;
-      marker_msg.action = visualization_msgs::msg::Marker::ADD;
-      marker_msg.color.r = 1.0;
-      marker_msg.color.g = 1.0;
-      marker_msg.color.b = 1.0;
-      marker_msg.color.a = 1.0;
-      marker_msg.scale.x = WALL_WIDTH;
-      marker_msg.scale.z = WALL_HEIGHT;
-      marker_msg.pose.position.z = WALL_HEIGHT / 2.0;
-
-      if (i < 2)
-      {
-        marker_msg.scale.y = Y_LENGTH;
-        marker_msg.pose.position.y = 0.0;
-        if (i == 0)
-        {
-          marker_msg.pose.position.x = X_LENGTH / 2.0 + WALL_WIDTH / 2.0;
-        }
-        else
-        {
-          marker_msg.pose.position.x = -X_LENGTH / 2.0 - WALL_WIDTH / 2.0;
-        }
-      }
-      else
-      {
-        q.setRPY(0.0, 0.0, 1.57);
-        marker_msg.pose.orientation.x = q.x();
-        marker_msg.pose.orientation.y = q.y();
-        marker_msg.pose.orientation.z = q.z();
-        marker_msg.pose.orientation.w = q.w();
-        marker_msg.pose.position.x = 0.0;
-        marker_msg.scale.y = X_LENGTH;
-        if (i == 2)
-        {
-          marker_msg.pose.position.y = Y_LENGTH / 2.0 + WALL_WIDTH / 2.0;
-        }
-        else
-        {
-          marker_msg.pose.position.y = -Y_LENGTH / 2.0 - WALL_WIDTH / 2.0;
-        }
-      }
-
-      // Pack Markers into MarkerArray
-      obstacle_marker_arr.markers.push_back(marker_msg);
-    }
+    // fill in MarkerArray with obstacles and walls
+    make_obstacles(marker_arr, obstacles_x, obstacles_y, obstacles_r);
+    make_walls(marker_arr, X_LENGTH, Y_LENGTH);
 
     // Define parent and child frame id's
     world_red_tf.header.frame_id = "nusim/world";
@@ -274,8 +201,7 @@ private:
   // Declare messages
   geometry_msgs::msg::TransformStamped world_red_tf;
   nuturtlebot_msgs::msg::SensorData sensor_data;
-  visualization_msgs::msg::MarkerArray obstacle_marker_arr;
-  visualization_msgs::msg::Marker marker_msg;
+  visualization_msgs::msg::MarkerArray marker_arr;
 
   /// @brief /wheel_cmd topic callback function that reads the integer value
   /// WheelCommands, converts them to speeds in rad/s, computes the angles
@@ -352,7 +278,7 @@ private:
     tf_broadcaster->sendTransform(world_red_tf);
 
     // Publish MarkerArray of obstacles
-    marker_arr_pub->publish(obstacle_marker_arr);
+    marker_arr_pub->publish(marker_arr);
 
     // Publish sensor data
     sensor_data_pub->publish(sensor_data);

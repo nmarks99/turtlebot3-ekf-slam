@@ -20,7 +20,16 @@ find_package(turtlelib REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
-add_executable(nusim src/nusim.cpp)
+# add markers library
+add_library(markers src/markers.cpp)
+ament_target_dependencies(markers
+  rclcpp
+  visualization_msgs
+  tf2
+)
+
+# Add nusim executable
+add_executable(nusim src/nusim.cpp src/markers.cpp)
 ament_target_dependencies(nusim
   rclcpp
   std_msgs
@@ -32,16 +41,21 @@ ament_target_dependencies(nusim
   visualization_msgs
 )
 
+# link nusim to turtlelib library
 target_link_libraries(nusim turtlelib::turtlelib)
 
+
+# Get custom service definitions
 rosidl_generate_interfaces(
   ${PROJECT_NAME}_srv
   "srv/Teleport.srv"
   LIBRARY_NAME ${PROJECT_NAME}
 )
-
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 target_link_libraries(nusim "${cpp_typesupport_target}")
+
+# include the "include" directory
+include_directories(include)
 
 # install nodes
 install(TARGETS
