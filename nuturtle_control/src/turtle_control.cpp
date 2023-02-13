@@ -12,7 +12,7 @@
 ///     /joint_states (sensor_msgs::msg::JointState): wheel speeds and angles
 /// SUBSCRIBES:
 ///     /cmd_vel (geometry_msgs::msg::Twist): commanded body twist
-///		/sensor_data (nuturtlebot_msgs::msg::SensorData): sensor data from the real robot sensors or nusim
+///		  /sensor_data (nuturtlebot_msgs::msg::SensorData): sensor data from the real robot sensors or nusim
 /// SERVICES:
 ///     None
 /// CLIENTS:
@@ -60,27 +60,27 @@ public:
     // Throw runtime error if any of the parameters are missing
     if (wheel_radius == 0)
     {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "wheel_radius parameter not provided");
+      RCLCPP_ERROR_STREAM(get_logger(), "wheel_radius parameter not provided");
       throw std::runtime_error("wheel_radius parameter not provided");
     }
     if (track_width == 0)
     {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "track_width parameter not provided");
+      RCLCPP_ERROR_STREAM(get_logger(), "track_width parameter not provided");
       throw std::runtime_error("track_width parameter not provided");
     }
     if (motor_cmd_max == 0)
     {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "motor_cmd_max parameter not provided");
+      RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_max parameter not provided");
       throw std::runtime_error("motor_cmd_max parameter not provided");
     }
     if (motor_cmd_per_rad_sec == 0)
     {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "motor_cmd_per_rad_sec parameter not provided");
+      RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_per_rad_sec parameter not provided");
       throw std::runtime_error("motor_cmd_per_rad_sec parameter not provided");
     }
     if (encoder_ticks_per_rad == 0)
     {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "encoder_ticks_per_rad parameter not provided");
+      RCLCPP_ERROR_STREAM(get_logger(), "encoder_ticks_per_rad parameter not provided");
       throw std::runtime_error("encoder_ticks_per_rad parameter not provided");
     }
 
