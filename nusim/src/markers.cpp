@@ -1,7 +1,7 @@
 #include "nusim/markers.hpp"
 
 void make_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
-                    std::vector<double> obstacles_x, std::vector<double> obstacles_y, double obstacles_r)
+                    const std::vector<double> &obstacles_x, const std::vector<double> &obstacles_y, double obstacles_r)
 {
 
     visualization_msgs::msg::Marker marker_msg;

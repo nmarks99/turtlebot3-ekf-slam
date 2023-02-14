@@ -17,7 +17,7 @@ static constexpr double WALL_WIDTH = 0.15;
 /// @param obstacles_y - std::vector<double> of y positions of the obstacles
 /// @param obstacles_y - radius of the obstacles
 void make_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
-                    std::vector<double> obstacles_x, std::vector<double> obstacles_y, double obstacles_r);
+                    const std::vector<double> &obstacles_x, const std::vector<double> &obstacles_y, double obstacles_r);
 
 /// @brief fills in the MarkerArray msg with walls to surround the "arena"
 /// @param X_LENGTH - x length of the walls
