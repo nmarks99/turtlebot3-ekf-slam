@@ -32,8 +32,8 @@ void make_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
         marker_msg.pose.position.x = obstacles_x.at(i);
         marker_msg.pose.position.y = obstacles_y.at(i);
         marker_msg.pose.position.z = OBSTACLE_HEIGHT / 2.0;
-        marker_msg.color.r = 0.0;
-        marker_msg.color.g = 1.0;
+        marker_msg.color.r = 1.0;
+        marker_msg.color.g = 0.0;
         marker_msg.color.b = 0.0;
         marker_msg.color.a = 1.0;
         marker_arr.markers.push_back(marker_msg); // pack Marker into MarkerArray
@@ -65,8 +65,8 @@ void make_walls(visualization_msgs::msg::MarkerArray &marker_arr, double X_LENGT
         marker_msg.type = visualization_msgs::msg::Marker::CUBE;
         marker_msg.action = visualization_msgs::msg::Marker::ADD;
         marker_msg.color.r = 1.0;
-        marker_msg.color.g = 1.0;
-        marker_msg.color.b = 1.0;
+        marker_msg.color.g = 0.0;
+        marker_msg.color.b = 0.0;
         marker_msg.color.a = 1.0;
         marker_msg.scale.x = WALL_WIDTH;
         marker_msg.scale.z = WALL_HEIGHT;
