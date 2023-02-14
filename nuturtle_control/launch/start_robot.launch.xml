@@ -18,6 +18,7 @@
         <param name="wheel_right" value="blue/wheel_right_link" />
     </node>
 
+    <!-- start circle node -->
     <node pkg="nuturtle_control" exec="circle" name="circle"/>
 
     <!-- start tf2_ros static transform publisher -->
