@@ -32,6 +32,13 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
                                  double obstacles_r, const turtlelib::Pose2D &true_pose,
                                  double max_range, double basic_sensor_variance);
 
+/// @brief gets a random number, ensuring you are only seeding the
+/// random number generator once
+/// Credit: Matt Elwin https://nu-msr.github.io/navigation_site/lectures/gaussian.html
 std::mt19937 &get_random();
+
+/// @brief computes the straight line distance between
+/// a point (a,b) and the origin
+double norm2D(double a, double b);
 
 #endif

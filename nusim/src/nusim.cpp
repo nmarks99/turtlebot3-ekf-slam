@@ -44,23 +44,11 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 
-#include "nusim/markers.hpp"
+#include "nusim/utils.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
-
-// std::mt19937 &get_random()
-// {
-// 	// Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
-
-// 	// static variables inside a function are created once and persist for the remainder of the program
-// 	static std::random_device rd{};
-// 	static std::mt19937 mt{rd()};
-// 	// we return a reference to the pseudo-random number genrator object. This is always the
-// 	// same object every time get_random is called
-// 	return mt;
-// }
 
 /// \brief nusim turtlebot simulation node
 class Nusim : public rclcpp::Node

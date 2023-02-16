@@ -20,17 +20,17 @@ find_package(turtlelib REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
-# add markers library
-add_library(markers src/markers.cpp)
-ament_target_dependencies(markers
+# add utils library
+add_library(utils src/utils.cpp)
+ament_target_dependencies(utils
   rclcpp
   visualization_msgs
   tf2
 )
-target_link_libraries(markers turtlelib::turtlelib)
+target_link_libraries(utils turtlelib::turtlelib)
 
 # Add nusim executable
-add_executable(nusim src/nusim.cpp src/markers.cpp)
+add_executable(nusim src/nusim.cpp src/utils.cpp)
 ament_target_dependencies(nusim
   rclcpp
   std_msgs

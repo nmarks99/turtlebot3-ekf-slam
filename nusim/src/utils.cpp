@@ -1,4 +1,4 @@
-#include "nusim/markers.hpp"
+#include "nusim/utils.hpp"
 
 void fill_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
                     const std::vector<double> &obstacles_x, const std::vector<double> &obstacles_y, double obstacles_r)
@@ -109,7 +109,7 @@ void fill_walls(visualization_msgs::msg::MarkerArray &marker_arr, double X_LENGT
     }
 }
 
-double norm2d(double a, double b)
+double norm2D(double a, double b)
 {
     return (std::sqrt(std::pow(a, 2.0) + std::pow(b, 2.0)));
 }
@@ -125,6 +125,7 @@ std::mt19937 &get_random()
     // same object every time get_random is called
     return mt;
 }
+
 void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
                                  const std::vector<double> &obstacles_x, const std::vector<double> &obstacles_y,
                                  double obstacles_r, const turtlelib::Pose2D &true_pose,
@@ -169,7 +170,7 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
         marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
 
         // DELETE if out of range, ADD if in range
-        if (norm2d(_vb.x, _vb.y) > max_range)
+        if (norm2D(_vb.x, _vb.y) > max_range)
         {
             marker_msg.action = visualization_msgs::msg::Marker::DELETE;
         }
