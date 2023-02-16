@@ -1,7 +1,7 @@
 nusim:
   ros__parameters:
-    slip_fraction: 1.0
-    input_noise: 1.0
+    slip_fraction: 0.0
+    input_noise: 0.0
     x0: -0.6
     y0: 0.8
     theta0: 1.57

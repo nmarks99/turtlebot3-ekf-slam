@@ -88,6 +88,7 @@ public:
 		declare_parameter<double>("slip_fraction", slip_fraction);
 		declare_parameter<double>("basic_sensor_variance", basic_sensor_variance);
 		declare_parameter<double>("max_range", max_range);
+		declare_parameter<double>("collision_radius", COLLISION_RADIUS);
 
 		// Get parameters
 		obstacles_r = get_parameter("obstacles/r").get_value<double>();
@@ -182,8 +183,8 @@ public:
 		fill_obstacles(marker_arr, obstacles_x, obstacles_y, obstacles_r);
 		fill_walls(marker_arr, X_LENGTH, Y_LENGTH);
 
-		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
-									obstacles_r, true_pose, max_range, basic_sensor_variance);
+		// fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
+		// 							obstacles_r, true_pose, max_range, basic_sensor_variance);
 
 		// Define parent and child frame id's
 		world_red_tf.header.frame_id = "nusim/world";
@@ -205,8 +206,9 @@ private:
 	double Y_LENGTH = 5.0;
 	double slip_fraction = 0.0;
 	double input_noise = 0.0;
-	double basic_sensor_variance = 0.1;
+	double basic_sensor_variance = 0.001;
 	double max_range = 5.0; // max basic sensor range
+	double COLLISION_RADIUS = 0.105;
 	uint64_t step;
 
 	// Wheel states with noise and slipping
@@ -248,7 +250,7 @@ private:
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray marker_arr;
-	visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
+	// visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
 
 	/// @brief /wheel_cmd topic callback function that reads the integer value
 	/// WheelCommands, converts them to speeds in rad/s, computes the angles
@@ -372,6 +374,7 @@ private:
 		visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
 		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
 									obstacles_r, true_pose, max_range, basic_sensor_variance);
+
 		fake_sensor_marker_arr_pub->publish(fake_sensor_marker_arr);
 	}
 };
