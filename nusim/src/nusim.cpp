@@ -209,7 +209,8 @@ private:
 	double basic_sensor_variance = 0.001;
 	double max_range = 5.0; // max basic sensor range
 	double COLLISION_RADIUS = 0.105;
-	uint64_t step;
+	uint64_t step = 0;
+	uint64_t count = 0;
 
 	// Wheel states with noise and slipping
 	turtlelib::WheelState noisy_wheel_speeds{0.0, 0.0};
@@ -296,8 +297,6 @@ private:
 
 		slippy_wheel_angles.left = slippy_wheel_angles.left + noisy_wheel_speeds.left * (1 + noise_l) * (1.0 / RATE);
 		slippy_wheel_angles.right = slippy_wheel_angles.right + noisy_wheel_speeds.right * (1 + noise_r) * (1.0 / RATE);
-		RCLCPP_INFO_STREAM(get_logger(), "left error = " << (true_wheel_angles.left - slippy_wheel_angles.left));
-		RCLCPP_INFO_STREAM(get_logger(), "right error = " << (true_wheel_angles.right - slippy_wheel_angles.right));
 
 		// Convert angle to encoder ticks to fill in sensor_data message with noise and slipping
 		sensor_data.left_encoder = (int)(slippy_wheel_angles.left * ENCODER_TICKS_PER_RAD);
@@ -305,6 +304,18 @@ private:
 
 		// Use new wheel angles with forward kinematics to obtain new pose of red robot
 		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
+
+		// if we drive at v = 0.1m/s (wheel_cmd = 127,127) straight ahead for 10 seconds,
+		// at t=10s wheel angles should be 30.48rad, speeds=3.048, pose = [1.00584,0,0]
+		// and I have verified below that this is true. So what is making the robot slow
+		// in RVIZ?
+		count++;
+		if (count == 2000)
+		{
+			RCLCPP_INFO_STREAM(get_logger(), "wheel angles = " << true_wheel_angles.left << "," << true_wheel_angles.right);
+			RCLCPP_INFO_STREAM(get_logger(), "wheel speeds = " << true_wheel_speeds.left << "," << true_wheel_speeds.right);
+			RCLCPP_INFO_STREAM(get_logger(), "pose = " << true_pose.x << "," << true_pose.y);
+		}
 	}
 
 	/// \brief ~/reset service callback function:
