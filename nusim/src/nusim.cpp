@@ -50,17 +50,17 @@ using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-std::mt19937 &get_random()
-{
-	// Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
+// std::mt19937 &get_random()
+// {
+// 	// Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
 
-	// static variables inside a function are created once and persist for the remainder of the program
-	static std::random_device rd{};
-	static std::mt19937 mt{rd()};
-	// we return a reference to the pseudo-random number genrator object. This is always the
-	// same object every time get_random is called
-	return mt;
-}
+// 	// static variables inside a function are created once and persist for the remainder of the program
+// 	static std::random_device rd{};
+// 	static std::mt19937 mt{rd()};
+// 	// we return a reference to the pseudo-random number genrator object. This is always the
+// 	// same object every time get_random is called
+// 	return mt;
+// }
 
 /// \brief nusim turtlebot simulation node
 class Nusim : public rclcpp::Node
@@ -86,6 +86,8 @@ public:
 		declare_parameter<double>("wall_y_length", Y_LENGTH);
 		declare_parameter<double>("input_noise", input_noise);
 		declare_parameter<double>("slip_fraction", slip_fraction);
+		declare_parameter<double>("basic_sensor_variance", basic_sensor_variance);
+		declare_parameter<double>("max_range", max_range);
 
 		// Get parameters
 		obstacles_r = get_parameter("obstacles/r").get_value<double>();
@@ -101,6 +103,7 @@ public:
 		RATE = get_parameter("rate").get_value<int>();
 		input_noise = get_parameter("input_noise").get_value<double>();
 		slip_fraction = get_parameter("slip_fraction").get_value<double>();
+		basic_sensor_variance = get_parameter("basic_sensor_variance").get_value<double>();
 
 		// Check for required parameters
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
@@ -127,6 +130,10 @@ public:
 		/// @brief marker publisher (visualization_msgs/msg/MarkerArray)
 		marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
 			"~/obstacles", 10);
+
+		/// @brief marker publisher (visualization_msgs/msg/MarkerArray)
+		fake_sensor_marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
+			"/fake_sensor", 10);
 
 		/// @brief red/sensor data publisher which publishes the encoder ticks of the wheels
 		sensor_data_pub = create_publisher<nuturtlebot_msgs::msg::SensorData>(
@@ -161,6 +168,10 @@ public:
 			std::chrono::milliseconds((int)(1000 / RATE)),
 			std::bind(&Nusim::timer_callback, this));
 
+		_fake_sensor_timer = create_wall_timer(
+			200ms,
+			std::bind(&Nusim::fake_sensor_timer_callback, this));
+
 		// Ground truth pose of the robot known only to the simulator
 		// Initial values are passed as parameters to the node
 		true_pose.x = X0;
@@ -168,8 +179,11 @@ public:
 		true_pose.theta = THETA0;
 
 		// fill in MarkerArray with obstacles and walls
-		make_obstacles(marker_arr, obstacles_x, obstacles_y, obstacles_r);
-		make_walls(marker_arr, X_LENGTH, Y_LENGTH);
+		fill_obstacles(marker_arr, obstacles_x, obstacles_y, obstacles_r);
+		fill_walls(marker_arr, X_LENGTH, Y_LENGTH);
+
+		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
+									obstacles_r, true_pose, max_range, basic_sensor_variance);
 
 		// Define parent and child frame id's
 		world_red_tf.header.frame_id = "nusim/world";
@@ -191,6 +205,8 @@ private:
 	double Y_LENGTH = 5.0;
 	double slip_fraction = 0.0;
 	double input_noise = 0.0;
+	double basic_sensor_variance = 0.1;
+	double max_range = 5.0; // max basic sensor range
 	uint64_t step;
 
 	// Wheel states with noise and slipping
@@ -211,13 +227,15 @@ private:
 	// Publishers
 	rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr timestep_pub;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
+	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_marker_arr_pub;
 	rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_pub;
 
 	// Subscribers
 	rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_sub;
 
-	// Timer
+	// Timers
 	rclcpp::TimerBase::SharedPtr _timer;
+	rclcpp::TimerBase::SharedPtr _fake_sensor_timer;
 
 	// Services
 	rclcpp::Service<std_srvs::srv::Empty>::SharedPtr _reset_service;
@@ -230,6 +248,7 @@ private:
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray marker_arr;
+	visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
 
 	/// @brief /wheel_cmd topic callback function that reads the integer value
 	/// WheelCommands, converts them to speeds in rad/s, computes the angles
@@ -323,11 +342,11 @@ private:
 		timestep_message.data = step++;
 		timestep_pub->publish(timestep_message);
 
-		// Set the translation
+		// Set the translation of the red robot
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
 
-		// Set the rotation
+		// Set the rotation of the red robot
 		q.setRPY(0.0, 0.0, true_pose.theta);
 		world_red_tf.transform.rotation.x = q.x();
 		world_red_tf.transform.rotation.y = q.y();
@@ -343,6 +362,17 @@ private:
 
 		// Publish sensor data
 		sensor_data_pub->publish(sensor_data);
+	}
+
+	/// @brief timer callback for fake sensor:
+	/// publishes a MarkerArray of the "sensed" positions of the obstacles at 5Hz
+	void fake_sensor_timer_callback()
+	{
+		// Publish MarkerArray of fake sensor data
+		visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
+		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
+									obstacles_r, true_pose, max_range, basic_sensor_variance);
+		fake_sensor_marker_arr_pub->publish(fake_sensor_marker_arr);
 	}
 };
 

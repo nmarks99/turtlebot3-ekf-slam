@@ -27,6 +27,7 @@ ament_target_dependencies(markers
   visualization_msgs
   tf2
 )
+target_link_libraries(markers turtlelib::turtlelib)
 
 # Add nusim executable
 add_executable(nusim src/nusim.cpp src/markers.cpp)
