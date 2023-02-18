@@ -72,10 +72,10 @@ public:
 		declare_parameter<double>("encoder_ticks_per_rad", ENCODER_TICKS_PER_RAD);
 		declare_parameter<double>("wall_x_length", X_LENGTH);
 		declare_parameter<double>("wall_y_length", Y_LENGTH);
-		declare_parameter<double>("input_noise", input_noise);
-		declare_parameter<double>("slip_fraction", slip_fraction);
-		declare_parameter<double>("basic_sensor_variance", basic_sensor_variance);
-		declare_parameter<double>("max_range", max_range);
+		declare_parameter<double>("input_noise", INPUT_NOISE);
+		declare_parameter<double>("slip_fraction", SLIP_FRACTION);
+		declare_parameter<double>("basic_sensor_variance", BASIC_SENSOR_VARIANCE);
+		declare_parameter<double>("max_range", MAX_RANGE);
 		declare_parameter<double>("collision_radius", COLLISION_RADIUS);
 
 		// Get parameters
@@ -90,9 +90,10 @@ public:
 		Y0 = get_parameter("y0").get_value<double>();
 		THETA0 = get_parameter("theta0").get_value<double>();
 		RATE = get_parameter("rate").get_value<int>();
-		input_noise = get_parameter("input_noise").get_value<double>();
-		slip_fraction = get_parameter("slip_fraction").get_value<double>();
-		basic_sensor_variance = get_parameter("basic_sensor_variance").get_value<double>();
+		INPUT_NOISE = get_parameter("input_noise").get_value<double>();
+		SLIP_FRACTION = get_parameter("slip_fraction").get_value<double>();
+		BASIC_SENSOR_VARIANCE = get_parameter("basic_sensor_variance").get_value<double>();
+		COLLISION_RADIUS = get_parameter("collision_radius").get_value<double>();
 
 		// Check for required parameters
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
@@ -192,10 +193,10 @@ private:
 	int MOTOR_CMD_MAX = 0;
 	double X_LENGTH = 5.0;
 	double Y_LENGTH = 5.0;
-	double slip_fraction = 0.0;
-	double input_noise = 0.0;
-	double basic_sensor_variance = 0.001;
-	double max_range = 5.0; // max basic sensor range
+	double SLIP_FRACTION = 0.0;
+	double INPUT_NOISE = 0.0;
+	double BASIC_SENSOR_VARIANCE = 0.001;
+	double MAX_RANGE = 1.0; // max basic sensor range
 	double COLLISION_RADIUS = 0.105;
 	uint64_t step = 0;
 	uint64_t count = 0;
@@ -248,8 +249,8 @@ private:
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
 		// Define normal noise distribution with zero mean and input_noise variance
-		std::normal_distribution<> left_noise_d(0.0, input_noise);
-		std::normal_distribution<> right_noise_d(0.0, input_noise);
+		std::normal_distribution<> left_noise_d(0.0, INPUT_NOISE);
+		std::normal_distribution<> right_noise_d(0.0, INPUT_NOISE);
 
 		// Compute wheel speeds (rad/s) from wheel command message with noise
 		// only add in noise if wheel cmds are non-zero
@@ -275,9 +276,14 @@ private:
 			noisy_wheel_speeds.right = (wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC) + right_noise;
 		}
 
-		std::uniform_real_distribution<> slip_d(-slip_fraction, slip_fraction);
-		auto noise_r = slip_d(get_random());
-		auto noise_l = slip_d(get_random());
+		auto noise_l = 0.0;
+		auto noise_r = 0.0;
+		if (!turtlelib::almost_equal(SLIP_FRACTION, 0.0))
+		{
+			std::uniform_real_distribution<> slip_d(-SLIP_FRACTION, SLIP_FRACTION);
+			noise_r = slip_d(get_random());
+			noise_l = slip_d(get_random());
+		}
 
 		// Compute new wheel angles (rad)
 		true_wheel_angles.left = true_wheel_angles.left + true_wheel_speeds.left * (1.0 / RATE);
@@ -372,7 +378,7 @@ private:
 		// Publish MarkerArray of fake sensor data
 		visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
 		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
-									obstacles_r, true_pose, max_range, basic_sensor_variance);
+									obstacles_r, true_pose, MAX_RANGE, BASIC_SENSOR_VARIANCE);
 
 		fake_sensor_marker_arr_pub->publish(fake_sensor_marker_arr);
 	}

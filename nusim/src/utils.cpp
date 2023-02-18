@@ -109,11 +109,6 @@ void fill_walls(visualization_msgs::msg::MarkerArray &marker_arr, double X_LENGT
     }
 }
 
-double norm2D(double a, double b)
-{
-    return (std::sqrt(std::pow(a, 2.0) + std::pow(b, 2.0)));
-}
-
 std::mt19937 &get_random()
 {
     // Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
@@ -149,33 +144,27 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
     // Create normal distribution for random numbers
     std::normal_distribution<> d(0.0, basic_sensor_variance);
 
-    // Get obstacles positions in body frame
-    turtlelib::Vector2D _vec{true_pose.x, true_pose.y};
-    turtlelib::Transform2D Twb(_vec, true_pose.theta);
-    std::vector<double> obstacles_xb = obstacles_x;
-    std::vector<double> obstacles_yb = obstacles_y;
-
     // Creates a marker obstacle at each specified location
     size_t i = 0;
     for (i = 0; i < obstacles_x.size(); i++)
     {
-
-        turtlelib::Vector2D _vw{obstacles_x.at(i), obstacles_y.at(i)};
-        auto _vb = Twb(_vw);
-        obstacles_xb.at(i) = _vb.x;
-        obstacles_yb.at(i) = _vb.y;
+        // Create a Vector2D for the current obstacle (x,y)
+        turtlelib::Vector2D _v{obstacles_x.at(i), obstacles_y.at(i)};
 
         marker_msg.header.frame_id = "nusim/world";
         marker_msg.id = last_id + (i + 1);
         marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
 
         // DELETE if out of range, ADD if in range
-        if (norm2D(_vb.x, _vb.y) > max_range)
+        auto dist = turtlelib::distance(turtlelib::Vector2D{_v.x, _v.y}, turtlelib::Vector2D{true_pose.x, true_pose.y});
+        if (dist > max_range)
         {
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle " << _v.x << "," << _v.y << " OUT OF RANGE: distance = " << dist);
             marker_msg.action = visualization_msgs::msg::Marker::DELETE;
         }
         else
         {
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle " << _v.x << "," << _v.y << " IN RANGE: distance = " << dist);
             marker_msg.action = visualization_msgs::msg::Marker::ADD;
         }
         marker_msg.scale.x = obstacles_r;
@@ -183,8 +172,8 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
         marker_msg.scale.z = OBSTACLE_HEIGHT;
         auto noisex = d(get_random());
         auto noisey = d(get_random());
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("markers"), "noisex = " << noisex);
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("markers"), "noisey = " << noisey);
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("nusim/utils"), "noisex = " << noisex);
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("nusim/utils"), "noisey = " << noisey);
         marker_msg.pose.position.x = obstacles_x.at(i) + noisex;
         marker_msg.pose.position.y = obstacles_y.at(i) + noisey;
         marker_msg.pose.position.z = OBSTACLE_HEIGHT / 2.0;

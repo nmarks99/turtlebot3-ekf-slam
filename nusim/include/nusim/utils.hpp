@@ -1,5 +1,5 @@
-#ifndef NUSIM_MARKERS_INCLUDE_GUARD_HPP
-#define NUSIM_MARKERS_INCLUDE_GUARD_HPP
+#ifndef NUSIM_UTILS_INCLUDE_GUARD_HPP
+#define NUSIM_UTILS_INCLUDE_GUARD_HPP
 
 #include <random>
 #include "visualization_msgs/msg/marker.hpp"
@@ -36,9 +36,5 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
 /// random number generator once
 /// Credit: Matt Elwin https://nu-msr.github.io/navigation_site/lectures/gaussian.html
 std::mt19937 &get_random();
-
-/// @brief computes the straight line distance between
-/// a point (a,b) and the origin
-double norm2D(double a, double b);
 
 #endif
