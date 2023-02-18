@@ -240,7 +240,35 @@ private:
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray marker_arr;
-	// visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
+
+	/// @brief Checks if there is a collision between the robot and an obstacle assuming there
+	/// will only ever be a collision with one obstacle at a time and updates the robot pose
+	///
+	/// Credit to https://flatredball.com/documentation/tutorials/math/circle-collision/ which
+	/// which provides a description of similar motion, "Circle Move Collision"
+	void detect_collision()
+	{
+		if (obstacles_x.size() > 0)
+		{
+			for (size_t i = 0; i < obstacles_x.size(); i++)
+			{
+				turtlelib::Vector2D p1{obstacles_x.at(i), obstacles_y.at(i)};
+				turtlelib::Vector2D p2{true_pose.x, true_pose.y};
+				auto d = turtlelib::distance(p1, p2);
+				auto dc = d - (obstacles_r + COLLISION_RADIUS);
+				if (dc <= 0.0)
+				{
+					auto collision_angle = std::atan2((true_pose.y - obstacles_y.at(i)), (true_pose.x - obstacles_x.at(i)));
+					const auto distance_to_move = obstacles_r + COLLISION_RADIUS;
+
+					// This makes the robot bump into the obstacle and move along the tangent
+					// line between the two collision circles
+					true_pose.x = obstacles_x.at(i) + std::cos(collision_angle) * distance_to_move;
+					true_pose.y = obstacles_y.at(i) + std::sin(collision_angle) * distance_to_move;
+				}
+			}
+		}
+	}
 
 	/// @brief /wheel_cmd topic callback function that reads the integer value
 	/// WheelCommands, converts them to speeds in rad/s, computes the angles
@@ -299,17 +327,8 @@ private:
 		// Use new wheel angles with forward kinematics to obtain new pose of red robot
 		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
 
-		// if we drive at v = 0.1m/s (wheel_cmd = 127,127) straight ahead for 10 seconds,
-		// at t=10s wheel angles should be 30.48rad, speeds=3.048, pose = [1.00584,0,0]
-		// and I have verified below that this is true. So what is making the robot slow
-		// in RVIZ?
-		count++;
-		if (count == 2000)
-		{
-			RCLCPP_INFO_STREAM(get_logger(), "wheel angles = " << true_wheel_angles.left << "," << true_wheel_angles.right);
-			RCLCPP_INFO_STREAM(get_logger(), "wheel speeds = " << true_wheel_speeds.left << "," << true_wheel_speeds.right);
-			RCLCPP_INFO_STREAM(get_logger(), "pose = " << true_pose.x << "," << true_pose.y);
-		}
+		// Check if there is a collision and update pose accordingly
+		detect_collision();
 	}
 
 	/// \brief ~/reset service callback function:
