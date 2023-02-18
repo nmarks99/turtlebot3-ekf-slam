@@ -117,6 +117,15 @@ namespace turtlelib
         Vector2D &operator*=(double scalar);
     };
 
+    /// @brief Computes straight line distance between two points in 2D
+    /// @param p1 a Vector2D representing the first point
+    /// @param p2 a Vector2D representing the second point
+    /// @return the straight line distance between the two points
+    constexpr double distance(Vector2D p1, Vector2D p2)
+    {
+        return (std::sqrt(std::pow((p2.x - p1.x), 2.0) + std::pow((p2.y - p1.y), 2.0)));
+    }
+
     /// \brief add two vectors together, returning their sum
     /// \param lhs - the left hand operand
     /// \param rhs - the right hand operand

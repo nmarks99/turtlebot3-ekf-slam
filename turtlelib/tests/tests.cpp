@@ -11,6 +11,13 @@ using turtlelib::almost_equal;
 //      rigid2D
 // =================
 
+TEST_CASE("distance()", "[rigid2D]")
+{ // Nick, Marks
+    turtlelib::Vector2D p1{0.0, 0.0};
+    turtlelib::Vector2D p2{1.0, 1.0};
+    REQUIRE(almost_equal(turtlelib::distance(p1, p2), std::sqrt(2.0)));
+}
+
 TEST_CASE("normalize_angle()", "[rigid2D]")
 { // Nick, Marks
     REQUIRE(almost_equal(turtlelib::normalize_angle(M_PI), M_PI));

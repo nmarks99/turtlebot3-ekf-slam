@@ -1,6 +1,6 @@
 <launch>
 
-  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nusim)/config/nusim.rviz --fixed-frame nusim/world"/>
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nusim)/config/nusim_standalone.rviz --fixed-frame nusim/world"/>
 
   <!-- <arg name="x0" default="0.0" />
   <arg name="y0" default="0.0" />
