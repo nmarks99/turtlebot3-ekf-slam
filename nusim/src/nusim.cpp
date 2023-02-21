@@ -246,6 +246,7 @@ private:
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray marker_arr;
+	nav_msgs::msg::Path path;
 
 	/// @brief Checks if there is a collision between the robot and an obstacle assuming there
 	/// will only ever be a collision with one obstacle at a time and updates the robot pose
@@ -332,6 +333,31 @@ private:
 
 		// Use new wheel angles with forward kinematics to obtain new pose of red robot
 		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
+
+		// Publish path message every 50th pose
+		if (count % 50 == 0)
+		{
+			count = 0;
+			geometry_msgs::msg::PoseStamped temp_pose;
+			temp_pose.header.stamp = get_clock()->now();
+			temp_pose.pose.position.x = true_pose.x;
+			temp_pose.pose.position.y = true_pose.y;
+			temp_pose.pose.position.z = 0.0;
+			q.setRPY(0.0, 0.0, true_pose.theta);
+			temp_pose.pose.orientation.x = q.x();
+			temp_pose.pose.orientation.y = q.y();
+			temp_pose.pose.orientation.z = q.z();
+			temp_pose.pose.orientation.w = q.w();
+
+			path.header.stamp = get_clock()->now();
+			path.header.frame_id = "/nusim/world";
+			path.poses.push_back(temp_pose);
+			path_pub->publish(path);
+		}
+		else
+		{
+			count++;
+		}
 
 		// Check if there is a collision and update pose accordingly
 		detect_collision();
