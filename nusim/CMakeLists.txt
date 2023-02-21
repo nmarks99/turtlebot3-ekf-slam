@@ -19,6 +19,7 @@ find_package(nuturtlebot_msgs REQUIRED)
 find_package(turtlelib REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 # add utils library
 add_library(utils src/utils.cpp)
@@ -40,6 +41,7 @@ ament_target_dependencies(nusim
   nuturtlebot_msgs
   geometry_msgs
   visualization_msgs
+  nav_msgs
 )
 
 # link nusim to turtlelib library

@@ -38,6 +38,7 @@
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
+#include "nav_msgs/msg/path.hpp"
 
 #include "turtlelib/diff_drive.hpp"
 
@@ -128,6 +129,10 @@ public:
 		/// @brief red/sensor data publisher which publishes the encoder ticks of the wheels
 		sensor_data_pub = create_publisher<nuturtlebot_msgs::msg::SensorData>(
 			"red/sensor_data", 10);
+
+		/// @brief publishes the path (nav_msgs/Path)
+		path_pub = create_publisher<nav_msgs::msg::Path>(
+			"/nusim/path", 10);
 
 		/// @brief subscription ot wheel_cmd to get the commanded
 		/// integer values which detemines the wheel velocities
@@ -221,6 +226,7 @@ private:
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_arr_pub;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_marker_arr_pub;
 	rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_pub;
+	rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
 
 	// Subscribers
 	rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_sub;
