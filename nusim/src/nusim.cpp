@@ -177,12 +177,12 @@ public:
 		fill_obstacles(marker_arr, obstacles_x, obstacles_y, obstacles_r);
 		fill_walls(marker_arr, X_LENGTH, Y_LENGTH);
 
-		// fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
-		// 							obstacles_r, true_pose, max_range, basic_sensor_variance);
-
 		// Define parent and child frame id's
 		world_red_tf.header.frame_id = "nusim/world";
 		world_red_tf.child_frame_id = "red/base_footprint";
+
+		// Define frame for path message
+		path.header.frame_id = "/nusim/world";
 	}
 
 private:
@@ -205,6 +205,10 @@ private:
 	double COLLISION_RADIUS = 0.105;
 	uint64_t step = 0;
 	uint64_t count = 0;
+	double left_noise = 0.0;
+	double right_noise = 0.0;
+	double left_slip = 0.0;
+	double right_slip = 0.0;
 
 	// Wheel states with noise and slipping
 	turtlelib::WheelState noisy_wheel_speeds{0.0, 0.0};
@@ -277,10 +281,8 @@ private:
 		}
 	}
 
-	/// @brief /wheel_cmd topic callback function that reads the integer value
-	/// WheelCommands, converts them to speeds in rad/s, computes the angles
-	/// at the next step, sensor encoder values, and finally the new pose of the
-	/// robot using forward kinematics.
+	/// @brief /wheel_cmd topic callback function that reads the integer valued
+	/// WheelCommands, converts them to speeds in rad/s, with and without noise + slipping
 	void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands &wheel_cmd)
 	{
 		// Define normal noise distribution with zero mean and input_noise variance
@@ -298,7 +300,7 @@ private:
 		}
 		else
 		{
-			auto left_noise = left_noise_d(get_random());
+			left_noise = left_noise_d(get_random());
 			noisy_wheel_speeds.left = (wheel_cmd.left_velocity * MOTOR_CMD_PER_RAD_SEC) + left_noise;
 		}
 		if (turtlelib::almost_equal((double)wheel_cmd.right_velocity, 0.0))
@@ -307,63 +309,19 @@ private:
 		}
 		else
 		{
-			auto right_noise = right_noise_d(get_random());
+			right_noise = right_noise_d(get_random());
 			noisy_wheel_speeds.right = (wheel_cmd.right_velocity * MOTOR_CMD_PER_RAD_SEC) + right_noise;
 		}
 
-		auto noise_l = 0.0;
-		auto noise_r = 0.0;
 		if (!turtlelib::almost_equal(SLIP_FRACTION, 0.0))
 		{
 			std::uniform_real_distribution<> slip_d(-SLIP_FRACTION, SLIP_FRACTION);
-			noise_r = slip_d(get_random());
-			noise_l = slip_d(get_random());
+			right_slip = slip_d(get_random());
+			left_slip = slip_d(get_random());
 		}
-
-		// Compute new wheel angles (rad)
-		true_wheel_angles.left = true_wheel_angles.left + true_wheel_speeds.left * (1.0 / RATE);
-		true_wheel_angles.right = true_wheel_angles.right + true_wheel_speeds.right * (1.0 / RATE);
-
-		slippy_wheel_angles.left = slippy_wheel_angles.left + noisy_wheel_speeds.left * (1 + noise_l) * (1.0 / RATE);
-		slippy_wheel_angles.right = slippy_wheel_angles.right + noisy_wheel_speeds.right * (1 + noise_r) * (1.0 / RATE);
-
-		// Convert angle to encoder ticks to fill in sensor_data message with noise and slipping
-		sensor_data.left_encoder = (int)(slippy_wheel_angles.left * ENCODER_TICKS_PER_RAD);
-		sensor_data.right_encoder = (int)(slippy_wheel_angles.right * ENCODER_TICKS_PER_RAD);
-
-		// Use new wheel angles with forward kinematics to obtain new pose of red robot
-		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
-
-		// Publish path message every 50th pose
-		if (count % 50 == 0)
-		{
-			count = 0;
-			geometry_msgs::msg::PoseStamped temp_pose;
-			temp_pose.header.stamp = get_clock()->now();
-			temp_pose.pose.position.x = true_pose.x;
-			temp_pose.pose.position.y = true_pose.y;
-			temp_pose.pose.position.z = 0.0;
-			q.setRPY(0.0, 0.0, true_pose.theta);
-			temp_pose.pose.orientation.x = q.x();
-			temp_pose.pose.orientation.y = q.y();
-			temp_pose.pose.orientation.z = q.z();
-			temp_pose.pose.orientation.w = q.w();
-
-			path.header.stamp = get_clock()->now();
-			path.header.frame_id = "/nusim/world";
-			path.poses.push_back(temp_pose);
-			path_pub->publish(path);
-		}
-		else
-		{
-			count++;
-		}
-
-		// Check if there is a collision and update pose accordingly
-		detect_collision();
 	}
 
-	/// \brief ~/reset service callback function:
+	/// @brief ~/reset service callback function:
 	/// resets the timestep variable to 0 and resets the
 	/// turtlebot pose to its initial location
 	void reset_callback(
@@ -376,10 +334,10 @@ private:
 		true_pose.theta = THETA0;
 	}
 
-	/// \brief ~/teleport service callback function:
+	/// @brief ~/teleport service callback function:
 	/// teleports the robot to the desired pose by setting
 	/// true_pose equal to the input x,y,theta
-	/// \param request - nusim/srv/Teleport request which has x,y,theta fields (UInt64)
+	/// @param request - nusim/srv/Teleport request which has x,y,theta fields (UInt64)
 	void teleport_callback(
 		const std::shared_ptr<nusim::srv::Teleport::Request> request,
 		std::shared_ptr<nusim::srv::Teleport::Response>)
@@ -390,11 +348,30 @@ private:
 		true_pose.theta = request->theta;
 	}
 
-	/// \brief timer callback function:
+	/// @brief timer callback function:
 	/// publises the simulation timestep, updates the transform between
 	/// the nusim/world and red/base_footprint frames, and published obstacle MarkerArray
 	void timer_callback()
 	{
+
+		// Compute new wheel angles (rad)
+		true_wheel_angles.left = true_wheel_angles.left + true_wheel_speeds.left * (1.0 / RATE);
+		true_wheel_angles.right = true_wheel_angles.right + true_wheel_speeds.right * (1.0 / RATE);
+
+		// Compute wheel angles with slipping model
+		slippy_wheel_angles.left = slippy_wheel_angles.left + noisy_wheel_speeds.left * (1 + left_slip) * (1.0 / RATE);
+		slippy_wheel_angles.right = slippy_wheel_angles.right + noisy_wheel_speeds.right * (1 + right_slip) * (1.0 / RATE);
+
+		// Convert angle to encoder ticks to fill in sensor_data message with noise and slipping
+		sensor_data.left_encoder = (int)(slippy_wheel_angles.left * ENCODER_TICKS_PER_RAD);
+		sensor_data.right_encoder = (int)(slippy_wheel_angles.right * ENCODER_TICKS_PER_RAD);
+
+		// Use new wheel angles with forward kinematics to obtain new pose of red robot
+		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
+
+		// Check if there is a collision and update pose accordingly
+		detect_collision();
+
 		// Publish timestep
 		auto timestep_message = std_msgs::msg::UInt64();
 		timestep_message.data = step++;
@@ -403,6 +380,7 @@ private:
 		// Set the translation of the red robot
 		world_red_tf.transform.translation.x = true_pose.x;
 		world_red_tf.transform.translation.y = true_pose.y;
+		world_red_tf.transform.translation.z = 0.0;
 
 		// Set the rotation of the red robot
 		q.setRPY(0.0, 0.0, true_pose.theta);
@@ -411,8 +389,10 @@ private:
 		world_red_tf.transform.rotation.z = q.z();
 		world_red_tf.transform.rotation.w = q.w();
 
+		auto time_now = get_clock()->now();
+
 		// Stamp and broadcast the transform
-		world_red_tf.header.stamp = get_clock()->now();
+		world_red_tf.header.stamp = time_now;
 		tf_broadcaster->sendTransform(world_red_tf);
 
 		// Publish MarkerArray of obstacles
@@ -420,6 +400,30 @@ private:
 
 		// Publish sensor data
 		sensor_data_pub->publish(sensor_data);
+
+		// Publish path at a slower rate than the loop
+		constexpr int PATH_PUB_RATE = 100;
+		if (count >= PATH_PUB_RATE)
+		{
+			count = 0;
+			geometry_msgs::msg::PoseStamped temp_pose;
+			temp_pose.header.stamp = time_now;
+			temp_pose.pose.position.x = true_pose.x;
+			temp_pose.pose.position.y = true_pose.y;
+			temp_pose.pose.position.z = 0.0;
+			temp_pose.pose.orientation.x = q.x();
+			temp_pose.pose.orientation.y = q.y();
+			temp_pose.pose.orientation.z = q.z();
+			temp_pose.pose.orientation.w = q.w();
+
+			path.header.stamp = time_now;
+			path.poses.push_back(temp_pose);
+			path_pub->publish(path);
+		}
+		else
+		{
+			count++;
+		}
 	}
 
 	/// @brief timer callback for fake sensor:
@@ -435,7 +439,7 @@ private:
 	}
 };
 
-/// \brief the main function to run the nusim node
+/// @brief the main function to run the nusim node
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
