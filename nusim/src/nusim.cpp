@@ -39,6 +39,7 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 
 #include "turtlelib/diff_drive.hpp"
 
@@ -76,8 +77,11 @@ public:
 		declare_parameter<double>("input_noise", INPUT_NOISE);
 		declare_parameter<double>("slip_fraction", SLIP_FRACTION);
 		declare_parameter<double>("basic_sensor_variance", BASIC_SENSOR_VARIANCE);
-		declare_parameter<double>("max_range", MAX_RANGE);
+		declare_parameter<double>("max_range", BASIC_MAX_RANGE);
 		declare_parameter<double>("collision_radius", COLLISION_RADIUS);
+		declare_parameter<double>("lidar_min_range", LIDAR_MIN_RANGE);
+		declare_parameter<double>("lidar_max_range", LIDAR_MAX_RANGE);
+		declare_parameter<double>("lidar_increment", LIDAR_INCREMENT);
 
 		// Get parameters
 		obstacles_r = get_parameter("obstacles/r").get_value<double>();
@@ -95,6 +99,9 @@ public:
 		SLIP_FRACTION = get_parameter("slip_fraction").get_value<double>();
 		BASIC_SENSOR_VARIANCE = get_parameter("basic_sensor_variance").get_value<double>();
 		COLLISION_RADIUS = get_parameter("collision_radius").get_value<double>();
+		LIDAR_MIN_RANGE = get_parameter("lidar_min_range").get_value<double>();
+		LIDAR_MAX_RANGE = get_parameter("lidar_max_range").get_value<double>();
+		LIDAR_INCREMENT = get_parameter("lidar_increment").get_value<double>();
 
 		// Check for required parameters
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
@@ -122,9 +129,13 @@ public:
 		marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
 			"~/obstacles", 10);
 
-		/// @brief marker publisher (visualization_msgs/msg/MarkerArray)
+		/// @brief marker publisher for fake basic sensor (visualization_msgs/msg/MarkerArray)
 		fake_sensor_marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
 			"/fake_sensor", 10);
+
+		/// @brief publisher for fake lidar sensor (sensor_msgs/msg/LaserScan)
+		fake_lidar_pub = create_publisher<sensor_msgs::msg::LaserScan>(
+			"/scan", 10);
 
 		/// @brief red/sensor data publisher which publishes the encoder ticks of the wheels
 		sensor_data_pub = create_publisher<nuturtlebot_msgs::msg::SensorData>(
@@ -165,7 +176,7 @@ public:
 
 		_fake_sensor_timer = create_wall_timer(
 			200ms,
-			std::bind(&Nusim::fake_sensor_timer_callback, this));
+			std::bind(&Nusim::fake_sensors_timer_callback, this));
 
 		// Ground truth pose of the robot known only to the simulator
 		// Initial values are passed as parameters to the node
@@ -182,33 +193,64 @@ public:
 		world_red_tf.child_frame_id = "red/base_footprint";
 
 		// Define frame for path message
-		path.header.frame_id = "/nusim/world";
+		path_msg.header.frame_id = "/nusim/world";
+
+		// Define constants in fake lidar message
+		fake_lidar_msg.header.frame_id = "red/base_scan";
+		fake_lidar_msg.angle_min = 0.0;
+		fake_lidar_msg.angle_max = 359.0;
+		fake_lidar_msg.angle_increment = LIDAR_INCREMENT;
+		fake_lidar_msg.range_max = LIDAR_MAX_RANGE;
+		fake_lidar_msg.range_min = LIDAR_MIN_RANGE;
+		fake_lidar_msg.scan_time = 0.02;
+		fake_lidar_msg.time_increment = 0.02;
 	}
 
 private:
+	// Obstacles location and geometry
 	std::vector<double> obstacles_x;
 	std::vector<double> obstacles_y;
 	double obstacles_r = 0.0;
+
+	// Initial position of the simulated robot
 	double X0 = 0.0;
 	double Y0 = 0.0;
 	double THETA0 = 0.0;
-	int RATE = 200;
+
+	int RATE = 200; // nusim loop frequency
+
+	// Turtlebot wheel encoder/motor parameters
 	double MOTOR_CMD_PER_RAD_SEC = 0.0;
 	double ENCODER_TICKS_PER_RAD = 0.0;
 	int MOTOR_CMD_MAX = 0;
+
+	// Border wall size
 	double X_LENGTH = 5.0;
 	double Y_LENGTH = 5.0;
+
+	// Encoder noise and slipping
 	double SLIP_FRACTION = 0.0;
 	double INPUT_NOISE = 0.0;
+
+	// Basic sensor
 	double BASIC_SENSOR_VARIANCE = 0.001;
-	double MAX_RANGE = 1.0; // max basic sensor range
+	double BASIC_MAX_RANGE = 1.0; // max basic sensor range
+
 	double COLLISION_RADIUS = 0.105;
-	uint64_t step = 0;
-	uint64_t count = 0;
+
+	// Fake lidar
+	double LIDAR_INCREMENT = 1.0;
+	double LIDAR_MIN_RANGE = 0.160; // meters
+	double LIDAR_MAX_RANGE = 8.0;	// meters
+
+	// Noise variables and params
 	double left_noise = 0.0;
 	double right_noise = 0.0;
 	double left_slip = 0.0;
 	double right_slip = 0.0;
+
+	uint64_t step = 0;
+	uint64_t count = 0;
 
 	// Wheel states with noise and slipping
 	turtlelib::WheelState noisy_wheel_speeds{0.0, 0.0};
@@ -231,6 +273,7 @@ private:
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_marker_arr_pub;
 	rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr sensor_data_pub;
 	rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
+	rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr fake_lidar_pub;
 
 	// Subscribers
 	rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr wheel_cmd_sub;
@@ -250,7 +293,8 @@ private:
 	geometry_msgs::msg::TransformStamped world_red_tf;
 	nuturtlebot_msgs::msg::SensorData sensor_data;
 	visualization_msgs::msg::MarkerArray marker_arr;
-	nav_msgs::msg::Path path;
+	nav_msgs::msg::Path path_msg;
+	sensor_msgs::msg::LaserScan fake_lidar_msg;
 
 	/// @brief Checks if there is a collision between the robot and an obstacle assuming there
 	/// will only ever be a collision with one obstacle at a time and updates the robot pose
@@ -276,6 +320,69 @@ private:
 					// line between the two collision circles
 					true_pose.x = obstacles_x.at(i) + std::cos(collision_angle) * distance_to_move;
 					true_pose.y = obstacles_y.at(i) + std::sin(collision_angle) * distance_to_move;
+				}
+			}
+		}
+	}
+
+	// constexpr double smaller(double a, double b)
+	// {
+	// 	if (a < b)
+	// 	{
+	// 		return a;
+	// 	}
+	// 	else
+	// 	{
+	// 		return b;
+	// 	}
+	// }
+
+	/// @brief Fake lidar scanner. Scans once in 360 degrees with 1 deg resolution
+	void fake_scan()
+	{
+
+		turtlelib::Vector2D wb_vec{true_pose.x, true_pose.y};
+		turtlelib::Transform2D Twb(wb_vec, true_pose.theta);
+
+		for (double deg = 0.0; deg < 360.0; deg += LIDAR_INCREMENT)
+		{
+			// Slope of the current lidar ray
+			const auto m = std::tan(turtlelib::deg2rad(deg));
+
+			// RCLCPP_INFO_STREAM(get_logger(), "angle = " << deg);
+
+			for (size_t i = 0; i < obstacles_x.size(); i++)
+			{
+				// Get the obstacle in the body frame of the robot
+				const turtlelib::Vector2D wo_vec{obstacles_x.at(i), obstacles_y.at(i)};
+				const turtlelib::Transform2D Two(wo_vec);
+				const auto Tbo = Twb.inv() * Two;
+
+				// Obstacle center in the body frame
+				const auto h = Tbo.translation().x;
+				const auto k = Tbo.translation().y;
+
+				// Quadratic formula terms
+				const auto a = 1 + std::pow(m, 2.0);
+				const auto b = -(2 * h + 2 * m * k);
+				const auto c = std::pow(h, 2.0) + std::pow(k, 2.0) - std::pow(obstacles_r, 2.0);
+				const auto descrim = std::pow(b, 2.0) - 4 * a * c;
+
+				// If real (descriminant is non-negative), there is an intesection
+				if (descrim >= 0)
+				{
+					// (x1,y1) and (x2,y2) are the two points of intersection
+					const auto x1 = (-b + std::sqrt(descrim)) / (2 * a);
+					const auto x2 = (-b - std::sqrt(descrim)) / (2 * a);
+					const auto y1 = m * x1;
+					const auto y2 = m * x2;
+
+					const auto d1 = std::sqrt(std::pow(x1, 2.0) + std::pow(y1, 2.0));
+					const auto d2 = std::sqrt(std::pow(x2, 2.0) + std::pow(y2, 2.0));
+					// RCLCPP_INFO_STREAM(get_logger(), "(x1,y1) = " << x1 << "," << y1);
+					// RCLCPP_INFO_STREAM(get_logger(), "(x2,y2) = " << x2 << "," << y2);
+
+					fake_lidar_msg.ranges.push_back(std::min(d1, d2));
 				}
 			}
 		}
@@ -389,10 +496,9 @@ private:
 		world_red_tf.transform.rotation.z = q.z();
 		world_red_tf.transform.rotation.w = q.w();
 
-		auto time_now = get_clock()->now();
-
 		// Stamp and broadcast the transform
-		world_red_tf.header.stamp = time_now;
+		world_red_tf.header.stamp = get_clock()->now();
+		fake_lidar_msg.header.stamp = get_clock()->now();
 		tf_broadcaster->sendTransform(world_red_tf);
 
 		// Publish MarkerArray of obstacles
@@ -407,7 +513,7 @@ private:
 		{
 			count = 0;
 			geometry_msgs::msg::PoseStamped temp_pose;
-			temp_pose.header.stamp = time_now;
+			temp_pose.header.stamp = get_clock()->now();
 			temp_pose.pose.position.x = true_pose.x;
 			temp_pose.pose.position.y = true_pose.y;
 			temp_pose.pose.position.z = 0.0;
@@ -416,9 +522,9 @@ private:
 			temp_pose.pose.orientation.z = q.z();
 			temp_pose.pose.orientation.w = q.w();
 
-			path.header.stamp = time_now;
-			path.poses.push_back(temp_pose);
-			path_pub->publish(path);
+			path_msg.header.stamp = get_clock()->now();
+			path_msg.poses.push_back(temp_pose);
+			path_pub->publish(path_msg);
 		}
 		else
 		{
@@ -428,14 +534,17 @@ private:
 
 	/// @brief timer callback for fake sensor:
 	/// publishes a MarkerArray of the "sensed" positions of the obstacles at 5Hz
-	void fake_sensor_timer_callback()
+	void fake_sensors_timer_callback()
 	{
 		// Publish MarkerArray of fake sensor data
 		visualization_msgs::msg::MarkerArray fake_sensor_marker_arr;
 		fill_basic_sensor_obstacles(fake_sensor_marker_arr, obstacles_x, obstacles_y,
-									obstacles_r, true_pose, MAX_RANGE, BASIC_SENSOR_VARIANCE);
+									obstacles_r, true_pose, BASIC_MAX_RANGE, BASIC_SENSOR_VARIANCE);
 
 		fake_sensor_marker_arr_pub->publish(fake_sensor_marker_arr);
+
+		// fake_scan();
+		// fake_lidar_pub->publish(fake_lidar_msg);
 	}
 };
 

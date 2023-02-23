@@ -20,6 +20,7 @@ find_package(turtlelib REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # add utils library
 add_library(utils src/utils.cpp)
@@ -42,8 +43,8 @@ ament_target_dependencies(nusim
   geometry_msgs
   visualization_msgs
   nav_msgs
+  sensor_msgs
 )
-
 # link nusim to turtlelib library
 target_link_libraries(nusim turtlelib::turtlelib)
 
