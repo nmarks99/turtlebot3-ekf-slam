@@ -59,6 +59,106 @@ namespace turtlelib
         return (rad * (180.0 / PI));
     }
 
+    /// @brief check whether a point and angle lie in the same quadrant
+    /// @param x the x coordinate
+    /// @param y the y coordinate
+    /// @param angle the angle in radians
+    /// @return true if the point and angle are in the same quadrant, false otherwise
+    constexpr bool check_quadrant(double x, double y, double angle)
+    {
+        angle = normalize_angle(angle);
+        int point_quadrant = 0;
+        int angle_quadrant = 0;
+        bool on_axis = false;
+
+        if (x > 0 and y > 0)
+        {
+            point_quadrant = 1;
+        }
+        else if (x < 0 and y > 0)
+        {
+            point_quadrant = 2;
+        }
+        else if (x < 0 and y < 0)
+        {
+            point_quadrant = 3;
+        }
+        else if (x > 0 and y < 0)
+        {
+            point_quadrant = 4;
+        }
+        else
+        {
+            on_axis = true;
+        }
+
+        if (angle >= 0 and angle < M_PI / 2)
+        {
+            angle_quadrant = 1;
+        }
+        else if (angle > M_PI / 2 and angle < M_PI)
+        {
+            angle_quadrant = 2;
+        }
+        else if (angle < -M_PI / 2 and angle > -M_PI)
+        {
+            angle_quadrant = 3;
+        }
+        else if (angle < 0 and angle > -M_PI / 2)
+        {
+            angle_quadrant = 4;
+        }
+
+        if (not on_axis)
+        {
+            if (angle_quadrant == point_quadrant)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (turtlelib::almost_equal(x, 0.0))
+            {
+                if (turtlelib::almost_equal(angle, M_PI / 2) and y > 0)
+                {
+                    return true;
+                }
+                else if (turtlelib::almost_equal(angle, -M_PI / 2) and y < 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (turtlelib::almost_equal(y, 0.0))
+            {
+                if (turtlelib::almost_equal(angle, 0.0) and x > 0)
+                {
+                    return true;
+                }
+                else if (turtlelib::almost_equal(angle, M_PI) and x < 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
     /// static_assertions test compile time assumptions.
     /// You should write at least one more test for each function
     /// You should also purposely (and temporarily) make one of these tests fail

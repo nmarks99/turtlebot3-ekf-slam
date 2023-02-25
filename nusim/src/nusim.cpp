@@ -197,13 +197,17 @@ public:
 
 		// Define constants in fake lidar message
 		fake_lidar_msg.header.frame_id = "red/base_scan";
-		fake_lidar_msg.angle_min = 0.0;
-		fake_lidar_msg.angle_max = 359.0;
+		fake_lidar_msg.angle_min = turtlelib::deg2rad(0.0);
+		fake_lidar_msg.angle_max = turtlelib::deg2rad(359.0);
 		fake_lidar_msg.angle_increment = LIDAR_INCREMENT;
 		fake_lidar_msg.range_max = LIDAR_MAX_RANGE;
 		fake_lidar_msg.range_min = LIDAR_MIN_RANGE;
-		fake_lidar_msg.scan_time = 0.02;
+		fake_lidar_msg.scan_time = 0.01; // before I had 0.02?
 		fake_lidar_msg.time_increment = 0.02;
+		for (size_t i = 0; i < 360; i++)
+		{
+			fake_lidar_msg.ranges.push_back(0.0);
+		}
 	}
 
 private:
@@ -239,7 +243,7 @@ private:
 	double COLLISION_RADIUS = 0.105;
 
 	// Fake lidar
-	double LIDAR_INCREMENT = 1.0;
+	double LIDAR_INCREMENT = 1.0;	// degrees
 	double LIDAR_MIN_RANGE = 0.160; // meters
 	double LIDAR_MAX_RANGE = 8.0;	// meters
 
@@ -325,35 +329,22 @@ private:
 		}
 	}
 
-	// constexpr double smaller(double a, double b)
-	// {
-	// 	if (a < b)
-	// 	{
-	// 		return a;
-	// 	}
-	// 	else
-	// 	{
-	// 		return b;
-	// 	}
-	// }
-
 	/// @brief Fake lidar scanner. Scans once in 360 degrees with 1 deg resolution
 	void fake_scan()
 	{
 
-		turtlelib::Vector2D wb_vec{true_pose.x, true_pose.y};
-		turtlelib::Transform2D Twb(wb_vec, true_pose.theta);
+		std::vector<double> ranges_out(360, 0.0);
+		std::vector<std::tuple<double, double>> hits;
 
-		for (double deg = 0.0; deg < 360.0; deg += LIDAR_INCREMENT)
+		for (size_t ang = 0; ang < 360; ang++)
 		{
 			// Slope of the current lidar ray
-			const auto m = std::tan(turtlelib::deg2rad(deg));
-
-			// RCLCPP_INFO_STREAM(get_logger(), "angle = " << deg);
-
+			const auto m = std::tan(turtlelib::deg2rad(ang));
 			for (size_t i = 0; i < obstacles_x.size(); i++)
 			{
 				// Get the obstacle in the body frame of the robot
+				const turtlelib::Vector2D wb_vec{true_pose.x, true_pose.y};
+				const turtlelib::Transform2D Twb(wb_vec, true_pose.theta);
 				const turtlelib::Vector2D wo_vec{obstacles_x.at(i), obstacles_y.at(i)};
 				const turtlelib::Transform2D Two(wo_vec);
 				const auto Tbo = Twb.inv() * Two;
@@ -362,11 +353,18 @@ private:
 				const auto h = Tbo.translation().x;
 				const auto k = Tbo.translation().y;
 
+				// if the current angle is not in the same quadrant as the obstacle,
+				// there must not be an intersection
+				if (not turtlelib::check_quadrant(h, k, turtlelib::deg2rad(ang)))
+				{
+					continue;
+				}
+
 				// Quadratic formula terms
 				const auto a = 1 + std::pow(m, 2.0);
 				const auto b = -(2 * h + 2 * m * k);
 				const auto c = std::pow(h, 2.0) + std::pow(k, 2.0) - std::pow(obstacles_r, 2.0);
-				const auto descrim = std::pow(b, 2.0) - 4 * a * c;
+				const auto descrim = std::pow(b, 2.0) - (4 * a * c);
 
 				// If real (descriminant is non-negative), there is an intesection
 				if (descrim >= 0)
@@ -379,12 +377,25 @@ private:
 
 					const auto d1 = std::sqrt(std::pow(x1, 2.0) + std::pow(y1, 2.0));
 					const auto d2 = std::sqrt(std::pow(x2, 2.0) + std::pow(y2, 2.0));
-					// RCLCPP_INFO_STREAM(get_logger(), "(x1,y1) = " << x1 << "," << y1);
-					// RCLCPP_INFO_STREAM(get_logger(), "(x2,y2) = " << x2 << "," << y2);
-
-					fake_lidar_msg.ranges.push_back(std::min(d1, d2));
+					const auto dmin = std::min(d1, d2);
+					if (dmin >= LIDAR_MIN_RANGE && dmin <= LIDAR_MAX_RANGE)
+					{
+						// if valid intersection, store the distance and the angle
+						hits.push_back(std::tuple<double, double>(dmin, ang));
+					}
 				}
 			}
+		}
+		for (size_t i = 0; i < hits.size(); i++)
+		{
+			const double dist = std::get<0>(hits.at(i));
+			const double ang = std::get<1>(hits.at(i));
+			ranges_out.at(ang) = dist;
+		}
+		for (size_t i = 0; i < ranges_out.size(); i++)
+		{
+			fake_lidar_msg.ranges.at(i) = ranges_out.at(i);
+			// RCLCPP_INFO_STREAM(get_logger(), ranges_out.at(i) << "," << i);
 		}
 	}
 
@@ -498,7 +509,6 @@ private:
 
 		// Stamp and broadcast the transform
 		world_red_tf.header.stamp = get_clock()->now();
-		fake_lidar_msg.header.stamp = get_clock()->now();
 		tf_broadcaster->sendTransform(world_red_tf);
 
 		// Publish MarkerArray of obstacles
@@ -543,8 +553,9 @@ private:
 
 		fake_sensor_marker_arr_pub->publish(fake_sensor_marker_arr);
 
-		// fake_scan();
-		// fake_lidar_pub->publish(fake_lidar_msg);
+		fake_scan();
+		fake_lidar_msg.header.stamp = get_clock()->now();
+		fake_lidar_pub->publish(fake_lidar_msg);
 	}
 };
 
