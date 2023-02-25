@@ -9,9 +9,11 @@
 ///     obstacles/y (std::vector<double>): Array of y locations of obstacles
 ///     obstacles/r (double): Radius of the obtacles
 /// PUBLISHES:
-///     ~/timestep (std_msgs/msg/UInt64): simulation timestep
-///     ~/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
-///		  /red/sensor_data (nuturtlebot_msgs/msg/SensorData): wheel encoder values
+///     nusim/timestep (std_msgs/msg/UInt64): simulation timestep
+///     nusim/obstacles (visualization_msgs/msg/MarkerArray): array of Marker messages
+///		/red/sensor_data (nuturtlebot_msgs/msg/SensorData): wheel encoder values
+///		/scan (sensor_msgs/msg/LaserScan): fake lidar sensor
+///		/fake_sensor (visualization_msgs/msg/MarkerArray): fake basic sensor that detects obstacles
 /// SUBSCRIBES:
 ///     /red/wheel_cmd (nuturtlebot_msgs/msg/WheelCommands): integer valued wheel command speeds
 /// SERVERS:
