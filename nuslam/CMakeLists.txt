@@ -20,8 +20,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(Armadillo REQUIRED)
 
-# nuturtle_control node
+# add slam.cpp executable
 add_executable(slam src/slam.cpp)
 ament_target_dependencies(slam
   rclcpp
@@ -34,7 +35,13 @@ ament_target_dependencies(slam
   sensor_msgs
   nuturtlebot_msgs
 )
-target_link_libraries(slam turtlelib::turtlelib)
+
+include_directories(${ARMADILLO_INCLUDE_DIRS})
+
+target_link_libraries(slam
+  turtlelib::turtlelib
+  ${${ARMADILLO_LIBRARIES}}
+)
 
 # install custom service definitions
 rosidl_generate_interfaces(
@@ -46,7 +53,6 @@ rosidl_generate_interfaces(
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 target_link_libraries(slam "${cpp_typesupport_target}")
-# target_link_libraries(odometry "${cpp_typesupport_target}")
 
 
 # install nodes
@@ -55,17 +61,17 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# install launchfiles
-install(
-  DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}
-)
+# # install launchfiles
+# install(
+#   DIRECTORY launch
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
-# install configuration files
-install(
-  DIRECTORY config
-  DESTINATION share/${PROJECT_NAME}
-)
+# # install configuration files
+# install(
+#   DIRECTORY config
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
 
 if(NOT CMAKE_CROSSCOMPILING)
@@ -80,13 +86,16 @@ endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
+
   # the following line skips cpplint (only works in a git repo)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
+
   ament_lint_auto_find_test_dependencies()
 endif()
 
