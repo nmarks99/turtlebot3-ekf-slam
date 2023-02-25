@@ -108,10 +108,6 @@ public:
         _timer = create_wall_timer(
             std::chrono::milliseconds((int)(1000 / RATE)),
             std::bind(&Slam::timer_callback, this));
-
-        // _timer = create_wall_timer(
-        //     5ms,
-        //     std::bind(&Slam::timer_callback, this));
     }
 
 private:
