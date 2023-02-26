@@ -25,9 +25,17 @@ namespace turtlelib
     {
         LandmarkMeasurement measurement;
         measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
-        measurement.phi = std::atan2(_y, _x);
+        measurement.phi = normalize_angle(std::atan2(_y, _x));
         measurement.marker_id = _marker_id;
         return measurement;
+    }
+
+    arma::mat LandmarkMeasurement::to_mat() const
+    {
+        arma::mat z(2, 1, arma::fill::zeros);
+        z(0, 0) = r;
+        z(1, 0) = normalize_angle(phi);
+        return z;
     }
 
     KalmanFilter::KalmanFilter()
@@ -54,7 +62,7 @@ namespace turtlelib
             A_t(2, 0) = V.xdot * std::cos(qt_hat.theta);
         }
         else // non-zero rotational velocity
-        {
+        {    // may need to do normalize_angle()
             qt_hat_new.theta = normalize_angle(qt_hat.theta + V.thetadot);
             qt_hat_new.x = qt_hat.x -
                            (V.xdot / V.thetadot) * std::sin(qt_hat.theta) +
@@ -75,5 +83,52 @@ namespace turtlelib
 
         // Now we propagate the uncertainty using the linear state transition model
         sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_mat;
+    }
+
+    void KalmanFilter::new_measurement(const LandmarkMeasurement &measurement)
+    {
+
+        // Landmark must be initialized if it hasn't been seen
+        auto mx_j = 0.0;
+        auto my_j = 0.0;
+        auto mt_j = arma::mat(2, 1, arma::fill::zeros);
+        if (not landmarks.count(measurement.marker_id))
+        {
+            // add new landmark
+            mx_j = qt_hat.x +
+                   measurement.r * std::cos(normalize_angle(measurement.phi + qt_hat.theta));
+            my_j = qt_hat.y +
+                   measurement.r * std::sin(normalize_angle(measurement.phi + qt_hat.theta));
+            mt_j = arma::mat{mx_j, my_j}.t();
+
+            landmarks[measurement.marker_id] = mt_j;
+
+            // Update dimensions of the covariance matrix Sigma
+
+            // Update the dimensions of the process noise matrix Q
+        }
+
+        // Update the complete state estimate
+        Xi = arma::join_cols(Xi, mt_j);
+        std::cout << "Xi = " << Xi << std::endl;
+    }
+
+    void KalmanFilter::update()
+    {
+        // First you must associate incoming measurements with a landmark
+        // 1. Check if measurement i corresponds to a landmark we already have
+        // 2. If a measurement i's marker_id is not present in our current list of
+        // known landmarks, call initialize_landmark(measurement_i)
+
+        // For each measurement i
+        // 1. Compute theoretical measurement z_t_hat = h_j
+        // 2. Compute the Kalman gain (Eq 26)
+        // 3. Compute the posterior state update Xi_t_hat
+        // 4. Compute the posterior covariance sigma_t
+    }
+
+    Pose2D KalmanFilter::pose_prediction() const
+    {
+        return qt_hat;
     }
 }

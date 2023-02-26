@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "turtlelib/rigid2d.hpp"
 #include "turtlelib/diff_drive.hpp"
+#include "turtlelib/kalman.hpp"
 #include <iostream>
 #include <cmath>
 #include <sstream>
@@ -468,5 +469,20 @@ namespace turtlelib
     // ====================
     //      KalmanFilter
     // ====================
+    TEST_CASE("from_cartesian()", "[LandmarkMeasurement]")
+    { // Nick, Marks
+        auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
+        REQUIRE(almost_equal(ms.r, std::sqrt(2.0)));
+        REQUIRE(almost_equal(ms.phi, M_PI / 4));
+        REQUIRE(ms.marker_id == 1);
+    }
 
+    TEST_CASE("predict()", "[KalmanFilter]")
+    {
+        KalmanFilter ekf;
+        ekf.predict(Twist2D{1.0, 0.0, 0.0});
+        std::cout << ekf.pose_prediction().theta << std::endl;
+        std::cout << ekf.pose_prediction().x << std::endl;
+        std::cout << ekf.pose_prediction().y << std::endl;
+    }
 }
