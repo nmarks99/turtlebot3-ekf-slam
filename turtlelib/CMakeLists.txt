@@ -30,6 +30,8 @@ add_executable(frame_main src/frame_main.cpp)
 
 target_link_libraries(frame_main ${PROJECT_NAME})
 
+target_link_libraries(turtlelib ${ARMADILLO_LIBRARIES})
+
 target_include_directories(turtlelib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
   $<INSTALL_INTERFACE:include/>)

@@ -15,6 +15,21 @@ namespace turtlelib
         return mt;
     }
 
+    LandmarkMeasurement::LandmarkMeasurement()
+        : r(0.0), phi(0.0), marker_id(0) {}
+
+    LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi, int _marker_id)
+        : r(_r), phi(_phi), marker_id(_marker_id) {}
+
+    LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y, int _marker_id)
+    {
+        LandmarkMeasurement measurement;
+        measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
+        measurement.phi = std::atan2(_y, _x);
+        measurement.marker_id = _marker_id;
+        return measurement;
+    }
+
     KalmanFilter::KalmanFilter()
         : qt_hat{0.0, 0.0, 0.0},
           sigma_hat(3, 3, arma::fill::zeros),
@@ -59,6 +74,6 @@ namespace turtlelib
         qt_hat = qt_hat_new;
 
         // Now we propagate the uncertainty using the linear state transition model
-        sigma_hat = A_t * sigma_hat * A_t.t() + Q_mat;
+        sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_mat;
     }
 }
