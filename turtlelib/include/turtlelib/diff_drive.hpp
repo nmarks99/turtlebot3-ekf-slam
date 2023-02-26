@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
+#include <armadillo>
 #include "turtlelib/rigid2d.hpp"
 
 namespace turtlelib
@@ -25,6 +26,10 @@ namespace turtlelib
 
         /// @brief the theta position
         double theta = 0.0;
+
+        /// @brief converts the Pose2D into an armadillo Matrix ordered (theta, x, y)
+        /// @return arma::mat object
+        arma::mat to_mat();
     };
 
     /// @brief generic state of the left and right wheels.

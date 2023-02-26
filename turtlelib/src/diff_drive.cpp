@@ -3,6 +3,11 @@
 namespace turtlelib
 {
 
+    arma::mat Pose2D::to_mat()
+    {
+        return arma::mat{theta, x, y};
+    }
+
     DiffDrive::DiffDrive() {}
 
     DiffDrive::DiffDrive(double wheel_radius, double wheel_separation)

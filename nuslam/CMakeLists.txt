@@ -22,6 +22,12 @@ find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(Armadillo REQUIRED)
 
+# add_library(kalman src/kalman.cpp)
+# ament_target_dependencies(kalman
+#   rclcpp
+# )
+# target_link_libraries(kalman turtlelib::turtlelib)
+
 # add slam.cpp executable
 add_executable(slam src/slam.cpp)
 ament_target_dependencies(slam

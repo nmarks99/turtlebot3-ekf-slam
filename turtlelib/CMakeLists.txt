@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 project(turtlelib)
 
 # create the turtlelib library
-add_library(${PROJECT_NAME} src/rigid2d.cpp src/diff_drive.cpp)
+add_library(${PROJECT_NAME} src/rigid2d.cpp src/diff_drive.cpp src/kalman.cpp)
 # The add_library function just added turtlelib as a "target"
 # A "target" is a name that CMake uses to refer to some type of output
 # In this case it is a library but it could also be an executable or some other items
@@ -12,11 +12,8 @@ add_library(${PROJECT_NAME} src/rigid2d.cpp src/diff_drive.cpp)
 # can be included with #include"turtlelib/file.hpp"
 # target_include_directories(${PROJECT_NAME} PUBLIC include/)
 
-# target_include_directories(${PROJECT_NAME}
-#     PUBLIC
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#     $<INSTALL_INTERFACE:include>)
-
+find_package(Armadillo)
+include_directories(${ARMADILLO_INCLUDE_DIRS})
 
 # enable C++ 17
 target_compile_features(turtlelib PUBLIC cxx_std_17)

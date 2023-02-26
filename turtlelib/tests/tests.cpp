@@ -12,6 +12,15 @@ namespace turtlelib
     //      rigid2D
     // =================
 
+    TEST_CASE("check_quadrant")
+    { // Nick, Marks
+        REQUIRE(check_quadrant(1.0, 1.0, deg2rad(45.0)) == true);
+        REQUIRE(check_quadrant(-1.0, 1.0, deg2rad(135.0)) == true);
+        REQUIRE(check_quadrant(1.0, -1.0, deg2rad(315.0)) == true);
+        REQUIRE(check_quadrant(-1.0, -1.0, deg2rad(225.0)) == true);
+        REQUIRE(check_quadrant(-1.0, 1.0, deg2rad(315.0)) == false);
+    }
+
     TEST_CASE("distance()", "[rigid2D]")
     { // Nick, Marks
         Vector2D p1{0.0, 0.0};
@@ -456,12 +465,8 @@ namespace turtlelib
         REQUIRE(almost_equal(V.xdot, 0.033));
     }
 
-    TEST_CASE("check_quadrant")
-    { // Nick, Marks
-        REQUIRE(check_quadrant(1.0, 1.0, deg2rad(45.0)) == true);
-        REQUIRE(check_quadrant(-1.0, 1.0, deg2rad(135.0)) == true);
-        REQUIRE(check_quadrant(1.0, -1.0, deg2rad(315.0)) == true);
-        REQUIRE(check_quadrant(-1.0, -1.0, deg2rad(225.0)) == true);
-        REQUIRE(check_quadrant(-1.0, 1.0, deg2rad(315.0)) == false);
-    }
+    // ====================
+    //      KalmanFilter
+    // ====================
+
 }
