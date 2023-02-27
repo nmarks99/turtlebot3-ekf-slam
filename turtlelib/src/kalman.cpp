@@ -93,11 +93,12 @@ namespace turtlelib
 
         auto mx_j = 0.0;
         auto my_j = 0.0;
-        auto mt_j = arma::mat(2, 1, arma::fill::zeros);
+        arma::mat mt_j(2, 1, arma::fill::zeros);
 
         // Landmark must be initialized if it hasn't been seen
         if (not landmarks_dict.count(measurement.marker_id))
         {
+            std::cout << "adding new measurement..." << std::endl;
             // add new landmark, converting to (x,y) from (r,phi)
             mx_j = Xi_hat(1, 0) +
                    measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat(0, 0)));
@@ -118,6 +119,52 @@ namespace turtlelib
         // Update the dimensions of the process noise matrix Q
     }
 
+    arma::mat KalmanFilter::compute_h(int j) const
+    {
+        const int ind_in_Xi = j + 3; // mt_j vector is at (j+3, j+4)
+        arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
+        mj = mj.t();
+        const auto r_j = std::sqrt(
+            std::pow((mj(0, 0) - Xi_hat(1, 0)), 2.0) +
+            std::pow((mj(1, 0) - Xi_hat(2, 0)), 2.0));
+        const auto phi_j = normalize_angle(
+            std::atan2(mj(1, 0) - Xi_hat(2, 0), mj(0, 0) - Xi_hat(1, 0)) - Xi_hat(0, 0));
+
+        return arma::mat{r_j, phi_j}; // may need to transpose
+    }
+
+    arma::mat KalmanFilter::compute_H(int j) const
+    {
+        const int ind_in_Xi = j + 3; // mt_j vector is at (j+3, j+4)
+        arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
+        mj = mj.t();
+        const auto del_x = (mj(0, 0) - Xi_hat(1, 0));
+        const auto del_y = (mj(1, 0) - Xi_hat(2, 0));
+        const auto d = std::pow(del_x, 2.0) + std::pow(del_y, 2.0);
+
+        // number of obstancles n is equal to number of rows, minus 3 (for qt = [theta x y]) / 2
+        const int n = (Xi_hat.n_rows - 3) / 2;
+
+        arma::mat H1(2, 3, arma::fill::zeros);
+        H1(1, 0) = -1.0;
+        H1(0, 1) = -del_x / std::sqrt(d);
+        H1(0, 2) = -del_y / std::sqrt(d);
+        H1(1, 1) = del_y / d;
+        H1(1, 2) = -del_x / d;
+        arma::mat H2(2, (2 * ((j + 1) - 1)), arma::fill::zeros);
+
+        arma::mat H3(2, 2, arma::fill::zeros);
+        H3(0, 0) = del_x / std::sqrt(d);
+        H3(0, 1) = del_y / std::sqrt(d);
+        H3(1, 0) = -del_y / d;
+        H3(1, 1) = del_x / d;
+
+        arma::mat H4(2, ((2 * n) - 2 * (j + 1)), arma::fill::zeros);
+        // note the j+1 is because we start indexing at 1 here and 0 everywhere else...
+
+        return arma::join_rows(H1, H2, H3, H4);
+    }
+
     void KalmanFilter::update(const std::vector<LandmarkMeasurement> &measurements)
     {
         // for each measurement
@@ -128,14 +175,7 @@ namespace turtlelib
 
             // 1. Compute theoretical measurement z_t_hat = h_j
             const auto index = landmarks_dict[measurements.at(i).marker_id];
-            const auto mj = arma::mat{Xi_hat(index, 0), Xi_hat(index + 1, 0)};
-            const auto r_j = std::sqrt(
-                std::pow((mj(0, 0) - Xi_hat(1, 0)), 2.0) +
-                std::pow((mj(1, 0) - Xi_hat(2, 0)), 2.0));
-            const auto phi_j = normalize_angle(
-                std::atan2(mj(1, 0) - Xi_hat(2, 0), mj(0, 0) - Xi_hat(1, 0)) - Xi_hat(0, 0));
-
-            const auto h = arma::mat{r_j, phi_j};
+            const auto h = compute_h(index - 3); // index is location in Xi, we want j for compute_h
 
             // 2. Compute the Kalman gain (Eq 26)
 

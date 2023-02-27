@@ -64,6 +64,14 @@ namespace turtlelib
         /// @brief class constructor
         KalmanFilter();
 
+        /// @brief computes the theoretical measurement given the current state estimate
+        /// @param j index of x component of mt_j in Xi_hat
+        arma::mat compute_h(int j) const;
+
+        /// @brief computes the derivative of h with respect to the state Xi
+        /// @param j index of x component of mt_j in Xi_hat
+        arma::mat compute_H(int j) const;
+
         /// @brief takes a measurement and if it hasn't been seen before, initializes it,
         /// and adds it to the set of known landmark measurments.
         void update_measurements(const LandmarkMeasurement &measurement);

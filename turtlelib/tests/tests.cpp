@@ -477,12 +477,38 @@ namespace turtlelib
         REQUIRE(ms.marker_id == 1);
     }
 
-    TEST_CASE("predict()", "[KalmanFilter]")
+    TEST_CASE("KalmanFilter()", "[KalmanFilter]")
+    { // Nick, Marks
+        KalmanFilter ekf;
+        // std::cout << "qt_hat = " << ekf.pose_prediction() << std::endl;
+        // std::cout << "Xi_hat = " << ekf.state_prediction() << std::endl;
+    }
+
+    TEST_CASE("update_measurements()", "[KalmanFilter]")
+    { // Nick, Marks
+        KalmanFilter ekf;
+        auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
+        ekf.update_measurements(ms);
+    }
+
+    TEST_CASE("compute_H", "[KalmanFilter]")
     {
         KalmanFilter ekf;
-        ekf.predict(Twist2D{1.0, 0.0, 0.0});
-        std::cout << ekf.pose_prediction().theta << std::endl;
-        std::cout << ekf.pose_prediction().x << std::endl;
-        std::cout << ekf.pose_prediction().y << std::endl;
+        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+        auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+        auto ms3 = LandmarkMeasurement::from_cartesian(42.3, 2.41, 3);
+        ekf.update_measurements(ms1);
+        ekf.update_measurements(ms2);
+        ekf.update_measurements(ms3);
+
+        int j = 0;
+        auto H = ekf.compute_H(j);
+        REQUIRE(arma::size(H).n_rows == 2);
+        REQUIRE(arma::size(H).n_cols == 9); // 3 + 2n
+
+        j = 1;
+        H = ekf.compute_H(j);
+        REQUIRE(arma::size(H).n_rows == 2);
+        REQUIRE(arma::size(H).n_cols == 9); // 3 + 2n
     }
 }
