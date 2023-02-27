@@ -88,32 +88,32 @@ namespace turtlelib
             // store the index of the x_j component for this landmark
             landmarks_dict[measurement.marker_id] = Xi_hat.n_rows;
 
-        } // else, Xi_hat (and therefore mt_hat) gets updated in the EKF update step
+            // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
+            // sigma_hat is initialed to the correct size already for n=1
+            const uint64_t n = (Xi_hat.n_rows - 3) / 2; // number of landmarks
+            if (n != 1)
+            {
+                // n has increased by 1 since the last time this function was called
+                // Sigma_hat goes from 3+2n x 3+2n to 3+2(n+1) x 3+2(n+1)
+                sigma_hat = arma::join_cols(sigma_hat, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+                sigma_hat = arma::join_rows(sigma_hat, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
 
-        // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
-        const uint64_t n = (Xi_hat.n_rows - 3) / 2; // new number of obstacles
+                // not sure if we need to do this each time a measurment is added...
+                sigma_hat(sigma_hat.n_rows - 1, sigma_hat.n_cols - 1) = BIG_NUMBER;
+                sigma_hat(sigma_hat.n_rows - 2, sigma_hat.n_cols - 2) = BIG_NUMBER;
 
-        if (n != 1) // sigma_hat is initialed to the correct size already for n=1
-        {
-            // n has increased by 1 since the last time this function was called
-            // Sigma_hat goes from 3+2n x 3+2n to 3+2(n+1) x 3+2(n+1)
-            sigma_hat = arma::join_cols(sigma_hat, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
-            sigma_hat = arma::join_rows(sigma_hat, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
+                // Update the dimensions of the process noise matrix Q_bar
+                Q_bar = arma::join_cols(Q_bar, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+                Q_bar = arma::join_rows(Q_bar, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
 
-            // not sure if we need to do this each time a measurment is added...
-            sigma_hat(sigma_hat.n_rows - 1, sigma_hat.n_cols - 1) = BIG_NUMBER;
-            sigma_hat(sigma_hat.n_rows - 2, sigma_hat.n_cols - 2) = BIG_NUMBER;
+                // Verify dimensions are correct
+                assert(sigma_hat.n_rows == sigma_hat.n_cols);
+                assert(sigma_hat.n_rows == (3 + 2 * n));
+                assert(Q_bar.n_rows == Q_bar.n_cols);
+                assert(Q_bar.n_rows == (3 + 2 * n));
+            }
 
-            // Update the dimensions of the process noise matrix Q_bar
-            Q_bar = arma::join_cols(Q_bar, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
-            Q_bar = arma::join_rows(Q_bar, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
-        }
-
-        // Verify dimensions are correct
-        assert(sigma_hat.n_rows == sigma_hat.n_cols);
-        assert(sigma_hat.n_rows == (3 + 2 * n));
-        assert(Q_bar.n_rows == Q_bar.n_cols);
-        assert(Q_bar.n_rows == (3 + 2 * n));
+        } // else, Xi_hat gets updated in the EKF update step, and it's dimenions are already correct
     }
 
     void KalmanFilter::predict(const Twist2D &V)
