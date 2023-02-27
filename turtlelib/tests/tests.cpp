@@ -505,13 +505,13 @@ namespace turtlelib
         ekf.predict(Twist2D{33.8741, 19.0, 0.0});
     }
 
-    // TEST_CASE("compute_h", "[KalmanFilter]")
-    // { // Nick, Marks
-    //     KalmanFilter ekf;
-    //     ekf.predict(Twist2D{32.0, 20.0, 9.0});
-    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-    //     ekf.update_measurements(ms1);
-    // }
+    TEST_CASE("compute_h", "[KalmanFilter]")
+    { // Nick, Marks
+        KalmanFilter ekf;
+        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+        ekf.update_measurements(ms1);
+        ekf.predict(Twist2D{32.0, 20.0, 9.0});
+    }
 
     // TEST_CASE("compute_H", "[KalmanFilter]")
     // { // Nick, Marks
@@ -533,4 +533,17 @@ namespace turtlelib
     //     REQUIRE(H.n_rows == 2);
     //     REQUIRE(H.n_cols == 9); // 3 + 2n
     // }
+
+    TEST_CASE("update()", "[KalmanFilter]")
+    {
+        KalmanFilter ekf;
+        std::vector<LandmarkMeasurement> ms;
+        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+        auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+        auto ms3 = LandmarkMeasurement::from_cartesian(42.3, 2.41, 3);
+        ms.push_back(ms1);
+        ms.push_back(ms2);
+        // ms.push_back(ms3);
+        ekf.update(ms);
+    }
 }

@@ -86,11 +86,13 @@ namespace turtlelib
             Xi_hat = arma::join_cols(Xi_hat, mt_j);
 
             // store the index of the x_j component for this landmark
-            landmarks_dict[measurement.marker_id] = Xi_hat.n_rows;
+            landmarks_dict[measurement.marker_id] = Xi_hat.n_rows - 2;
+
+            n = (Xi_hat.n_rows - 3) / 2; // number of landmarks
 
             // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
             // sigma_hat is initialed to the correct size already for n=1
-            const uint64_t n = (Xi_hat.n_rows - 3) / 2; // number of landmarks
+
             if (n != 1)
             {
                 // n has increased by 1 since the last time this function was called
@@ -118,6 +120,8 @@ namespace turtlelib
 
     void KalmanFilter::predict(const Twist2D &V)
     {
+        // This must only be called once update_measurements() has been called
+
         // Note for the prediction step here, we set the noise
         // equal to zero and the map stays stationary
 
@@ -150,8 +154,6 @@ namespace turtlelib
                         (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot);
         }
 
-        const uint64_t n = (Xi_hat.n_rows - 3) / 2; // number of obstacles
-
         // A_t should be (3+2n x 3+2n)
         A_t = arma::join_rows(A_t, arma::mat(3, 2 * n, arma::fill::zeros));
         A_t = arma::join_cols(A_t, arma::mat(2 * n, 3 + 2 * n, arma::fill::zeros));
@@ -168,7 +170,7 @@ namespace turtlelib
 
     arma::mat KalmanFilter::compute_h(int j) const
     {
-        const int ind_in_Xi = j + 3; // mt_j vector is at (j+3, j+4)
+        const int ind_in_Xi = j + (n + 1); // mt_j vector is at (j+3, j+4)
         arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
         mj = mj.t();
         const auto r_j = std::sqrt(
@@ -182,7 +184,7 @@ namespace turtlelib
 
     arma::mat KalmanFilter::compute_H(int j) const
     {
-        const int ind_in_Xi = j + 3; // mt_j vector is at (j+3, j+4)
+        const int ind_in_Xi = j + (n + 1); // mt_j vector is at (j+3, j+4)
         arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
         mj = mj.t();
         const auto del_x = (mj(0, 0) - Xi_hat(1, 0));
@@ -199,7 +201,7 @@ namespace turtlelib
         H1(1, 1) = del_y / d;
         H1(1, 2) = -del_x / d;
 
-        arma::mat H2(2, (2 * ((j + 1) - 1)), arma::fill::zeros);
+        arma::mat H2(2, (2 * (j - 1)), arma::fill::zeros);
 
         arma::mat H3(2, 2, arma::fill::zeros);
         H3(0, 0) = del_x / std::sqrt(d);
@@ -207,8 +209,7 @@ namespace turtlelib
         H3(1, 0) = -del_y / d;
         H3(1, 1) = del_x / d;
 
-        arma::mat H4(2, ((2 * n) - 2 * (j + 1)), arma::fill::zeros);
-        // note the j+1 is because we start indexing at 1 here and 0 everywhere else...
+        arma::mat H4(2, ((2 * n) - (2 * j)), arma::fill::zeros);
 
         return arma::join_rows(H1, H2, H3, H4);
     }
@@ -219,18 +220,45 @@ namespace turtlelib
         for (size_t i = 0; i < measurements.size(); i++)
         {
             // First you must associate incoming measurements with a landmark
-            update_measurements(measurements.at(i));
+            // update_measurements(measurements.at(i));
 
             // 1. Compute theoretical measurement z_t_hat = h_j
-            const auto index = landmarks_dict[measurements.at(i).marker_id];
-            const auto h = compute_h(index - 3); // index is location in Xi, we want j for compute_h
+            const unsigned int ind_in_Xi = landmarks_dict[measurements.at(i).marker_id];
+            const unsigned int j = ind_in_Xi - (n + 1);
+            const arma::mat zi_hat = compute_h(j); // index is location in Xi, we want j for compute_h
 
             // 2. Compute the Kalman gain (Eq 26)
-            const auto H = compute_H(index - 3);
+            const arma::mat R(2, 2, arma::fill::zeros);
+            const arma::mat H = compute_H(j);
+            assert(H.n_rows == 2);
+            assert(H.n_cols == 3 + (2 * n));
+            const arma::mat K = (sigma_hat * H.t()) * arma::inv((H * sigma_hat * H.t()) + R);
 
             // 3. Compute the posterior state update Xi_t_hat
+            const arma::mat zi{Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
+            Xi_hat = Xi_hat + K * (zi.t() - zi_hat.t());
+
             // 4. Compute the posterior covariance sigma_t
+            const arma::mat I = arma::mat(arma::size(sigma_hat), arma::fill::eye);
+            sigma_hat = (I - K * H) * sigma_hat;
+            std::cout << sigma_hat << std::endl;
         }
+    }
+
+    void KalmanFilter::run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
+    {
+
+        // Add new measurments and update dimensions if needed
+        for (size_t i = 0; i < measurements.size(); i++)
+        {
+            update_measurements(measurements.at(i));
+        }
+
+        /// Kalman filter prediction step
+        predict(V);
+
+        // Kalman filter update step
+        update(measurements);
     }
 
     arma::mat KalmanFilter::pose_prediction() const

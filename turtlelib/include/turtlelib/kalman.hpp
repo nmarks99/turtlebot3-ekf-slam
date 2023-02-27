@@ -55,10 +55,11 @@ namespace turtlelib
         arma::mat sigma_hat; // covariance matrix
         arma::mat Q_bar;     // process noise matrix
         arma::mat R_bar;     // something to do with noise
+        uint64_t n = 0;      // number of landmarks
 
         // map (dictionary) of id:index key value pairs
         // the index is the index of the x_j compont of mt_j, so index+1 is y_j
-        std::map<int, int> landmarks_dict;
+        std::map<unsigned int, unsigned int> landmarks_dict;
 
     public:
         /// @brief class constructor
@@ -87,7 +88,14 @@ namespace turtlelib
         void predict(const Twist2D &V);
 
         /// @brief extented Kalman filter update step
+        /// @param measurements a vector of LandmarkMeasurements
         void update(const std::vector<LandmarkMeasurement> &measurements);
+
+        /// @brief Runs one iterations of the extended Kalman filtera
+        /// with the given twist and landmark measurements
+        /// @param V a Twist2D
+        /// @param measurements a vector of LandmarkMeasurements
+        void run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
 
         /// @brief returns the current pose prediction, qt_hat
         /// @return an arma::mat of the prediction of the robot's current pose
