@@ -39,9 +39,12 @@ namespace turtlelib
     }
 
     KalmanFilter::KalmanFilter()
-        : qt_hat{0.0, 0.0, 0.0},
-          sigma_hat(3, 3, arma::fill::zeros),
-          Q_mat(3, 3, arma::fill::zeros) {}
+        : qt_hat(arma::mat{3, 1, arma::fill::zeros}),
+          Xi_hat(qt_hat),
+          sigma_hat(arma::mat{3, 3, arma::fill::zeros}),
+          Q_mat(arma::mat{3, 3, arma::fill::zeros})
+    {
+    }
 
     void KalmanFilter::predict(const Twist2D &V)
     {
@@ -49,32 +52,32 @@ namespace turtlelib
         // equal to zero and the map stays stationary
 
         arma::mat A_t(3, 3, arma::fill::zeros);
-        Pose2D qt_hat_new;
+        arma::mat qt_hat_new(3, 1, arma::fill::zeros);
 
         // zero rotational velocity
         if (almost_equal(V.thetadot, 0.0))
         {
-            qt_hat_new.theta = 0.0;
-            qt_hat_new.x = qt_hat.x + V.xdot * std::cos(qt_hat.theta);
-            qt_hat_new.y = qt_hat.y + V.xdot * std::sin(qt_hat.theta);
+            qt_hat_new(0, 0) = 0.0;
+            qt_hat_new(1, 0) = Xi_hat(1, 0) + V.xdot * std::cos(Xi_hat(0, 0));
+            qt_hat_new(2, 0) = Xi_hat(2, 0) + V.xdot * std::sin(Xi_hat(0, 0));
 
-            A_t(1, 0) = -V.xdot * std::sin(qt_hat.theta);
-            A_t(2, 0) = V.xdot * std::cos(qt_hat.theta);
+            A_t(1, 0) = -V.xdot * std::sin(Xi_hat(0, 0));
+            A_t(2, 0) = V.xdot * std::cos(Xi_hat(0, 0));
         }
         else // non-zero rotational velocity
         {    // may need to do normalize_angle()
-            qt_hat_new.theta = normalize_angle(qt_hat.theta + V.thetadot);
-            qt_hat_new.x = qt_hat.x -
-                           (V.xdot / V.thetadot) * std::sin(qt_hat.theta) +
-                           (V.xdot / V.thetadot) * std::sin(qt_hat.theta + V.thetadot);
-            qt_hat_new.y = qt_hat.y +
-                           (V.xdot / V.thetadot) * std::cos(qt_hat.theta) -
-                           (V.xdot / V.thetadot) * std::cos(qt_hat.theta + V.thetadot);
+            qt_hat_new(0, 0) = normalize_angle(Xi_hat(0, 0) + V.thetadot);
+            qt_hat_new(1, 0) = Xi_hat(1, 0) -
+                               (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0)) +
+                               (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot);
+            qt_hat_new(2, 0) = Xi_hat(2, 0) +
+                               (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0)) -
+                               (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0) + V.thetadot);
 
-            A_t(1, 0) = -(V.xdot / V.thetadot) * std::cos(qt_hat.theta) +
-                        (V.xdot / V.thetadot) * std::cos(qt_hat.theta + V.thetadot);
-            A_t(2, 0) = -(V.xdot / V.thetadot) * std::sin(qt_hat.theta) +
-                        (V.xdot / V.thetadot) * std::sin(qt_hat.theta + V.thetadot);
+            A_t(1, 0) = -(V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0)) +
+                        (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0) + V.thetadot);
+            A_t(2, 0) = -(V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0)) +
+                        (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot);
         }
         A_t = arma::eye(arma::size(A_t)) + A_t;
 
@@ -85,50 +88,75 @@ namespace turtlelib
         sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_mat;
     }
 
-    void KalmanFilter::new_measurement(const LandmarkMeasurement &measurement)
+    void KalmanFilter::update_measurements(const LandmarkMeasurement &measurement)
     {
 
-        // Landmark must be initialized if it hasn't been seen
         auto mx_j = 0.0;
         auto my_j = 0.0;
         auto mt_j = arma::mat(2, 1, arma::fill::zeros);
-        if (not landmarks.count(measurement.marker_id))
+
+        // Landmark must be initialized if it hasn't been seen
+        if (not landmarks_dict.count(measurement.marker_id))
         {
-            // add new landmark
-            mx_j = qt_hat.x +
-                   measurement.r * std::cos(normalize_angle(measurement.phi + qt_hat.theta));
-            my_j = qt_hat.y +
-                   measurement.r * std::sin(normalize_angle(measurement.phi + qt_hat.theta));
+            // add new landmark, converting to (x,y) from (r,phi)
+            mx_j = Xi_hat(1, 0) +
+                   measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat(0, 0)));
+            my_j = Xi_hat(2, 0) +
+                   measurement.r * std::sin(normalize_angle(measurement.phi + Xi_hat(0, 0)));
             mt_j = arma::mat{mx_j, my_j}.t();
 
-            landmarks[measurement.marker_id] = mt_j;
+            // Update the complete state estimate by adding in the new mt_j vector
+            Xi_hat = arma::join_cols(Xi_hat, mt_j);
 
-            // Update dimensions of the covariance matrix Sigma
+            // store the index of the x_j component for this landmark
+            landmarks_dict[measurement.marker_id] = Xi_hat.n_rows;
 
-            // Update the dimensions of the process noise matrix Q
-        }
+        } // else, Xi_hat (and therefore mt_hat) gets updated in the EKF update step
 
-        // Update the complete state estimate
-        Xi = arma::join_cols(Xi, mt_j);
-        std::cout << "Xi = " << Xi << std::endl;
+        // Update dimensions of the covariance matrix Sigma
+
+        // Update the dimensions of the process noise matrix Q
     }
 
-    void KalmanFilter::update()
+    void KalmanFilter::update(const std::vector<LandmarkMeasurement> &measurements)
     {
-        // First you must associate incoming measurements with a landmark
-        // 1. Check if measurement i corresponds to a landmark we already have
-        // 2. If a measurement i's marker_id is not present in our current list of
-        // known landmarks, call initialize_landmark(measurement_i)
+        // for each measurement
+        for (size_t i = 0; i < measurements.size(); i++)
+        {
+            // First you must associate incoming measurements with a landmark
+            update_measurements(measurements.at(i));
 
-        // For each measurement i
-        // 1. Compute theoretical measurement z_t_hat = h_j
-        // 2. Compute the Kalman gain (Eq 26)
-        // 3. Compute the posterior state update Xi_t_hat
-        // 4. Compute the posterior covariance sigma_t
+            // 1. Compute theoretical measurement z_t_hat = h_j
+            const auto index = landmarks_dict[measurements.at(i).marker_id];
+            const auto mj = arma::mat{Xi_hat(index, 0), Xi_hat(index + 1, 0)};
+            const auto r_j = std::sqrt(
+                std::pow((mj(0, 0) - Xi_hat(1, 0)), 2.0) +
+                std::pow((mj(1, 0) - Xi_hat(2, 0)), 2.0));
+            const auto phi_j = normalize_angle(
+                std::atan2(mj(1, 0) - Xi_hat(2, 0), mj(0, 0) - Xi_hat(1, 0)) - Xi_hat(0, 0));
+
+            const auto h = arma::mat{r_j, phi_j};
+
+            // 2. Compute the Kalman gain (Eq 26)
+
+            // 3. Compute the posterior state update Xi_t_hat
+            // 4. Compute the posterior covariance sigma_t
+        }
     }
 
-    Pose2D KalmanFilter::pose_prediction() const
+    arma::mat KalmanFilter::pose_prediction() const
     {
         return qt_hat;
     }
+
+    arma::mat KalmanFilter::map_prediction() const
+    {
+        return mt_hat;
+    }
+
+    arma::mat KalmanFilter::state_prediction() const
+    {
+        return Xi_hat;
+    }
+
 }

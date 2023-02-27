@@ -17,8 +17,8 @@ namespace turtlelib
 {
 
     /// @brief Each landmark measurement contains a distance r,
-    /// bearing (angle) phi, and marker_id. Angles are normalized
-    /// to be in the range (-pi, pi]
+    /// bearing (angle) phi, and marker_id (from ROS Marker msg).
+    /// Angles are normalized to be in the range (-pi, pi]
     struct LandmarkMeasurement
     {
         double r;
@@ -50,12 +50,15 @@ namespace turtlelib
     {
 
     private:
-        Pose2D qt_hat{0.0, 0.0, 0.0};          // 3x1 predicted robot state vector
-        arma::mat mt_hat;                      // 2xn predicted map state
-        arma::mat sigma_hat = arma::mat(3, 3); // covariance matrix
-        arma::mat Q_mat = arma::mat(3, 3);     // process noise matrix
-        arma::mat Xi;                          // Full state prediction. [qt_hat mt_hat]
-        std::map<int, arma::mat> landmarks;    // map (dictionary) of id:mt_j key value pairs
+        arma::mat qt_hat;    // 3x1 predicted robot state vector
+        arma::mat mt_hat;    // 2xn predicted map state
+        arma::mat Xi_hat;    // Full state prediction. [qt_hat mt_hat]
+        arma::mat sigma_hat; // covariance matrix
+        arma::mat Q_mat;     // process noise matrix
+
+        // map (dictionary) of id:index key value pairs
+        // the index is the index of the x_j compont of mt_j, so index+1 is y_j
+        std::map<int, int> landmarks_dict;
 
     public:
         /// @brief class constructor
@@ -63,7 +66,7 @@ namespace turtlelib
 
         /// @brief takes a measurement and if it hasn't been seen before, initializes it,
         /// and adds it to the set of known landmark measurments.
-        void new_measurement(const LandmarkMeasurement &measurement);
+        void update_measurements(const LandmarkMeasurement &measurement);
 
         /// @brief extented Kalman filter prediction step which predicts
         /// the new robot state qt_hat at time t. The process noise is zero here.
@@ -71,15 +74,19 @@ namespace turtlelib
         void predict(const Twist2D &V);
 
         /// @brief extented Kalman filter update step
-        void update();
+        void update(const std::vector<LandmarkMeasurement> &measurements);
 
         /// @brief returns the current pose prediction, qt_hat
-        /// @return a Pose2D of the prediction of the robot's current pose
-        Pose2D pose_prediction() const;
+        /// @return an arma::mat of the prediction of the robot's current pose
+        arma::mat pose_prediction() const;
 
         /// @brief returns the current map prediction, mt_hat
-        /// @return a arma::mat of the prediction of the state of the map
+        /// @return an arma::mat of the prediction of the state of the map
         arma::mat map_prediction() const;
+
+        /// @brief returns the current full state prediction, Xi_hat
+        /// @return an arma::mat of the prediction of the full state (robot+map)
+        arma::mat state_prediction() const;
     };
 
 }
