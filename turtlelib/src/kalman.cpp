@@ -44,6 +44,8 @@ namespace turtlelib
           sigma_hat(arma::mat{3, 3, arma::fill::zeros}),
           Q_mat(arma::mat{3, 3, arma::fill::zeros})
     {
+        // sigma_hat(1, 1) = 100000.0;
+        // sigma_hat(2, 2) = 100000.0;
     }
 
     void KalmanFilter::predict(const Twist2D &V)
@@ -86,6 +88,10 @@ namespace turtlelib
 
         // Now we propagate the uncertainty using the linear state transition model
         sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_mat;
+        // std::cout << "A_t = " << A_t << std::endl;
+        // std::cout << "Q_mat = " << Q_mat << std::endl;
+        // std::cout << "Sigma_hat = " << sigma_hat << std::endl;
+        // std::cout << "qt_hat" << qt_hat << std::endl;
     }
 
     void KalmanFilter::update_measurements(const LandmarkMeasurement &measurement)
@@ -98,7 +104,6 @@ namespace turtlelib
         // Landmark must be initialized if it hasn't been seen
         if (not landmarks_dict.count(measurement.marker_id))
         {
-            std::cout << "adding new measurement..." << std::endl;
             // add new landmark, converting to (x,y) from (r,phi)
             mx_j = Xi_hat(1, 0) +
                    measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat(0, 0)));
@@ -151,6 +156,7 @@ namespace turtlelib
         H1(0, 2) = -del_y / std::sqrt(d);
         H1(1, 1) = del_y / d;
         H1(1, 2) = -del_x / d;
+
         arma::mat H2(2, (2 * ((j + 1) - 1)), arma::fill::zeros);
 
         arma::mat H3(2, 2, arma::fill::zeros);
@@ -178,6 +184,7 @@ namespace turtlelib
             const auto h = compute_h(index - 3); // index is location in Xi, we want j for compute_h
 
             // 2. Compute the Kalman gain (Eq 26)
+            const auto H = compute_H(index - 3);
 
             // 3. Compute the posterior state update Xi_t_hat
             // 4. Compute the posterior covariance sigma_t

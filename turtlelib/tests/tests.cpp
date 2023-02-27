@@ -489,10 +489,28 @@ namespace turtlelib
         KalmanFilter ekf;
         auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
         ekf.update_measurements(ms);
+
+        REQUIRE(ekf.state_prediction().n_cols == 1);
+        REQUIRE(ekf.state_prediction().n_rows == 5);
+        REQUIRE(almost_equal(ekf.state_prediction()(3, 0), 1.0));
+        REQUIRE(almost_equal(ekf.state_prediction()(4, 0), 1.0));
+    }
+
+    TEST_CASE("predict()", "[KalmanFilter]")
+    {
+        REQUIRE(1 == 0);
+    }
+
+    TEST_CASE("compute_h", "[KalmanFilter]")
+    { // Nick, Marks
+        KalmanFilter ekf;
+        ekf.predict(Twist2D{32.0, 20.0, 9.0});
+        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+        ekf.update_measurements(ms1);
     }
 
     TEST_CASE("compute_H", "[KalmanFilter]")
-    {
+    { // Nick, Marks
         KalmanFilter ekf;
         auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
         auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
@@ -508,7 +526,7 @@ namespace turtlelib
 
         j = 1;
         H = ekf.compute_H(j);
-        REQUIRE(arma::size(H).n_rows == 2);
-        REQUIRE(arma::size(H).n_cols == 9); // 3 + 2n
+        REQUIRE(H.n_rows == 2);
+        REQUIRE(H.n_cols == 9); // 3 + 2n
     }
 }
