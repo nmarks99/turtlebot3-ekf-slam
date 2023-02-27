@@ -51,10 +51,10 @@ namespace turtlelib
 
     private:
         arma::mat qt_hat;    // 3x1 predicted robot state vector
-        arma::mat mt_hat;    // 2xn predicted map state
         arma::mat Xi_hat;    // Full state prediction. [qt_hat mt_hat]
         arma::mat sigma_hat; // covariance matrix
-        arma::mat Q_mat;     // process noise matrix
+        arma::mat Q_bar;     // process noise matrix
+        arma::mat R_bar;     // something to do with noise
 
         // map (dictionary) of id:index key value pairs
         // the index is the index of the x_j compont of mt_j, so index+1 is y_j
@@ -63,6 +63,11 @@ namespace turtlelib
     public:
         /// @brief class constructor
         KalmanFilter();
+
+        /// @brief class constructor that accepts
+        /// @param Q process noise gain
+        /// @param R measurment noise gain (I think)
+        KalmanFilter(double Q, double R);
 
         /// @brief computes the theoretical measurement given the current state estimate
         /// @param j index of x component of mt_j in Xi_hat
