@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.9)
 project(turtlelib)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # create the turtlelib library
 add_library(${PROJECT_NAME} src/rigid2d.cpp src/diff_drive.cpp src/kalman.cpp)
 # The add_library function just added turtlelib as a "target"
@@ -12,7 +14,8 @@ add_library(${PROJECT_NAME} src/rigid2d.cpp src/diff_drive.cpp src/kalman.cpp)
 # can be included with #include"turtlelib/file.hpp"
 # target_include_directories(${PROJECT_NAME} PUBLIC include/)
 
-find_package(Armadillo)
+find_package(Armadillo REQUIRED)
+find_package(rclcpp REQUIRED)
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 
 # enable C++ 17
@@ -30,7 +33,14 @@ add_executable(frame_main src/frame_main.cpp)
 
 target_link_libraries(frame_main ${PROJECT_NAME})
 
-target_link_libraries(turtlelib ${ARMADILLO_LIBRARIES})
+target_link_libraries(turtlelib
+  ${ARMADILLO_LIBRARIES}
+  rclcpp::rclcpp
+  rcpputils::rcpputils
+  rcutils::rcutils
+  rcl_logging_interface::rcl_logging_interface
+)
+
 
 target_include_directories(turtlelib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>

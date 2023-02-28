@@ -12,6 +12,8 @@
 #include <map>
 #include "turtlelib/rigid2d.hpp"
 #include "turtlelib/diff_drive.hpp"
+#include "rclcpp/logging.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 namespace turtlelib
 {
@@ -21,9 +23,14 @@ namespace turtlelib
     /// Angles are normalized to be in the range (-pi, pi]
     struct LandmarkMeasurement
     {
+        /// @brief distance in meters to the landmark
         double r;
+
+        /// @brief  bearing(angle) to the landmark in radians
         double phi;
-        int marker_id;
+
+        /// @brief integer id, typically associated with a ROS Marker message
+        unsigned int marker_id;
 
         /// @brief Default constructor that initializes variables to zero
         LandmarkMeasurement();
@@ -46,6 +53,7 @@ namespace turtlelib
         arma::mat to_mat() const;
     };
 
+    /// @brief Extended Kalman Filter
     class KalmanFilter
     {
 
