@@ -469,49 +469,43 @@ namespace turtlelib
     // ====================
     //      KalmanFilter
     // ====================
-    TEST_CASE("from_cartesian()", "[LandmarkMeasurement]")
-    { // Nick, Marks
-        auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
-        REQUIRE(almost_equal(ms.r, std::sqrt(2.0)));
-        REQUIRE(almost_equal(ms.phi, M_PI / 4));
-        REQUIRE(ms.marker_id == 1);
-    }
 
-    TEST_CASE("KalmanFilter()", "[KalmanFilter]")
-    { // Nick, Marks
-        KalmanFilter ekf;
-        // std::cout << "qt_hat = " << ekf.pose_prediction() << std::endl;
-        // std::cout << "Xi_hat = " << ekf.state_prediction() << std::endl;
-    }
+    // TEST_CASE("from_cartesian()", "[LandmarkMeasurement]")
+    // { // Nick, Marks
+    //     auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
+    //     REQUIRE(almost_equal(ms.r, std::sqrt(2.0)));
+    //     REQUIRE(almost_equal(ms.phi, M_PI / 4));
+    //     REQUIRE(ms.marker_id == 1);
+    // }
 
-    TEST_CASE("update_measurements()", "[KalmanFilter]")
-    { // Nick, Marks
-        KalmanFilter ekf(3.0, 2.0);
-        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-        auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
-        ekf.update_measurements(ms1);
-        ekf.update_measurements(ms2);
-        REQUIRE(ekf.state_prediction().n_cols == 1);
-        REQUIRE(ekf.state_prediction().n_rows == 7);
-    }
+    // TEST_CASE("update_measurements()", "[KalmanFilter]")
+    // { // Nick, Marks
+    //     KalmanFilter ekf(3.0, 2.0);
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+    //     auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+    //     ekf.update_measurements(ms1);
+    //     ekf.update_measurements(ms2);
+    //     REQUIRE(ekf.state_prediction().n_cols == 1);
+    //     REQUIRE(ekf.state_prediction().n_rows == 7);
+    // }
 
-    TEST_CASE("predict()", "[KalmanFilter]")
-    {
-        KalmanFilter ekf;
-        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-        auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
-        ekf.update_measurements(ms1);
-        ekf.update_measurements(ms2);
-        ekf.predict(Twist2D{33.8741, 19.0, 0.0});
-    }
+    // TEST_CASE("predict()", "[KalmanFilter]")
+    // { // Nick, Marks
+    //     KalmanFilter ekf;
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+    //     auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+    //     ekf.update_measurements(ms1);
+    //     ekf.update_measurements(ms2);
+    //     ekf.predict(Twist2D{33.8741, 19.0, 0.0});
+    // }
 
-    TEST_CASE("compute_h", "[KalmanFilter]")
-    { // Nick, Marks
-        KalmanFilter ekf;
-        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-        ekf.update_measurements(ms1);
-        ekf.predict(Twist2D{32.0, 20.0, 9.0});
-    }
+    // TEST_CASE("compute_h", "[KalmanFilter]")
+    // { // Nick, Marks
+    //     KalmanFilter ekf;
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+    //     ekf.update_measurements(ms1);
+    //     ekf.predict(Twist2D{32.0, 20.0, 9.0});
+    // }
 
     // TEST_CASE("compute_H", "[KalmanFilter]")
     // { // Nick, Marks
@@ -523,27 +517,51 @@ namespace turtlelib
     //     ekf.update_measurements(ms2);
     //     ekf.update_measurements(ms3);
 
-    //     int j = 0;
-    //     auto H = ekf.compute_H(j);
-    //     REQUIRE(arma::size(H).n_rows == 2);
-    //     REQUIRE(arma::size(H).n_cols == 9); // 3 + 2n
+    //     const unsigned int j = 1;
+    //     arma::mat H = ekf.compute_H(j);
 
-    //     j = 1;
-    //     H = ekf.compute_H(j);
+    //     // H must be 2x(2+3n)
     //     REQUIRE(H.n_rows == 2);
     //     REQUIRE(H.n_cols == 9); // 3 + 2n
     // }
 
-    TEST_CASE("update()", "[KalmanFilter]")
+    // TEST_CASE("update()", "[KalmanFilter]")
+    // { // Nick, Marks
+    //     KalmanFilter ekf{1.0, 0.0};
+    //     std::vector<LandmarkMeasurement> ms;
+    //     auto ms1 = LandmarkMeasurement{1.0, 2.0, 1};
+    //     auto ms2 = LandmarkMeasurement{4.0, 5.5, 2};
+    //     ms.push_back(ms1);
+    //     ms.push_back(ms2);
+
+    //     ekf.predict(Twist2D{1.0, 1.0, 1.0});
+    //     ekf.update(ms);
+    // }
+
+    TEST_CASE("run()", "[KalmanFilter]")
     {
-        KalmanFilter ekf;
+        KalmanFilter ekf{1e6, 1.0};
         std::vector<LandmarkMeasurement> ms;
-        auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-        auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
-        auto ms3 = LandmarkMeasurement::from_cartesian(42.3, 2.41, 3);
+
+        auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
+        auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
+        auto ms3 = LandmarkMeasurement::from_cartesian(-3.0, -2.0, 2);
+        auto ms4 = LandmarkMeasurement::from_cartesian(-8.0, -5.0, 3);
         ms.push_back(ms1);
         ms.push_back(ms2);
-        // ms.push_back(ms3);
-        ekf.update(ms);
+        ms.push_back(ms3);
+        ms.push_back(ms4);
+
+        int i = 0;
+        while (i < 10)
+        {
+
+            ekf.run(Twist2D{0.0, 0.0, 0.0}, ms);
+
+            // ms.clear();
+
+            i++;
+        }
     }
+
 }

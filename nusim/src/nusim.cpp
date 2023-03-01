@@ -239,8 +239,8 @@ private:
 	double INPUT_NOISE = 0.0;
 
 	// Basic sensor
-	double BASIC_SENSOR_VARIANCE = 0.001;
-	double BASIC_MAX_RANGE = 1.0; // max basic sensor range
+	double BASIC_SENSOR_VARIANCE = 0.0; // 0.001
+	double BASIC_MAX_RANGE = 5.0;		// max basic sensor range
 
 	double COLLISION_RADIUS = 0.105;
 

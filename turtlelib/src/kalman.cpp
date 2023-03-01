@@ -3,19 +3,7 @@
 namespace turtlelib
 {
 
-    // std::mt19937 &get_random()
-    // {
-    //     // Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
-
-    //     // static variables inside a function are created once and persist for the remainder of the program
-    //     static std::random_device rd{};
-    //     static std::mt19937 mt{rd()};
-    //     // we return a reference to the pseudo-random number genrator object. This is always the
-    //     // same object every time get_random is called
-    //     return mt;
-    // }
-
-    static constexpr double BIG_NUMBER = 1e6;
+    static constexpr double BIG_NUMBER = 1e5;
 
     LandmarkMeasurement::LandmarkMeasurement()
         : r(0.0), phi(0.0), marker_id(0) {}
@@ -49,7 +37,8 @@ namespace turtlelib
     {
         sigma_hat(3, 3) = BIG_NUMBER;
         sigma_hat(4, 4) = BIG_NUMBER;
-        // std::cout << sigma_hat << std::endl;
+        std::cout << "sigma = " << std::endl;
+        std::cout << sigma_hat << std::endl;
         // std::cout << arma::size(sigma_hat) << std::endl;
     }
 
@@ -63,11 +52,11 @@ namespace turtlelib
         sigma_hat(3, 3) = BIG_NUMBER;
         sigma_hat(4, 4) = BIG_NUMBER;
         Q_bar.submat(0, 0, 2, 2) = Q * arma::mat(3, 3, arma::fill::eye);
+        std::cout << sigma_hat << std::endl;
     }
 
     void KalmanFilter::update_measurements(const LandmarkMeasurement &measurement)
     {
-
         auto mx_j = 0.0;
         auto my_j = 0.0;
         arma::mat mt_j(2, 1, arma::fill::zeros);
@@ -92,7 +81,6 @@ namespace turtlelib
 
             // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
             // sigma_hat is initialed to the correct size already for n=1
-
             if (n != 1)
             {
                 // n has increased by 1 since the last time this function was called
@@ -119,7 +107,7 @@ namespace turtlelib
         } // else, Xi_hat gets updated in the EKF update step, and it's dimenions are already correct
         else
         {
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Landmarks updated, no new added");
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "No new landmarks added");
         }
     }
 
@@ -169,17 +157,19 @@ namespace turtlelib
         // Save the new prediction of the robot's configuration
         qt_hat = qt_hat_new;
         Xi_hat.submat(0, 0, 2, 0) = qt_hat;
+        // Xi_hat.submat(0, 0, 2, 0) = arma::mat{0.0, 0.0, 0.0}.t();
 
         // Now we propagate the uncertainty using the linear state transition model
         sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_bar;
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat is " << arma::size(sigma_hat));
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat size = " << arma::size(sigma_hat));
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Xi_hat = " << Xi_hat);
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Finished prediciton step-----------");
     }
 
     arma::mat KalmanFilter::compute_h(int j) const
     {
-        const int ind_in_Xi = j + (n + 1); // mt_j vector is at (j+3, j+4)
+        const int ind_in_Xi = (j * 2) + 1;
         arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
         mj = mj.t();
         const auto r_j = std::sqrt(
@@ -194,7 +184,8 @@ namespace turtlelib
 
     arma::mat KalmanFilter::compute_H(int j) const
     {
-        const int ind_in_Xi = j + (n + 1); // mt_j vector is at (j+3, j+4)
+        const int ind_in_Xi = (j * 2) + 1; // mt_j vector is at (j+3, j+4)
+        std::cout << "ind = " << ind_in_Xi << std::endl;
         arma::mat mj = {Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
         mj = mj.t();
         const auto del_x = (mj(0, 0) - Xi_hat(1, 0));
@@ -230,15 +221,20 @@ namespace turtlelib
         // for each measurement
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Beginning update step-----------");
 
+        // Note: if the vector has multiple measurments with the same id,
+        // this will fail! The duplicate id measurement will not get added
+        // measurements.size() will be greater than the number of unique measurements
         for (size_t i = 0; i < measurements.size(); i++)
         {
             // First you must associate incoming measurements with a landmark
+            std::cout << measurements.at(i).r << std::endl;
+            std::cout << measurements.at(i).phi << std::endl;
             update_measurements(measurements.at(i));
 
-            // 1. Compute theoretical measurement z_t_hat = h_j
             const unsigned int ind_in_Xi = landmarks_dict[measurements.at(i).marker_id];
-            // const unsigned int j = ind_in_Xi - (n + 1);
             const unsigned int j = i + 1;
+
+            // 1. Compute theoretical measurement z_t_hat = h_j
             const arma::mat zi_hat = compute_h(j); // index is location in Xi, we want j for compute_h
 
             // 2. Compute the Kalman gain (Eq 26)
@@ -246,6 +242,7 @@ namespace turtlelib
             const arma::mat H = compute_H(j);
             assert(H.n_rows == 2);
             assert(H.n_cols == 3 + (2 * n));
+            // std::cout << (H * sigma_hat * H.t()) << std::endl;
             const arma::mat K = (sigma_hat * H.t()) * arma::inv((H * sigma_hat * H.t()) + R);
 
             // 3. Compute the posterior state update Xi_t_hat

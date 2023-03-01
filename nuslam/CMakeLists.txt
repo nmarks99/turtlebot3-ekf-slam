@@ -20,6 +20,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(Armadillo REQUIRED)
 
 # add_library(kalman src/kalman.cpp)
@@ -40,6 +41,7 @@ ament_target_dependencies(slam
   nav_msgs
   sensor_msgs
   nuturtlebot_msgs
+  visualization_msgs
 )
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
@@ -67,11 +69,11 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# # install launchfiles
-# install(
-#   DIRECTORY launch
-#   DESTINATION share/${PROJECT_NAME}
-# )
+# install launchfiles
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
 # # install configuration files
 # install(
