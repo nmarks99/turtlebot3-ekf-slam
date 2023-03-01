@@ -5,6 +5,7 @@
 
 #include <iosfwd>
 #include <cstdlib>
+#include <fstream>
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -58,6 +59,7 @@ namespace turtlelib
     {
 
     private:
+    public:
         arma::mat qt_hat;    // 3x1 predicted robot state vector
         arma::mat Xi_hat;    // Full state prediction. [qt_hat mt_hat]
         arma::mat sigma_hat; // covariance matrix
@@ -69,7 +71,6 @@ namespace turtlelib
         // the index is the index of the x_j compont of mt_j, so index+1 is y_j
         std::map<unsigned int, unsigned int> landmarks_dict;
 
-    public:
         /// @brief class constructor
         KalmanFilter();
 
