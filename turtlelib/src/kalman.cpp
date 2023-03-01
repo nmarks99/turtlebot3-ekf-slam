@@ -238,17 +238,18 @@ namespace turtlelib
             const arma::mat H = compute_H(j);
             assert(H.n_rows == 2);
             assert(H.n_cols == 3 + (2 * n));
+            // auto to_invert = (H * sigma_hat * H.t()) + R;
+            // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "invert " << to_invert);
             const arma::mat K = (sigma_hat * H.t()) * arma::inv((H * sigma_hat * H.t()) + R);
 
             // 3. Compute the posterior state update Xi_t_hat
             // const arma::mat zi{Xi_hat(ind_in_Xi, 0), Xi_hat(ind_in_Xi + 1, 0)};
             const arma::mat zi{measurements.at(i).r, normalize_angle(measurements.at(i).phi)};
-            // std::cout << "zi = " << zi << std::endl;
-            // std::cout << "zi_hat = " << zi_hat << std::endl;
             arma::mat z_diff = zi.t() - zi_hat.t();
             z_diff(1, 0) = normalize_angle(z_diff(1, 0));
 
-            Xi_hat = Xi_hat + K * (zi.t() - zi_hat.t());
+            Xi_hat = Xi_hat + K * (z_diff);
+            // Xi_hat = Xi_hat + K * (zi.t() - zi_hat.t());
 
             // 4. Compute the posterior covariance sigma_t
             const arma::mat I = arma::mat(arma::size(sigma_hat), arma::fill::eye);
