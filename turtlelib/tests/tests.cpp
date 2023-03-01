@@ -538,30 +538,84 @@ namespace turtlelib
     //     ekf.update(ms);
     // }
 
-    TEST_CASE("run()", "[KalmanFilter]")
+    // TEST_CASE("run()", "[KalmanFilter]")
+    // {
+    //     KalmanFilter ekf{1e6, 1.0};
+    //     std::vector<LandmarkMeasurement> ms;
+
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
+    //     auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
+    //     auto ms3 = LandmarkMeasurement::from_cartesian(-1.0, 1.0, 2);
+    //     auto ms4 = LandmarkMeasurement::from_cartesian(1.0, -1.0, 3);
+    //     ms.push_back(ms1);
+    //     ms.push_back(ms2);
+    //     ms.push_back(ms3);
+    //     ms.push_back(ms4);
+
+    //     int i = 0;
+    //     while (i < 10)
+    //     {
+
+    //         ekf.run(Twist2D{0.0, 0.0, 0.0}, ms);
+
+    //         // ms.clear();
+
+    //         i++;
+    //     }
+    // }
+
+    void print_debug(KalmanFilter ekf)
     {
-        KalmanFilter ekf{1e6, 1.0};
+        std::cout << "State vector = \n"
+                  << ekf.Xi_hat << std::endl;
+        std::cout << "sigma = \n"
+                  << ekf.sigma_hat << std::endl;
+        std::cout << "Q_bar = \n"
+                  << ekf.Q_bar << std::endl;
+        std::cout << "R_bar = \n"
+                  << ekf.R_bar << std::endl;
+    }
+
+    TEST_CASE("scatch", "[KalmanFilter]")
+    {
+        KalmanFilter ekf{100.0, 2.0};
+
+        // Landmarks at these places are assumed to be known with 100% certainty
         std::vector<LandmarkMeasurement> ms;
-
         auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
-        auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
-        auto ms3 = LandmarkMeasurement::from_cartesian(-3.0, -2.0, 2);
-        auto ms4 = LandmarkMeasurement::from_cartesian(-8.0, -5.0, 3);
+        // auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
+        auto ms3 = LandmarkMeasurement::from_cartesian(-1.0, 1.0, 1);
+        // auto ms4 = LandmarkMeasurement::from_cartesian(1.0, -1.0, 3);
         ms.push_back(ms1);
-        ms.push_back(ms2);
+        // ms.push_back(ms2);
         ms.push_back(ms3);
-        ms.push_back(ms4);
+        // ms.push_back(ms4);
 
-        int i = 0;
-        while (i < 10)
+        for (auto &m : ms)
         {
-
-            ekf.run(Twist2D{0.0, 0.0, 0.0}, ms);
-
-            // ms.clear();
-
-            i++;
+            ekf.update_measurements(m);
         }
+        std::cout << "Got " << ekf.landmarks_dict.size() << " landmarks" << std::endl;
+        std::cout << "Initial state vector = \n"
+                  << ekf.Xi_hat << std::endl;
+        std::cout << "sigma = \n"
+                  << ekf.sigma_hat << std::endl;
+        std::cout << "Q_bar = \n"
+                  << ekf.Q_bar << std::endl;
+        std::cout << "R_bar = \n"
+                  << ekf.R_bar << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+
+        // Now run predict step
+        std::cout << "Predict step..." << std::endl;
+        ekf.predict(Twist2D{0.0, 0.0, 0.0});
+        print_debug(ekf);
+        std::cout << "----------------------------------" << std::endl;
+
+        // Now run update step
+        std::cout << "Update step..." << std::endl;
+        ekf.update(ms);
+        std::cout << "----------------------------------" << std::endl;
     }
 
 }

@@ -245,9 +245,12 @@ private:
                      << slam_pose_estimate(1, 0) << ","
                      << slam_pose_estimate(2, 0) << "\n";
         }
-
         RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
         RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
+
+        slam_pose_estimate(0, 0) = pose_now.theta;
+        slam_pose_estimate(1, 0) = pose_now.x;
+        slam_pose_estimate(2, 0) = pose_now.y;
     }
 
     void timer_callback()
