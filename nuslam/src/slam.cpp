@@ -145,7 +145,7 @@ private:
     // KalmanFilter object
     double Q = 1.0;
     double R = 0.0;
-    turtlelib::KalmanFilter ekf{1.0, 0.0};
+    turtlelib::KalmanFilter ekf{100.0, 10.0};
     arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
     arma::mat slam_map_estimate = arma::mat(3, 1, arma::fill::zeros);
 
@@ -237,6 +237,8 @@ private:
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
 
+        landmarks.clear();
+
         if (LOG_SLAM_DATA)
         {
             log_file << slam_pose_estimate(0, 0) << ","
@@ -244,11 +246,8 @@ private:
                      << slam_pose_estimate(2, 0) << "\n";
         }
 
-        slam_pose_estimate(0, 0) = pose_now.theta;
-        slam_pose_estimate(1, 0) = pose_now.x;
-        slam_pose_estimate(2, 0) = pose_now.x;
-        // RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
-        // RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
+        RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
+        RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
     }
 
     void timer_callback()
@@ -316,7 +315,7 @@ private:
         odom_pub->publish(odom_msg);
 
         // clear landmarks vector
-        landmarks.clear();
+        // landmarks.clear();
     }
 };
 

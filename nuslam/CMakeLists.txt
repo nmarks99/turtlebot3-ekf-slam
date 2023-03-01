@@ -75,11 +75,11 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-# # install configuration files
-# install(
-#   DIRECTORY config
-#   DESTINATION share/${PROJECT_NAME}
-# )
+# install configuration files
+install(
+  DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
 
 
 if(NOT CMAKE_CROSSCOMPILING)

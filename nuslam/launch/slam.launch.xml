@@ -10,7 +10,8 @@
         <remap from="/joint_states" to="/blue/joint_states"/>
     </node>
 
-    <!-- start odometry node for blue robot-->
+    <!-- Start the nuslam node -->
+    <!-- blue robot is for odometry -->
     <node pkg="nuslam" exec="slam" name="slam">
         <param name="body_id" value="blue/base_footprint"/>
         <param name="odom_id" value="odom"/>
@@ -37,7 +38,7 @@
 
         <!-- start rviz with nuturle_control.rviz configuration -->
         <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
-            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nuturtle_control.rviz --fixed-frame nusim/world"/>
+            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuslam)/config/nuslam.rviz --fixed-frame nusim/world"/>
 
             <!-- load red robot into rviz with jsp-->
             <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
