@@ -30,7 +30,7 @@
 
         <!-- start the nusim node with basic_world.yaml config file -->
         <node pkg="nusim" exec="nusim" name="nusim">
-            <param from="$(find-pkg-share nusim)/config/basic_world.yaml"/>
+            <param from="$(find-pkg-share nuslam)/config/nusim_slam_params.yaml"/>
             <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
             <remap from="/red/wheel_cmd" to="/wheel_cmd"/>
             <remap from="/red/sensor_data" to="/sensor_data"/>

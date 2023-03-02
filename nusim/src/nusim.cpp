@@ -100,6 +100,7 @@ public:
 		INPUT_NOISE = get_parameter("input_noise").get_value<double>();
 		SLIP_FRACTION = get_parameter("slip_fraction").get_value<double>();
 		BASIC_SENSOR_VARIANCE = get_parameter("basic_sensor_variance").get_value<double>();
+		BASIC_MAX_RANGE = get_parameter("max_range").get_value<double>();
 		COLLISION_RADIUS = get_parameter("collision_radius").get_value<double>();
 		LIDAR_MIN_RANGE = get_parameter("lidar_min_range").get_value<double>();
 		LIDAR_MAX_RANGE = get_parameter("lidar_max_range").get_value<double>();
@@ -239,8 +240,8 @@ private:
 	double INPUT_NOISE = 0.0;
 
 	// Basic sensor
-	double BASIC_SENSOR_VARIANCE = 0.0; // 0.001
-	double BASIC_MAX_RANGE = 5.0;		// max basic sensor range
+	double BASIC_SENSOR_VARIANCE = 0.001; // 0.001
+	double BASIC_MAX_RANGE = 1.0;		  // max basic sensor range
 
 	double COLLISION_RADIUS = 0.105;
 
