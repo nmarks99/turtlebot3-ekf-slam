@@ -60,7 +60,7 @@ namespace turtlelib
 
     private:
     public:
-        arma::mat qt_hat;    // 3x1 predicted robot state vector
+        // arma::mat qt_hat;    // 3x1 predicted robot state vector
         arma::mat Xi_hat;    // Full state prediction. [qt_hat mt_hat]
         arma::mat sigma_hat; // covariance matrix
         arma::mat Q_bar;     // process noise matrix

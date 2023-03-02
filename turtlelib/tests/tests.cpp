@@ -491,52 +491,61 @@ namespace turtlelib
 
     // TEST_CASE("predict()", "[KalmanFilter]")
     // { // Nick, Marks
-    //     KalmanFilter ekf;
-    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-    //     auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+    //     KalmanFilter ekf(1.0, 1.0);
+    //     // auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
+    //     // auto ms2 = LandmarkMeasurement::from_cartesian(0.0, 1.0, 2);
+    //     auto ms1 = LandmarkMeasurement(1.41421, M_PI / 4, 1);
+    //     auto ms2 = LandmarkMeasurement(1.41421, -M_PI / 4, 2);
     //     ekf.update_measurements(ms1);
     //     ekf.update_measurements(ms2);
-    //     ekf.predict(Twist2D{33.8741, 19.0, 0.0});
+    //     ekf.predict(Twist2D{0.0, 1.0, 0.0});
     // }
 
     // TEST_CASE("compute_h", "[KalmanFilter]")
     // { // Nick, Marks
     //     KalmanFilter ekf;
-    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(0.0, 1.0, 1);
     //     ekf.update_measurements(ms1);
-    //     ekf.predict(Twist2D{32.0, 20.0, 9.0});
+    //     ekf.predict(Twist2D{0.0, 0.0, 0.0});
+    //     ekf.compute_h(1);
     // }
 
     // TEST_CASE("compute_H", "[KalmanFilter]")
     // { // Nick, Marks
     //     KalmanFilter ekf;
-    //     auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
-    //     auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
-    //     auto ms3 = LandmarkMeasurement::from_cartesian(42.3, 2.41, 3);
+    //     // auto ms1 = LandmarkMeasurement::from_cartesian(3.14, 1.57, 1);
+    //     // auto ms2 = LandmarkMeasurement::from_cartesian(4.44, 9.99, 2);
+    //     // auto ms3 = LandmarkMeasurement::from_cartesian(42.3, 2.41, 3);
+    //     // ekf.update_measurements(ms1);
+    //     // ekf.update_measurements(ms2);
+    //     // ekf.update_measurements(ms3);
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(0.0, 1.0, 1);
     //     ekf.update_measurements(ms1);
-    //     ekf.update_measurements(ms2);
-    //     ekf.update_measurements(ms3);
 
     //     const unsigned int j = 1;
     //     arma::mat H = ekf.compute_H(j);
 
     //     // H must be 2x(2+3n)
-    //     REQUIRE(H.n_rows == 2);
-    //     REQUIRE(H.n_cols == 9); // 3 + 2n
+    //     // REQUIRE(H.n_rows == 2);
+    //     // REQUIRE(H.n_cols == 9); // 3 + 2n
     // }
 
-    // TEST_CASE("update()", "[KalmanFilter]")
-    // { // Nick, Marks
-    //     KalmanFilter ekf{1.0, 0.0};
-    //     std::vector<LandmarkMeasurement> ms;
-    //     auto ms1 = LandmarkMeasurement{1.0, 2.0, 1};
-    //     auto ms2 = LandmarkMeasurement{4.0, 5.5, 2};
-    //     ms.push_back(ms1);
-    //     ms.push_back(ms2);
+    TEST_CASE("update()", "[KalmanFilter]")
+    { // Nick, Marks
+        KalmanFilter ekf{1.0, 1.0};
+        std::vector<LandmarkMeasurement> ms;
+        // auto ms1 = LandmarkMeasurement{1.0, 1.0, 1};
+        auto ms2 = LandmarkMeasurement::from_cartesian(0, 1, 1);
+        // ms.push_back(ms1);
+        ms.push_back(ms2);
+        for (auto &m : ms)
+        {
+            ekf.update_measurements(m);
+        }
 
-    //     ekf.predict(Twist2D{1.0, 1.0, 1.0});
-    //     ekf.update(ms);
-    // }
+        ekf.predict(Twist2D{0.0, 1.0, 0.0});
+        ekf.update(ms);
+    }
 
     // TEST_CASE("run()", "[KalmanFilter]")
     // {
@@ -576,46 +585,46 @@ namespace turtlelib
                   << ekf.R_bar << std::endl;
     }
 
-    TEST_CASE("scatch", "[KalmanFilter]")
-    {
-        KalmanFilter ekf{100.0, 2.0};
+    // TEST_CASE("scatch", "[KalmanFilter]")
+    // {
+    //     KalmanFilter ekf{100.0, 2.0};
 
-        // Landmarks at these places are assumed to be known with 100% certainty
-        std::vector<LandmarkMeasurement> ms;
-        auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
-        // auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
-        auto ms3 = LandmarkMeasurement::from_cartesian(-1.0, 1.0, 1);
-        // auto ms4 = LandmarkMeasurement::from_cartesian(1.0, -1.0, 3);
-        ms.push_back(ms1);
-        // ms.push_back(ms2);
-        ms.push_back(ms3);
-        // ms.push_back(ms4);
+    //     // Landmarks at these places are assumed to be known with 100% certainty
+    //     std::vector<LandmarkMeasurement> ms;
+    //     auto ms1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
+    //     // auto ms2 = LandmarkMeasurement::from_cartesian(-1.0, -1.0, 1);
+    //     auto ms3 = LandmarkMeasurement::from_cartesian(-1.0, 1.0, 1);
+    //     // auto ms4 = LandmarkMeasurement::from_cartesian(1.0, -1.0, 3);
+    //     ms.push_back(ms1);
+    //     // ms.push_back(ms2);
+    //     ms.push_back(ms3);
+    //     // ms.push_back(ms4);
 
-        for (auto &m : ms)
-        {
-            ekf.update_measurements(m);
-        }
-        std::cout << "Got " << ekf.landmarks_dict.size() << " landmarks" << std::endl;
-        std::cout << "Initial state vector = \n"
-                  << ekf.Xi_hat << std::endl;
-        std::cout << "sigma = \n"
-                  << ekf.sigma_hat << std::endl;
-        std::cout << "Q_bar = \n"
-                  << ekf.Q_bar << std::endl;
-        std::cout << "R_bar = \n"
-                  << ekf.R_bar << std::endl;
-        std::cout << "----------------------------------" << std::endl;
+    //     for (auto &m : ms)
+    //     {
+    //         ekf.update_measurements(m);
+    //     }
+    //     std::cout << "Got " << ekf.landmarks_dict.size() << " landmarks" << std::endl;
+    //     std::cout << "Initial state vector = \n"
+    //               << ekf.Xi_hat << std::endl;
+    //     std::cout << "sigma = \n"
+    //               << ekf.sigma_hat << std::endl;
+    //     std::cout << "Q_bar = \n"
+    //               << ekf.Q_bar << std::endl;
+    //     std::cout << "R_bar = \n"
+    //               << ekf.R_bar << std::endl;
+    //     std::cout << "----------------------------------" << std::endl;
 
-        // Now run predict step
-        std::cout << "Predict step..." << std::endl;
-        ekf.predict(Twist2D{0.0, 0.0, 0.0});
-        print_debug(ekf);
-        std::cout << "----------------------------------" << std::endl;
+    //     // Now run predict step
+    //     std::cout << "Predict step..." << std::endl;
+    //     ekf.predict(Twist2D{0.0, 0.0, 0.0});
+    //     print_debug(ekf);
+    //     std::cout << "----------------------------------" << std::endl;
 
-        // Now run update step
-        std::cout << "Update step..." << std::endl;
-        ekf.update(ms);
-        std::cout << "----------------------------------" << std::endl;
-    }
+    //     // Now run update step
+    //     std::cout << "Update step..." << std::endl;
+    //     ekf.update(ms);
+    //     std::cout << "----------------------------------" << std::endl;
+    // }
 
 }
