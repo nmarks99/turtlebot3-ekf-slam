@@ -561,7 +561,7 @@ namespace turtlelib
                 ekf.update_measurements(m);
             }
 
-            ekf.predict(Twist2D{0.0, 1.0, 0.0});
+            ekf.predict(Twist2D{1.57, 0.0, 0.0});
             ekf.update(ms);
 
             ms.clear();

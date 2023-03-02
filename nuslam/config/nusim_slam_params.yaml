@@ -1,8 +1,8 @@
 nusim:
   ros__parameters:
-    slip_fraction: 0.0
-    input_noise: 0.0
-    basic_sensor_variance: 0.001
+    slip_fraction: 0.01
+    input_noise: 0.01
+    basic_sensor_variance: 0.0001
     max_range: 5.0
     x0: 0.0
     y0: 0.0
