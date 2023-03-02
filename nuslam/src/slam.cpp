@@ -163,7 +163,6 @@ private:
     turtlelib::WheelState wheel_angles_now{0.0, 0.0};
     turtlelib::WheelState wheel_speeds_now{0.0, 0.0};
     turtlelib::Twist2D Vb_now{0.0, 0.0, 0.0};
-    tf2::Quaternion q;
 
     std::vector<turtlelib::LandmarkMeasurement> landmarks;
 
@@ -253,10 +252,13 @@ private:
         slam_pose_estimate(2, 0) = pose_now.y;
     }
 
-    void timer_callback()
+    /// @brief Publishes transforms for the odometry (blue) robot
+    //// as well as odometry information on the odom topic
+    void odom_to_blue()
     {
         // Define quaternion for current rotation
-        q.setRPY(0.0, 0.0, pose_now.theta);
+        tf2::Quaternion q_ob;
+        q_ob.setRPY(0.0, 0.0, pose_now.theta);
 
         // This is for the blue robot
         // Fill in Odometry message
@@ -265,10 +267,10 @@ private:
         odom_msg.child_frame_id = body_id;
         odom_msg.pose.pose.position.x = pose_now.x;
         odom_msg.pose.pose.position.y = pose_now.y;
-        odom_msg.pose.pose.orientation.x = q.x();
-        odom_msg.pose.pose.orientation.y = q.y();
-        odom_msg.pose.pose.orientation.z = q.z();
-        odom_msg.pose.pose.orientation.w = q.w();
+        odom_msg.pose.pose.orientation.x = q_ob.x();
+        odom_msg.pose.pose.orientation.y = q_ob.y();
+        odom_msg.pose.pose.orientation.z = q_ob.z();
+        odom_msg.pose.pose.orientation.w = q_ob.w();
         odom_msg.twist.twist.linear.x = Vb_now.xdot;
         odom_msg.twist.twist.linear.y = Vb_now.ydot;
         odom_msg.twist.twist.angular.z = Vb_now.thetadot;
@@ -280,11 +282,22 @@ private:
         odom_blue_tf.child_frame_id = body_id;
         odom_blue_tf.transform.translation.x = pose_now.x;
         odom_blue_tf.transform.translation.y = pose_now.y;
-        odom_blue_tf.transform.rotation.x = q.x();
-        odom_blue_tf.transform.rotation.y = q.y();
-        odom_blue_tf.transform.rotation.z = q.z();
-        odom_blue_tf.transform.rotation.w = q.w();
+        odom_blue_tf.transform.rotation.x = q_ob.x();
+        odom_blue_tf.transform.rotation.y = q_ob.y();
+        odom_blue_tf.transform.rotation.z = q_ob.z();
+        odom_blue_tf.transform.rotation.w = q_ob.w();
+    }
 
+    void slam_odom_to_green()
+    {
+        // odom_slam -> green/base_footprint
+        odom_green_tf.header.stamp = get_clock()->now();
+        odom_green_tf.transform = odom_blue_tf.transform;
+    }
+
+    void map_to_slam_odom()
+    {
+        // Compute transforms between frames
         const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
         const double angle_mb = slam_pose_estimate(0, 0);
         const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
@@ -293,10 +306,6 @@ private:
         const turtlelib::Transform2D T_OB(vec_ob, pose_now.theta);
 
         const turtlelib::Transform2D T_MO = T_MB * T_OB.inv();
-
-        // odom_slam -> green/base_footprint
-        odom_green_tf.header.stamp = get_clock()->now();
-        odom_green_tf.transform = odom_blue_tf.transform;
 
         // map -> odom_slam
         tf2::Quaternion q_mo;
@@ -308,6 +317,14 @@ private:
         map_odom_tf.transform.rotation.y = q_mo.y();
         map_odom_tf.transform.rotation.z = q_mo.z();
         map_odom_tf.transform.rotation.w = q_mo.w();
+    }
+
+    void timer_callback()
+    {
+        // fill in tf messages
+        odom_to_blue();
+        slam_odom_to_green();
+        map_to_slam_odom();
 
         // send transforms
         tf_broadcaster->sendTransform(odom_blue_tf);
@@ -316,9 +333,6 @@ private:
 
         // publish odometry msg
         odom_pub->publish(odom_msg);
-
-        // clear landmarks vector
-        // landmarks.clear();
     }
 };
 
