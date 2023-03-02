@@ -530,21 +530,43 @@ namespace turtlelib
     //     // REQUIRE(H.n_cols == 9); // 3 + 2n
     // }
 
+    std::mt19937 &get_random()
+    {
+        // Credit Matt Elwin: https://nu-msr.github.io/navigation_site/lectures/gaussian.html
+
+        // static variables inside a function are created once and persist for the remainder of the program
+        static std::random_device rd{};
+        static std::mt19937 mt{rd()};
+        // we return a reference to the pseudo-random number genrator object. This is always the
+        // same object every time get_random is called
+        return mt;
+    }
+    std::normal_distribution<> d(0.0, 0.001);
+
     TEST_CASE("update()", "[KalmanFilter]")
     { // Nick, Marks
         KalmanFilter ekf{1.0, 1.0};
         std::vector<LandmarkMeasurement> ms;
         // auto ms1 = LandmarkMeasurement{1.0, 1.0, 1};
-        auto ms2 = LandmarkMeasurement::from_cartesian(0, 1, 1);
-        // ms.push_back(ms1);
-        ms.push_back(ms2);
-        for (auto &m : ms)
+        int i = 0;
+        while (i < 11)
         {
-            ekf.update_measurements(m);
-        }
 
-        ekf.predict(Twist2D{0.0, 1.0, 0.0});
-        ekf.update(ms);
+            auto ms2 = LandmarkMeasurement::from_cartesian(0.0, 1.0 + d(get_random()), 0);
+            // std::cout << "x = " << -double(i) << std::endl;
+            // std::cout << "y = " << 1.0 + d(get_random()) << std::endl;
+            ms.push_back(ms2);
+            for (auto &m : ms)
+            {
+                ekf.update_measurements(m);
+            }
+
+            ekf.predict(Twist2D{0.0, 1.0, 0.0});
+            ekf.update(ms);
+
+            ms.clear();
+            i++;
+        }
     }
 
     // TEST_CASE("run()", "[KalmanFilter]")

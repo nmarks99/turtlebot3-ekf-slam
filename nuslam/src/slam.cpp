@@ -145,7 +145,7 @@ private:
     // KalmanFilter object
     double Q = 1.0;
     double R = 0.0;
-    turtlelib::KalmanFilter ekf{100.0, 10.0};
+    turtlelib::KalmanFilter ekf{1.0, 10.0};
     arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
     arma::mat slam_map_estimate = arma::mat(3, 1, arma::fill::zeros);
 
@@ -222,15 +222,17 @@ private:
     { // this is running at 5Hz, specified in nusim node
 
         // store markers in a vector of LandmarkMeasurement's
+        double x = 0.0;
+        double y = 0.0;
         for (size_t i = 0; i < marker_arr.markers.size(); i++)
         {
-            const double x = marker_arr.markers.at(i).pose.position.x;
-            const double y = marker_arr.markers.at(i).pose.position.y;
+            x = marker_arr.markers.at(i).pose.position.x;
+            y = marker_arr.markers.at(i).pose.position.y;
             const unsigned int marker_id = marker_arr.markers.at(i).id;
             RCLCPP_INFO_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
             landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
         }
-        RCLCPP_INFO_STREAM(get_logger(), "landmarks vector length = " << landmarks.size());
+        // RCLCPP_INFO_STREAM(get_logger(), "landmarks vector length = " << landmarks.size());
         ekf.run(Vb_now, landmarks);
 
         slam_pose_estimate = ekf.pose_prediction();
@@ -244,12 +246,10 @@ private:
                      << slam_pose_estimate(1, 0) << ","
                      << slam_pose_estimate(2, 0) << "\n";
         }
+        RCLCPP_INFO_STREAM(get_logger(), "Actual marker position = " << x << "," << y);
+        RCLCPP_INFO_STREAM(get_logger(), "Vb_now = " << Vb_now);
         RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
         RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
-
-        slam_pose_estimate(0, 0) = pose_now.theta;
-        slam_pose_estimate(1, 0) = pose_now.x;
-        slam_pose_estimate(2, 0) = pose_now.y;
     }
 
     /// @brief Publishes transforms for the odometry (blue) robot

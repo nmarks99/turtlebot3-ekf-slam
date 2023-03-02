@@ -196,8 +196,8 @@ private:
     js_msg.position.at(1) = sensor_data.right_encoder / encoder_ticks_per_rad;
 
     // Update wheel velocities
-    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * encoder_ticks_per_rad;
-    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * encoder_ticks_per_rad;
+    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
+    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
 
     // Update last_encode values
     last_encoder_left = sensor_data.left_encoder;
