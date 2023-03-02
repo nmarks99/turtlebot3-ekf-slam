@@ -151,7 +151,14 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
         // Create a Vector2D for the current obstacle (x,y)
         turtlelib::Vector2D _v{obstacles_x.at(i), obstacles_y.at(i)};
 
-        marker_msg.header.frame_id = "nusim/world";
+        // Get the transforms so we can publish the obstacles in the body frame
+        turtlelib::Transform2D T_WO(_v);
+        turtlelib::Transform2D T_WB(turtlelib::Vector2D{true_pose.x, true_pose.y}, true_pose.theta);
+        auto T_BO = T_WB.inv() * T_WO;
+        double ob_x_in_body = T_BO.translation().x;
+        double ob_y_in_body = T_BO.translation().y;
+
+        marker_msg.header.frame_id = "red/base_footprint";
         marker_msg.id = last_id + (i + 1);
         marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
 
@@ -174,8 +181,8 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
         auto noisey = d(get_random());
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("nusim/utils"), "noisex = " << noisex);
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("nusim/utils"), "noisey = " << noisey);
-        marker_msg.pose.position.x = obstacles_x.at(i) + noisex;
-        marker_msg.pose.position.y = obstacles_y.at(i) + noisey;
+        marker_msg.pose.position.x = ob_x_in_body + noisex;
+        marker_msg.pose.position.y = ob_y_in_body + noisey;
         marker_msg.pose.position.z = OBSTACLE_HEIGHT / 2.0;
         marker_msg.color.r = 1.0;
         marker_msg.color.g = 1.0;
