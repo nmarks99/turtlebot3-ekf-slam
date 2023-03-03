@@ -15,6 +15,12 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 ## Results
 
 **SLAM estimate remains good even after colliding with an obstacle, messing up odometry:**
+This result was achieved by first runnning the slam.launch.xml file, following by 
+```
+ros2 service call circle/control nuturtle_control/srv/Control "velocity: 0.8
+radius: 0.5
+"
+```
 ![good_result](https://user-images.githubusercontent.com/45540813/222725895-fcf66a30-96df-4d8f-ae8d-5e3d57093ddb.png)
 
 
