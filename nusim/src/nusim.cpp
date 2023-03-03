@@ -84,6 +84,7 @@ public:
 		declare_parameter<double>("lidar_min_range", LIDAR_MIN_RANGE);
 		declare_parameter<double>("lidar_max_range", LIDAR_MAX_RANGE);
 		declare_parameter<double>("lidar_increment", LIDAR_INCREMENT);
+		declare_parameter<bool>("draw_only", DRAW_ONLY);
 
 		// Get parameters
 		obstacles_r = get_parameter("obstacles/r").get_value<double>();
@@ -105,6 +106,7 @@ public:
 		LIDAR_MIN_RANGE = get_parameter("lidar_min_range").get_value<double>();
 		LIDAR_MAX_RANGE = get_parameter("lidar_max_range").get_value<double>();
 		LIDAR_INCREMENT = get_parameter("lidar_increment").get_value<double>();
+		DRAW_ONLY = get_parameter("draw_only").get_value<bool>();
 
 		// Check for required parameters
 		if (turtlelib::almost_equal(MOTOR_CMD_PER_RAD_SEC, 0.0))
@@ -218,6 +220,9 @@ private:
 	std::vector<double> obstacles_x;
 	std::vector<double> obstacles_y;
 	double obstacles_r = 0.0;
+
+	// When true, just draws obstacles and doesn't simulate anything
+	bool DRAW_ONLY = false;
 
 	// Initial position of the simulated robot
 	double X0 = 0.0;
@@ -474,75 +479,77 @@ private:
 	/// the nusim/world and red/base_footprint frames, and published obstacle MarkerArray
 	void timer_callback()
 	{
+		if (not DRAW_ONLY)
+		{
+			// Compute new wheel angles (rad)
+			true_wheel_angles.left = true_wheel_angles.left + true_wheel_speeds.left * (1.0 / RATE);
+			true_wheel_angles.right = true_wheel_angles.right + true_wheel_speeds.right * (1.0 / RATE);
 
-		// Compute new wheel angles (rad)
-		true_wheel_angles.left = true_wheel_angles.left + true_wheel_speeds.left * (1.0 / RATE);
-		true_wheel_angles.right = true_wheel_angles.right + true_wheel_speeds.right * (1.0 / RATE);
+			// Compute wheel angles with slipping model
+			slippy_wheel_angles.left = slippy_wheel_angles.left + noisy_wheel_speeds.left * (1 + left_slip) * (1.0 / RATE);
+			slippy_wheel_angles.right = slippy_wheel_angles.right + noisy_wheel_speeds.right * (1 + right_slip) * (1.0 / RATE);
 
-		// Compute wheel angles with slipping model
-		slippy_wheel_angles.left = slippy_wheel_angles.left + noisy_wheel_speeds.left * (1 + left_slip) * (1.0 / RATE);
-		slippy_wheel_angles.right = slippy_wheel_angles.right + noisy_wheel_speeds.right * (1 + right_slip) * (1.0 / RATE);
+			// Convert angle to encoder ticks to fill in sensor_data message with noise and slipping
+			sensor_data.left_encoder = (int)(slippy_wheel_angles.left * ENCODER_TICKS_PER_RAD);
+			sensor_data.right_encoder = (int)(slippy_wheel_angles.right * ENCODER_TICKS_PER_RAD);
 
-		// Convert angle to encoder ticks to fill in sensor_data message with noise and slipping
-		sensor_data.left_encoder = (int)(slippy_wheel_angles.left * ENCODER_TICKS_PER_RAD);
-		sensor_data.right_encoder = (int)(slippy_wheel_angles.right * ENCODER_TICKS_PER_RAD);
+			// Use new wheel angles with forward kinematics to obtain new pose of red robot
+			true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
 
-		// Use new wheel angles with forward kinematics to obtain new pose of red robot
-		true_pose = ddrive.forward_kinematics(true_pose, true_wheel_angles);
+			// Check if there is a collision and update pose accordingly
+			detect_collision();
 
-		// Check if there is a collision and update pose accordingly
-		detect_collision();
+			// Publish timestep
+			auto timestep_message = std_msgs::msg::UInt64();
+			timestep_message.data = step++;
+			timestep_pub->publish(timestep_message);
 
-		// Publish timestep
-		auto timestep_message = std_msgs::msg::UInt64();
-		timestep_message.data = step++;
-		timestep_pub->publish(timestep_message);
+			// Set the translation of the red robot
+			world_red_tf.transform.translation.x = true_pose.x;
+			world_red_tf.transform.translation.y = true_pose.y;
+			world_red_tf.transform.translation.z = 0.0;
 
-		// Set the translation of the red robot
-		world_red_tf.transform.translation.x = true_pose.x;
-		world_red_tf.transform.translation.y = true_pose.y;
-		world_red_tf.transform.translation.z = 0.0;
+			// Set the rotation of the red robot
+			q.setRPY(0.0, 0.0, true_pose.theta);
+			world_red_tf.transform.rotation.x = q.x();
+			world_red_tf.transform.rotation.y = q.y();
+			world_red_tf.transform.rotation.z = q.z();
+			world_red_tf.transform.rotation.w = q.w();
 
-		// Set the rotation of the red robot
-		q.setRPY(0.0, 0.0, true_pose.theta);
-		world_red_tf.transform.rotation.x = q.x();
-		world_red_tf.transform.rotation.y = q.y();
-		world_red_tf.transform.rotation.z = q.z();
-		world_red_tf.transform.rotation.w = q.w();
+			// Stamp and broadcast the transform
+			world_red_tf.header.stamp = get_clock()->now();
+			tf_broadcaster->sendTransform(world_red_tf);
 
-		// Stamp and broadcast the transform
-		world_red_tf.header.stamp = get_clock()->now();
-		tf_broadcaster->sendTransform(world_red_tf);
+			// Publish sensor data
+			sensor_data_pub->publish(sensor_data);
+
+			// Publish path at a slower rate than the loop
+			constexpr int PATH_PUB_RATE = 100;
+			if (count >= PATH_PUB_RATE)
+			{
+				count = 0;
+				geometry_msgs::msg::PoseStamped temp_pose;
+				temp_pose.header.stamp = get_clock()->now();
+				temp_pose.pose.position.x = true_pose.x;
+				temp_pose.pose.position.y = true_pose.y;
+				temp_pose.pose.position.z = 0.0;
+				temp_pose.pose.orientation.x = q.x();
+				temp_pose.pose.orientation.y = q.y();
+				temp_pose.pose.orientation.z = q.z();
+				temp_pose.pose.orientation.w = q.w();
+
+				path_msg.header.stamp = get_clock()->now();
+				path_msg.poses.push_back(temp_pose);
+				path_pub->publish(path_msg);
+			}
+			else
+			{
+				count++;
+			}
+		}
 
 		// Publish MarkerArray of obstacles
 		marker_arr_pub->publish(marker_arr);
-
-		// Publish sensor data
-		sensor_data_pub->publish(sensor_data);
-
-		// Publish path at a slower rate than the loop
-		constexpr int PATH_PUB_RATE = 100;
-		if (count >= PATH_PUB_RATE)
-		{
-			count = 0;
-			geometry_msgs::msg::PoseStamped temp_pose;
-			temp_pose.header.stamp = get_clock()->now();
-			temp_pose.pose.position.x = true_pose.x;
-			temp_pose.pose.position.y = true_pose.y;
-			temp_pose.pose.position.z = 0.0;
-			temp_pose.pose.orientation.x = q.x();
-			temp_pose.pose.orientation.y = q.y();
-			temp_pose.pose.orientation.z = q.z();
-			temp_pose.pose.orientation.w = q.w();
-
-			path_msg.header.stamp = get_clock()->now();
-			path_msg.poses.push_back(temp_pose);
-			path_pub->publish(path_msg);
-		}
-		else
-		{
-			count++;
-		}
 	}
 
 	/// @brief timer callback for fake sensor:
