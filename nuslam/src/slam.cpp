@@ -3,14 +3,17 @@
 /// @brief slam and odometry node
 ///
 /// PARAMETERS:
-///     body_id: The name of the body frame of the robot (e.g. "base_footprint")
+///     Q :  Extended Kalman Filter process noise gain
+///     R :  Extended Kalman Filter sensor noise gain
 ///     odom_id: The name of the odometry frame. Defaults to odom if not specified
 ///     wheel_left: The name of the left wheel joint
 ///     wheel_right: The name of the right wheel joint
 /// PUBLISHES:
-///     /odom (nav_msgs::msg::Odometry): odom information
+///     /odom (nav_msgs/Odometry): odom information
+///     /odom/path (nav_msgs/Path): path taken by robot from odometry estimate
+///     /slam/path (nav_msgs/Path): path taken by roobt from SLAM estimate
 /// SUBSCRIBES:
-///		/joint_states (sensor_msgs::msg::JointStat): joint (wheel) states information
+///		/joint_states (sensor_msgs/JointState): joint (wheel) states information
 /// SERVICES:
 ///		/initial_pose
 /// CLIENTS:
@@ -110,6 +113,9 @@ public:
         /// @brief Publishes the path of the slam estimate
         odom_path_pub = create_publisher<nav_msgs::msg::Path>("/odom/path", 10);
 
+        slam_marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/slam/landmarks", 10);
+
         /// @brief Subscriber to joint_states topic
         joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
             "/blue/joint_states", 10,
@@ -164,6 +170,7 @@ private:
 
     unsigned int count = 0;
     bool path_flag = true;
+    bool landmarks_flag = false;
 
     // KalmanFilter object
     double Q = 1.0;
@@ -192,6 +199,7 @@ private:
     nav_msgs::msg::Odometry odom_msg;
     nav_msgs::msg::Path slam_path_msg;
     nav_msgs::msg::Path odom_path_msg;
+    visualization_msgs::msg::MarkerArray slam_marker_arr;
     geometry_msgs::msg::TransformStamped odom_blue_tf;
     geometry_msgs::msg::TransformStamped world_map_tf;
     geometry_msgs::msg::TransformStamped map_odom_tf;
@@ -212,6 +220,7 @@ private:
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr slam_path_pub;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr odom_path_pub;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr slam_marker_arr_pub;
 
     // Services
     rclcpp::Service<nuslam::srv::InitialPose>::SharedPtr _init_pose_service;
@@ -246,6 +255,7 @@ private:
 
     void fake_sensor_callback(const visualization_msgs::msg::MarkerArray &marker_arr)
     { // this is running at 5Hz, specified in nusim node
+        landmarks_flag = true;
 
         // store markers in a vector of LandmarkMeasurement's
         double x = 0.0;
@@ -264,7 +274,7 @@ private:
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
 
-        landmarks.clear();
+        // landmarks.clear();
 
         if (LOG_SLAM_DATA)
         {
@@ -276,6 +286,32 @@ private:
         RCLCPP_INFO_STREAM(get_logger(), "Vb_now = " << Vb_now);
         RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
         RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
+    }
+
+    /// @brief fills in MarkerArray of landmarks based on SLAM estimation
+    void fill_slam_marker_arr()
+    {
+        visualization_msgs::msg::Marker marker_msg;
+        for (size_t i = 0; i <= slam_map_estimate.n_rows - 2; i += 2)
+        {
+            // Landmarks body frame
+            const double x_b = slam_map_estimate(i, 0);
+            const double y_b = slam_map_estimate(i + 1, 0);
+            const turtlelib::Vector2D vec_b{x_b, y_b};
+            const turtlelib::Transform2D T_BL(vec_b);
+
+            // Body in the map frame
+            const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
+            const double angle_mb = slam_pose_estimate(0, 0);
+            const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
+
+            // Landmarks in the map frame
+            const turtlelib::Transform2D T_ML = T_MB * T_BL;
+
+            marker_msg.header.frame_id = "map";
+            marker_msg.id = i;
+            marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
+        }
     }
 
     /// @brief Publishes transforms for the odometry (blue) robot
@@ -410,6 +446,16 @@ private:
 
         // publish odometry msg
         odom_pub->publish(odom_msg);
+
+        if (landmarks_flag)
+        {
+            landmarks_flag = false;
+
+            // publish marker messages for map landmarks based on map_estimate
+            fill_slam_marker_arr();
+
+            landmarks.clear();
+        }
     }
 };
 
