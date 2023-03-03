@@ -11,6 +11,7 @@ This repository consists of several ROS packages
 - turtlelib
   - `rigid2D`: A 2D rigid body transformations library
   - `diff_drive`: A differential drive robot library
+- nuslam - Extended Kalman Filter SLAM for estimating the robot's pose and map based on sensor data
   
 ## Demonstation of turtlebot driving in a circle
 The video below shows a demonstration of the turtlebot driving in a a circle, and
