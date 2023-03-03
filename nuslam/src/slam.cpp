@@ -447,15 +447,15 @@ private:
         // publish odometry msg
         odom_pub->publish(odom_msg);
 
-        if (landmarks_flag)
-        {
-            landmarks_flag = false;
+        // if (landmarks_flag)
+        // {
+        //     landmarks_flag = false;
 
-            // publish marker messages for map landmarks based on map_estimate
-            fill_slam_marker_arr();
+        //     // publish marker messages for map landmarks based on map_estimate
+        //     fill_slam_marker_arr();
 
-            landmarks.clear();
-        }
+        //     landmarks.clear();
+        // }
     }
 };
 
