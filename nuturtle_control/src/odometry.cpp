@@ -29,6 +29,7 @@
 #include "turtlelib/diff_drive.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2/LinearMath/Quaternion.h"
@@ -46,16 +47,16 @@ public:
   Odometry()
       : Node("odometry")
   {
-    pose_now.x = 0;
-    pose_now.y = 0;
-    pose_now.theta = 0;
-    wheel_angles_now.left = 0;
-    wheel_angles_now.right = 0;
-    wheel_speeds_now.left = 0;
-    wheel_speeds_now.right = 0;
-    Vb_now.thetadot = 0;
-    Vb_now.xdot = 0;
-    Vb_now.ydot = 0;
+    // pose_now.x = 0;
+    // pose_now.y = 0;
+    // pose_now.theta = 0;
+    // wheel_angles_now.left = 0;
+    // wheel_angles_now.right = 0;
+    // wheel_speeds_now.left = 0;
+    // wheel_speeds_now.right = 0;
+    // Vb_now.thetadot = 0;
+    // Vb_now.xdot = 0;
+    // Vb_now.ydot = 0;
 
     // declare parameters to the node
     declare_parameter("body_id", body_id);
@@ -87,6 +88,10 @@ public:
     /// @brief Publisher to the odom topic
     odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
+    /// @brief publishes the path of the odometry (nav_msgs/Path)
+    path_pub = create_publisher<nav_msgs::msg::Path>(
+        "/odom/path", 10);
+
     /// @brief Subscriber to joint_states topic
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
         "/blue/joint_states", 10,
@@ -114,6 +119,7 @@ private:
   std::string wheel_left;
   std::string wheel_right;
   std::string odom_id = "odom";
+  int count = 0;
 
   // DiffDrive object
   turtlelib::DiffDrive ddrive;
@@ -128,6 +134,7 @@ private:
   // Declare messages
   nav_msgs::msg::Odometry odom_msg;
   geometry_msgs::msg::TransformStamped odom_body_tf;
+  nav_msgs::msg::Path path_msg;
 
   // Declare timer
   rclcpp::TimerBase::SharedPtr _timer;
@@ -140,6 +147,7 @@ private:
 
   // Declare publishers
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
 
   // Services
   rclcpp::Service<nuturtle_control::srv::InitialPose>::SharedPtr _init_pose_service;
@@ -205,6 +213,30 @@ private:
     // publish odometry on /odom and transform on /tf
     tf_broadcaster->sendTransform(odom_body_tf);
     odom_pub->publish(odom_msg);
+
+    constexpr int PATH_PUB_RATE = 100;
+    if (count >= PATH_PUB_RATE)
+    {
+      count = 0;
+      geometry_msgs::msg::PoseStamped temp_pose;
+      temp_pose.header.stamp = get_clock()->now();
+      temp_pose.pose.position.x = pose_now.x;
+      temp_pose.pose.position.y = pose_now.y;
+      temp_pose.pose.position.z = 0.0;
+      temp_pose.pose.orientation.x = q.x();
+      temp_pose.pose.orientation.y = q.y();
+      temp_pose.pose.orientation.z = q.z();
+      temp_pose.pose.orientation.w = q.w();
+
+      path_msg.header.frame_id = "odom";
+      path_msg.header.stamp = get_clock()->now();
+      path_msg.poses.push_back(temp_pose);
+      path_pub->publish(path_msg);
+    }
+    else
+    {
+      count++;
+    }
   }
 };
 

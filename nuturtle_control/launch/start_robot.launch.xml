@@ -37,7 +37,7 @@
 
         <!-- start rviz with nuturle_control.rviz configuration -->
         <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
-            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nuturtle_control.rviz --fixed-frame nusim/world"/>
+            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/simulation_with_odometry.rviz --fixed-frame nusim/world"/>
 
             <!-- load red robot into rviz with jsp-->
             <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
@@ -58,8 +58,37 @@
     </group>
 
     <!-- Running with the real robot -->
-    <!-- <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
-    </group> -->
+    <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
 
+        <!-- start rviz if requested -->
+        <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/real_with_odometry.rviz --fixed-frame nusim/world"/>
+
+            <!-- load blue robot into rviz without jsp -->
+            <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
+                <arg name="color" value="blue"/>
+                <arg name="use_rviz" value="false"/>
+                <arg name="use_jsp" value="false"/>
+            </include>
+
+        </group>
+    </group>
+
+    <!-- Running with the real robot -->
+    <group if="$(eval '\'$(var robot)\' == \'none\'')">
+
+        <!-- start rviz with nuturle_control.rviz configuration -->
+        <group if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+            <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/real_with_odometry.rviz --fixed-frame nusim/world"/>
+
+            <!-- load blue robot into rviz without jsp -->
+            <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
+                <arg name="color" value="blue"/>
+                <arg name="use_rviz" value="false"/>
+                <arg name="use_jsp" value="false"/>
+            </include>
+
+        </group>
+    </group>
 
 </launch>
