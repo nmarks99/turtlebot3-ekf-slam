@@ -9,5 +9,5 @@ repositories:
     version: main
   hls_lfcd_lds_drive:
     type: git
-    url: https://github.com/ROBOTIS-GIT/hls_lfcd_lds_driver/tree/master
+    url: https://github.com/ROBOTIS-GIT/hls_lfcd_lds_driver.git
     version: master
