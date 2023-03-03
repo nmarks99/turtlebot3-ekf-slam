@@ -20,3 +20,12 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 
 **SLAM pose estimate vs. time for robot driving in a circle:**
 ![circle_plot](https://user-images.githubusercontent.com/45540813/222717511-c264f501-a403-43ce-b61c-3c0515437540.png)
+
+### Issues
+As of right now there is a bug somewhere which is causing spikes in the
+state estimate from the extended Kalman filter. With certain starting conditions,
+driving the robot in a circle using the circle node will give worse results
+and the pose estimate will jump around. This issue can be clearly seen in
+the below plot. Furthermore, these two test were run using the `circle` node
+and I have found these errors to be more pronounced when using
+`teleop_twist_keyboard`.
