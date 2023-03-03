@@ -6,8 +6,8 @@ repositories:
   nuturtlebot_msgs:
     type: git
     url: https://github.com/ME495-Navigation/nuturtlebot_msgs.git
-    version: main
+    version: humble
   hls_lfcd_lds_drive:
     type: git
     url: https://github.com/ROBOTIS-GIT/hls_lfcd_lds_driver.git
-    version: humble-devel
+    version: master
