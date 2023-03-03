@@ -13,6 +13,7 @@ This repository consists of several ROS packages
   - diff_drive: A differential drive robot library
   - kalman: Extended Kalman Filter library
 - nuslam - Extended Kalman Filter SLAM for estimating the robot's pose and map based on sensor data
+
 For a more detailed description of these packages, see the README files in each respective package.
 
 
