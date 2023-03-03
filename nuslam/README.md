@@ -16,3 +16,7 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 
 **SLAM pose estimate vs. time for robot driving in a circle:**
 ![circle_plot](https://user-images.githubusercontent.com/45540813/222717511-c264f501-a403-43ce-b61c-3c0515437540.png)
+
+
+https://user-images.githubusercontent.com/45540813/222717700-ebc3ccf3-bc04-4a50-8ba4-08aec8aa493e.mp4
+
