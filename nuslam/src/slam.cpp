@@ -32,6 +32,7 @@
 #include "turtlelib/diff_drive.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
@@ -59,24 +60,26 @@ std::ofstream log_file;
 class Slam : public rclcpp::Node
 {
 public:
-    Slam() : Node("slam"),
-             pose_now{0.0, 0.0, 0.0},
-             wheel_angles_now{0.0, 0.0},
-             wheel_speeds_now{0.0, 0.0},
-             Vb_now{0.0, 0.0, 0.0}
+    Slam() : Node("slam")
     {
 
-        // declare parameters to the node
+        // Declare parameters to the node
         declare_parameter("body_id", body_id);
         declare_parameter("odom_id", odom_id);
         declare_parameter("wheel_left", wheel_left);
         declare_parameter("wheel_right", wheel_right);
+        declare_parameter("Q", Q);
+        declare_parameter("R", R);
+
+        // Get parameters
+        Q = get_parameter("Q").get_value<double>();
+        R = get_parameter("R").get_value<double>();
         body_id = get_parameter("body_id").get_value<std::string>();
         odom_id = get_parameter("odom_id").get_value<std::string>();
         wheel_left = get_parameter("wheel_left").get_value<std::string>();
         wheel_right = get_parameter("wheel_right").get_value<std::string>();
 
-        // throw runtime error if parameters are undefined
+        // throw runtime error if required parameters are undefined
         if (body_id.empty())
         {
             RCLCPP_ERROR_STREAM(get_logger(), "body_id parameter not specified");
@@ -95,6 +98,9 @@ public:
 
         /// @brief Publisher to the odom topic
         odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+
+        /// @brief Publishes the path of the slam estimate
+        path_pub = create_publisher<nav_msgs::msg::Path>("/slam/path", 10);
 
         /// @brief Subscriber to joint_states topic
         joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
@@ -136,18 +142,24 @@ public:
         // this comes from the state estimate from the EKF
         map_odom_tf.header.frame_id = "map";
         map_odom_tf.child_frame_id = "odom_slam";
+
+        // slam path message
+        path_msg.header.frame_id = "map";
     }
 
 private:
-    // int RATE = 200;
+    // Main timer callback frequency in Hz
     int RATE = 100;
+
+    unsigned int count = 0;
 
     // KalmanFilter object
     double Q = 1.0;
-    double R = 0.0;
-    turtlelib::KalmanFilter ekf{1.0, 10.0};
+    double R = 10.0;
+    turtlelib::KalmanFilter ekf{Q, R};
     arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
     arma::mat slam_map_estimate = arma::mat(3, 1, arma::fill::zeros);
+    std::vector<turtlelib::LandmarkMeasurement> landmarks;
 
     // Parameters that can be passed to the node
     std::string body_id;
@@ -164,10 +176,9 @@ private:
     turtlelib::WheelState wheel_speeds_now{0.0, 0.0};
     turtlelib::Twist2D Vb_now{0.0, 0.0, 0.0};
 
-    std::vector<turtlelib::LandmarkMeasurement> landmarks;
-
     // Declare messages
     nav_msgs::msg::Odometry odom_msg;
+    nav_msgs::msg::Path path_msg;
     geometry_msgs::msg::TransformStamped odom_blue_tf;
     geometry_msgs::msg::TransformStamped world_map_tf;
     geometry_msgs::msg::TransformStamped map_odom_tf;
@@ -186,6 +197,7 @@ private:
 
     // Declare publishers
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
 
     // Services
     rclcpp::Service<nuslam::srv::InitialPose>::SharedPtr _init_pose_service;
@@ -295,7 +307,7 @@ private:
         odom_green_tf.transform = odom_blue_tf.transform;
     }
 
-    void map_to_slam_odom()
+    void map_to_slam_odom(unsigned int &count)
     {
         // Compute transforms between frames
         const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
@@ -317,6 +329,32 @@ private:
         map_odom_tf.transform.rotation.y = q_mo.y();
         map_odom_tf.transform.rotation.z = q_mo.z();
         map_odom_tf.transform.rotation.w = q_mo.w();
+
+        constexpr unsigned int PATH_PUB_RATE = 100;
+        if (count >= PATH_PUB_RATE)
+        {
+            count = 0;
+            tf2::Quaternion q_mb;
+            q_mb.setRPY(0.0, 0.0, T_MB.rotation());
+
+            geometry_msgs::msg::PoseStamped path_pose;
+            path_pose.header.frame_id = "green/base_footprint";
+            path_pose.header.stamp = get_clock()->now();
+            path_pose.pose.position.x = vec_mb.x;
+            path_pose.pose.position.y = vec_mb.y;
+            path_pose.pose.orientation.x = q_mb.x();
+            path_pose.pose.orientation.y = q_mb.y();
+            path_pose.pose.orientation.z = q_mb.z();
+            path_pose.pose.orientation.w = q_mb.w();
+
+            path_msg.header.stamp = get_clock()->now();
+            path_msg.poses.push_back(path_pose);
+            path_pub->publish(path_msg);
+        }
+        else
+        {
+            count++;
+        }
     }
 
     void timer_callback()
@@ -324,7 +362,7 @@ private:
         // fill in tf messages
         odom_to_blue();
         slam_odom_to_green();
-        map_to_slam_odom();
+        map_to_slam_odom(count);
 
         // send transforms
         tf_broadcaster->sendTransform(odom_blue_tf);
