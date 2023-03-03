@@ -53,7 +53,12 @@ using std::placeholders::_2;
 /// \cond
 // if true, saves slam data (pose predictions etc.) to a csv file
 static constexpr bool LOG_SLAM_DATA = true;
+
+// for logging slam data to a csv file
 std::ofstream log_file;
+
+// throttle the rate at which path messages are published
+constexpr unsigned int PATH_PUB_RATE = 100;
 /// \endcond
 
 /// @brief odometry node class
@@ -100,7 +105,10 @@ public:
         odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
         /// @brief Publishes the path of the slam estimate
-        path_pub = create_publisher<nav_msgs::msg::Path>("/slam/path", 10);
+        slam_path_pub = create_publisher<nav_msgs::msg::Path>("/slam/path", 10);
+
+        /// @brief Publishes the path of the slam estimate
+        odom_path_pub = create_publisher<nav_msgs::msg::Path>("/odom/path", 10);
 
         /// @brief Subscriber to joint_states topic
         joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
@@ -144,7 +152,10 @@ public:
         map_odom_tf.child_frame_id = "odom_slam";
 
         // slam path message
-        path_msg.header.frame_id = "map";
+        slam_path_msg.header.frame_id = "map";
+
+        // odom path message
+        odom_path_msg.header.frame_id = "odom";
     }
 
 private:
@@ -152,6 +163,7 @@ private:
     int RATE = 100;
 
     unsigned int count = 0;
+    bool path_flag = true;
 
     // KalmanFilter object
     double Q = 1.0;
@@ -178,7 +190,8 @@ private:
 
     // Declare messages
     nav_msgs::msg::Odometry odom_msg;
-    nav_msgs::msg::Path path_msg;
+    nav_msgs::msg::Path slam_path_msg;
+    nav_msgs::msg::Path odom_path_msg;
     geometry_msgs::msg::TransformStamped odom_blue_tf;
     geometry_msgs::msg::TransformStamped world_map_tf;
     geometry_msgs::msg::TransformStamped map_odom_tf;
@@ -197,7 +210,8 @@ private:
 
     // Declare publishers
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr slam_path_pub;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr odom_path_pub;
 
     // Services
     rclcpp::Service<nuslam::srv::InitialPose>::SharedPtr _init_pose_service;
@@ -266,7 +280,7 @@ private:
 
     /// @brief Publishes transforms for the odometry (blue) robot
     //// as well as odometry information on the odom topic
-    void odom_to_blue()
+    void odom_to_blue(const bool &path_flag)
     {
         // Define quaternion for current rotation
         tf2::Quaternion q_ob;
@@ -298,6 +312,25 @@ private:
         odom_blue_tf.transform.rotation.y = q_ob.y();
         odom_blue_tf.transform.rotation.z = q_ob.z();
         odom_blue_tf.transform.rotation.w = q_ob.w();
+
+        if (path_flag)
+        {
+            count = 0;
+            geometry_msgs::msg::PoseStamped temp_pose;
+            temp_pose.header.stamp = get_clock()->now();
+            temp_pose.pose.position.x = pose_now.x;
+            temp_pose.pose.position.y = pose_now.y;
+            temp_pose.pose.position.z = 0.0;
+            temp_pose.pose.orientation.x = q_ob.x();
+            temp_pose.pose.orientation.y = q_ob.y();
+            temp_pose.pose.orientation.z = q_ob.z();
+            temp_pose.pose.orientation.w = q_ob.w();
+
+            odom_path_msg.header.frame_id = "odom";
+            odom_path_msg.header.stamp = get_clock()->now();
+            odom_path_msg.poses.push_back(temp_pose);
+            odom_path_pub->publish(odom_path_msg);
+        }
     }
 
     void slam_odom_to_green()
@@ -307,7 +340,7 @@ private:
         odom_green_tf.transform = odom_blue_tf.transform;
     }
 
-    void map_to_slam_odom(unsigned int &count)
+    void map_to_slam_odom(const bool &path_flag)
     {
         // Compute transforms between frames
         const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
@@ -330,10 +363,8 @@ private:
         map_odom_tf.transform.rotation.z = q_mo.z();
         map_odom_tf.transform.rotation.w = q_mo.w();
 
-        constexpr unsigned int PATH_PUB_RATE = 100;
-        if (count >= PATH_PUB_RATE)
+        if (path_flag)
         {
-            count = 0;
             tf2::Quaternion q_mb;
             q_mb.setRPY(0.0, 0.0, T_MB.rotation());
 
@@ -347,22 +378,30 @@ private:
             path_pose.pose.orientation.z = q_mb.z();
             path_pose.pose.orientation.w = q_mb.w();
 
-            path_msg.header.stamp = get_clock()->now();
-            path_msg.poses.push_back(path_pose);
-            path_pub->publish(path_msg);
-        }
-        else
-        {
-            count++;
+            slam_path_msg.header.stamp = get_clock()->now();
+            slam_path_msg.poses.push_back(path_pose);
+            slam_path_pub->publish(slam_path_msg);
         }
     }
 
     void timer_callback()
     {
+        // throttle the path publishing for performance
+        if (count > PATH_PUB_RATE)
+        {
+            path_flag = true;
+            count = 0;
+        }
+        else
+        {
+            path_flag = false;
+            count++;
+        }
+
         // fill in tf messages
-        odom_to_blue();
         slam_odom_to_green();
-        map_to_slam_odom(count);
+        odom_to_blue(path_flag);
+        map_to_slam_odom(path_flag);
 
         // send transforms
         tf_broadcaster->sendTransform(odom_blue_tf);
