@@ -29,3 +29,6 @@ and the pose estimate will jump around. This issue can be clearly seen in
 the below plot. Furthermore, these two test were run using the `circle` node
 and I have found these errors to be more pronounced when using
 `teleop_twist_keyboard`.
+
+![noise_spikes](https://user-images.githubusercontent.com/45540813/222746914-8f2250c0-b8b0-44df-8cea-d066968dd2ad.png)
+
