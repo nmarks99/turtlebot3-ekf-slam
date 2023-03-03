@@ -265,10 +265,10 @@ private:
             x = marker_arr.markers.at(i).pose.position.x;
             y = marker_arr.markers.at(i).pose.position.y;
             const unsigned int marker_id = marker_arr.markers.at(i).id;
-            RCLCPP_INFO_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
+            RCLCPP_DEBUG_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
             landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
         }
-        // RCLCPP_INFO_STREAM(get_logger(), "landmarks vector length = " << landmarks.size());
+        // RCLCPP_DEBUG_STREAM(get_logger(), "landmarks vector length = " << landmarks.size());
         ekf.run(Vb_now, landmarks);
 
         slam_pose_estimate = ekf.pose_prediction();
@@ -282,10 +282,10 @@ private:
                      << slam_pose_estimate(1, 0) << ","
                      << slam_pose_estimate(2, 0) << "\n";
         }
-        RCLCPP_INFO_STREAM(get_logger(), "Actual marker position = " << x << "," << y);
-        RCLCPP_INFO_STREAM(get_logger(), "Vb_now = " << Vb_now);
-        RCLCPP_INFO_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
-        RCLCPP_INFO_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
+        RCLCPP_DEBUG_STREAM(get_logger(), "Actual marker position = " << x << "," << y);
+        RCLCPP_DEBUG_STREAM(get_logger(), "Vb_now = " << Vb_now);
+        RCLCPP_DEBUG_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
+        RCLCPP_DEBUG_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
     }
 
     /// @brief fills in MarkerArray of landmarks based on SLAM estimation
