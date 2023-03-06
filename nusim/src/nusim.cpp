@@ -204,11 +204,11 @@ public:
 		fake_lidar_msg.header.frame_id = "red/base_scan";
 		fake_lidar_msg.angle_min = turtlelib::deg2rad(0.0);
 		fake_lidar_msg.angle_max = turtlelib::deg2rad(359.0);
-		fake_lidar_msg.angle_increment = LIDAR_INCREMENT;
+		fake_lidar_msg.angle_increment = turtlelib::deg2rad(LIDAR_INCREMENT);
 		fake_lidar_msg.range_max = LIDAR_MAX_RANGE;
 		fake_lidar_msg.range_min = LIDAR_MIN_RANGE;
-		fake_lidar_msg.scan_time = 0.01; // before I had 0.02?
-		fake_lidar_msg.time_increment = 0.02;
+		fake_lidar_msg.scan_time = 0.2;
+		// fake_lidar_msg.time_increment = 0.00043478;
 		for (size_t i = 0; i < 360; i++)
 		{
 			fake_lidar_msg.ranges.push_back(0.0);
@@ -350,16 +350,19 @@ private:
 			const auto m = std::tan(turtlelib::deg2rad(ang));
 			for (size_t i = 0; i < obstacles_x.size(); i++)
 			{
+				RCLCPP_INFO_STREAM(get_logger(), "x,y = " << obstacles_x.at(i) << "," << obstacles_y.at(i));
+
 				// Get the obstacle in the body frame of the robot
 				const turtlelib::Vector2D wb_vec{true_pose.x, true_pose.y};
 				const turtlelib::Transform2D Twb(wb_vec, true_pose.theta);
 				const turtlelib::Vector2D wo_vec{obstacles_x.at(i), obstacles_y.at(i)};
 				const turtlelib::Transform2D Two(wo_vec);
-				const auto Tbo = Twb.inv() * Two;
+				const turtlelib::Transform2D Tbo = Twb.inv() * Two;
 
 				// Obstacle center in the body frame
-				const auto h = Tbo.translation().x;
-				const auto k = Tbo.translation().y;
+				const double h = Tbo.translation().x;
+				const double k = Tbo.translation().y;
+				RCLCPP_INFO_STREAM(get_logger(), "h,k = " << h << "," << k);
 
 				// if the current angle is not in the same quadrant as the obstacle,
 				// there must not be an intersection
@@ -369,23 +372,23 @@ private:
 				}
 
 				// Quadratic formula terms
-				const auto a = 1 + std::pow(m, 2.0);
-				const auto b = -(2 * h + 2 * m * k);
-				const auto c = std::pow(h, 2.0) + std::pow(k, 2.0) - std::pow(obstacles_r, 2.0);
-				const auto descrim = std::pow(b, 2.0) - (4 * a * c);
+				const double a = 1 + std::pow(m, 2.0);
+				const double b = -(2 * h + 2 * m * k);
+				const double c = std::pow(h, 2.0) + std::pow(k, 2.0) - std::pow(obstacles_r, 2.0);
+				const double descrim = std::pow(b, 2.0) - (4 * a * c);
 
 				// If real (descriminant is non-negative), there is an intesection
 				if (descrim >= 0)
 				{
 					// (x1,y1) and (x2,y2) are the two points of intersection
-					const auto x1 = (-b + std::sqrt(descrim)) / (2 * a);
-					const auto x2 = (-b - std::sqrt(descrim)) / (2 * a);
-					const auto y1 = m * x1;
-					const auto y2 = m * x2;
+					const double x1 = (-b + std::sqrt(descrim)) / (2 * a);
+					const double x2 = (-b - std::sqrt(descrim)) / (2 * a);
+					const double y1 = m * x1;
+					const double y2 = m * x2;
 
-					const auto d1 = std::sqrt(std::pow(x1, 2.0) + std::pow(y1, 2.0));
-					const auto d2 = std::sqrt(std::pow(x2, 2.0) + std::pow(y2, 2.0));
-					const auto dmin = std::min(d1, d2);
+					const double d1 = std::sqrt(std::pow(x1, 2.0) + std::pow(y1, 2.0));
+					const double d2 = std::sqrt(std::pow(x2, 2.0) + std::pow(y2, 2.0));
+					const double dmin = std::min(d1, d2);
 					if (dmin >= LIDAR_MIN_RANGE && dmin <= LIDAR_MAX_RANGE)
 					{
 						// if valid intersection, store the distance and the angle
@@ -517,7 +520,7 @@ private:
 			world_red_tf.transform.rotation.w = q.w();
 
 			// Stamp and broadcast the transform
-			world_red_tf.header.stamp = get_clock()->now();
+			world_red_tf.header.stamp = get_clock()->now() + 200ms;
 			tf_broadcaster->sendTransform(world_red_tf);
 
 			// Publish sensor data
