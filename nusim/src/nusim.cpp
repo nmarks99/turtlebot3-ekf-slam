@@ -201,7 +201,7 @@ public:
 		path_msg.header.frame_id = "/nusim/world";
 
 		// Define constants in fake lidar message
-		fake_lidar_msg.header.frame_id = "red/base_scan";
+		fake_lidar_msg.header.frame_id = "red/base_footprint";
 		fake_lidar_msg.angle_min = turtlelib::deg2rad(0.0);
 		fake_lidar_msg.angle_max = turtlelib::deg2rad(359.0);
 		fake_lidar_msg.angle_increment = turtlelib::deg2rad(LIDAR_INCREMENT);
@@ -350,7 +350,6 @@ private:
 			const auto m = std::tan(turtlelib::deg2rad(ang));
 			for (size_t i = 0; i < obstacles_x.size(); i++)
 			{
-				RCLCPP_INFO_STREAM(get_logger(), "x,y = " << obstacles_x.at(i) << "," << obstacles_y.at(i));
 
 				// Get the obstacle in the body frame of the robot
 				const turtlelib::Vector2D wb_vec{true_pose.x, true_pose.y};
@@ -362,7 +361,6 @@ private:
 				// Obstacle center in the body frame
 				const double h = Tbo.translation().x;
 				const double k = Tbo.translation().y;
-				RCLCPP_INFO_STREAM(get_logger(), "h,k = " << h << "," << k);
 
 				// if the current angle is not in the same quadrant as the obstacle,
 				// there must not be an intersection
