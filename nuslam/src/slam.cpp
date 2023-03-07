@@ -291,7 +291,9 @@ private:
     /// @brief fills in MarkerArray of landmarks based on SLAM estimation
     void fill_slam_marker_arr()
     {
-        visualization_msgs::msg::Marker marker_msg;
+        slam_marker_arr.markers.clear();
+
+        visualization_msgs::msg::Marker slam_marker_msg;
         for (size_t i = 0; i <= slam_map_estimate.n_rows - 2; i += 2)
         {
             // Landmarks body frame
@@ -305,13 +307,34 @@ private:
             const double angle_mb = slam_pose_estimate(0, 0);
             const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
 
+            if (i == 0)
+            {
+                RCLCPP_INFO_STREAM(get_logger(), "slam map est = " << vec_b);
+                RCLCPP_INFO_STREAM(get_logger(), "T_MB x,y = " << T_MB.translation().x << "," << T_MB.translation().y);
+            }
+
             // Landmarks in the map frame
             const turtlelib::Transform2D T_ML = T_MB * T_BL;
 
-            marker_msg.header.frame_id = "map";
-            marker_msg.id = i;
-            marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
+            slam_marker_msg.header.frame_id = "map";
+            slam_marker_msg.header.stamp = get_clock()->now();
+            slam_marker_msg.id = i;
+            slam_marker_msg.scale.x = 0.038;
+            slam_marker_msg.scale.y = 0.038;
+            slam_marker_msg.scale.z = 0.25;
+            slam_marker_msg.pose.position.x = T_ML.translation().x;
+            slam_marker_msg.pose.position.y = T_ML.translation().y;
+            slam_marker_msg.pose.position.z = 0.125;
+            slam_marker_msg.color.a = 1.0;
+            slam_marker_msg.color.r = 0.0;
+            slam_marker_msg.color.b = 0.0;
+            slam_marker_msg.color.g = 1.0;
+            slam_marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
+
+            slam_marker_arr.markers.push_back(slam_marker_msg);
         }
+
+        slam_marker_arr_pub->publish(slam_marker_arr);
     }
 
     /// @brief Publishes transforms for the odometry (blue) robot
