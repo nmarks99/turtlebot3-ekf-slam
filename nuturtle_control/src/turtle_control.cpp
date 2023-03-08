@@ -187,7 +187,6 @@ private:
 
   /// @brief  callback function to /sensor_data subscription
   /// which computes joint positions and velcoties from encoder data
-  /// @note - something is incorrect here, joint angles and velocites are HUGE
   /// @param sensor_data (nuturtlebot_msgs/msg/SensorData)
   void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
   {
@@ -196,8 +195,15 @@ private:
     js_msg.position.at(1) = sensor_data.right_encoder / encoder_ticks_per_rad;
 
     // Update wheel velocities
-    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
-    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
+    // js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
+    // js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
+
+    // delta_encoder_ticks / encoder_ticks_per_rad = delta_theta
+    // delta_theta / dt = rad/s
+    const double dt = (1.0 / RATE);
+    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) / encoder_ticks_per_rad / dt;
+    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) / encoder_ticks_per_rad / dt;
+    // RCLCPP_INFO_STREAM(get_logger(), "Wheel vel = " << js_msg.velocity.at(0) << "," << js_msg.velocity.at(1));
 
     // Update last_encode values
     last_encoder_left = sensor_data.left_encoder;

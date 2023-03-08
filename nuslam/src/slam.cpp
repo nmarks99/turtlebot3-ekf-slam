@@ -173,7 +173,7 @@ private:
     bool landmarks_flag = false;
 
     // KalmanFilter object
-    double Q = 1.0;
+    double Q = 10.0;
     double R = 10.0;
     turtlelib::KalmanFilter ekf{Q, R};
     arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
@@ -247,6 +247,7 @@ private:
         wheel_speeds_now.right = js_data.velocity.at(1);
 
         // Compute current body twist from given wheel velocities
+        // RCLCPP_INFO_STREAM(get_logger(), "Wheel speeds = " << wheel_speeds_now.left << "," << wheel_speeds_now.right);
         Vb_now = ddrive.body_twist(wheel_speeds_now);
 
         // Update current pose of the robot with forward kinematics
@@ -258,21 +259,21 @@ private:
         landmarks_flag = true;
 
         // store markers in a vector of LandmarkMeasurement's
-        double x = 0.0;
-        double y = 0.0;
         for (size_t i = 0; i < marker_arr.markers.size(); i++)
         {
-            x = marker_arr.markers.at(i).pose.position.x;
-            y = marker_arr.markers.at(i).pose.position.y;
+            const double x = marker_arr.markers.at(i).pose.position.x;
+            const double y = marker_arr.markers.at(i).pose.position.y;
             const unsigned int marker_id = marker_arr.markers.at(i).id;
-            RCLCPP_DEBUG_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
+            RCLCPP_INFO_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
             landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
         }
-        // RCLCPP_DEBUG_STREAM(get_logger(), "landmarks vector length = " << landmarks.size());
-        ekf.run(Vb_now, landmarks);
 
+        RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
+        ekf.run(Vb_now, landmarks);
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
+        arma::mat slam_state_estimate = ekf.state_prediction();
+        RCLCPP_INFO_STREAM(get_logger(), "state = " << slam_state_estimate);
 
         // landmarks.clear();
 
@@ -282,10 +283,6 @@ private:
                      << slam_pose_estimate(1, 0) << ","
                      << slam_pose_estimate(2, 0) << "\n";
         }
-        RCLCPP_DEBUG_STREAM(get_logger(), "Actual marker position = " << x << "," << y);
-        RCLCPP_DEBUG_STREAM(get_logger(), "Vb_now = " << Vb_now);
-        RCLCPP_DEBUG_STREAM(get_logger(), "pose estimate = " << slam_pose_estimate);
-        RCLCPP_DEBUG_STREAM(get_logger(), "map estimate = " << slam_map_estimate);
     }
 
     /// @brief fills in MarkerArray of landmarks based on SLAM estimation
@@ -307,12 +304,6 @@ private:
             const double angle_mb = slam_pose_estimate(0, 0);
             const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
 
-            if (i == 0)
-            {
-                RCLCPP_INFO_STREAM(get_logger(), "slam map est = " << vec_b);
-                RCLCPP_INFO_STREAM(get_logger(), "T_MB x,y = " << T_MB.translation().x << "," << T_MB.translation().y);
-            }
-
             // Landmarks in the map frame
             const turtlelib::Transform2D T_ML = T_MB * T_BL;
 
@@ -325,7 +316,11 @@ private:
             slam_marker_msg.pose.position.x = T_ML.translation().x;
             slam_marker_msg.pose.position.y = T_ML.translation().y;
             slam_marker_msg.pose.position.z = 0.125;
-            slam_marker_msg.color.a = 1.0;
+            slam_marker_msg.pose.orientation.x = 0.0;
+            slam_marker_msg.pose.orientation.y = 0.0;
+            slam_marker_msg.pose.orientation.z = 0.0;
+            slam_marker_msg.pose.orientation.w = 1.0;
+            slam_marker_msg.color.a = 0.7;
             slam_marker_msg.color.r = 0.0;
             slam_marker_msg.color.b = 0.0;
             slam_marker_msg.color.g = 1.0;
