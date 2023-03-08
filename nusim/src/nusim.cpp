@@ -518,7 +518,7 @@ private:
 			world_red_tf.transform.rotation.w = q.w();
 
 			// Stamp and broadcast the transform
-			world_red_tf.header.stamp = get_clock()->now() + 200ms;
+			world_red_tf.header.stamp = get_clock()->now();
 			tf_broadcaster->sendTransform(world_red_tf);
 
 			// Publish sensor data
