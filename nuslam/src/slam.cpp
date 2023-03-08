@@ -173,11 +173,12 @@ private:
     bool landmarks_flag = false;
 
     // KalmanFilter object
-    double Q = 10.0;
-    double R = 10.0;
+    double Q = 100.0;
+    double R = 100.0;
     turtlelib::KalmanFilter ekf{Q, R};
     arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
     arma::mat slam_map_estimate = arma::mat(3, 1, arma::fill::zeros);
+    arma::mat slam_state_estimate = arma::mat(5, 1, arma::fill::zeros);
     std::vector<turtlelib::LandmarkMeasurement> landmarks;
 
     // Parameters that can be passed to the node
@@ -272,16 +273,26 @@ private:
         ekf.run(Vb_now, landmarks);
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
-        arma::mat slam_state_estimate = ekf.state_prediction();
+        slam_state_estimate = ekf.state_prediction();
         RCLCPP_INFO_STREAM(get_logger(), "state = " << slam_state_estimate);
 
         // landmarks.clear();
 
+        // Saves the state estimate from the EKF to a csv file
         if (LOG_SLAM_DATA)
         {
-            log_file << slam_pose_estimate(0, 0) << ","
-                     << slam_pose_estimate(1, 0) << ","
-                     << slam_pose_estimate(2, 0) << "\n";
+            for (size_t i = 0; i <= slam_state_estimate.n_rows - 1; i++)
+            {
+                RCLCPP_INFO_STREAM(get_logger(), "i = " << i);
+                if (i != slam_state_estimate.n_rows - 1)
+                {
+                    log_file << slam_state_estimate(i, 0) << ",";
+                }
+                else
+                {
+                    log_file << slam_state_estimate(i, 0) << "\n";
+                }
+            }
         }
     }
 
@@ -296,16 +307,16 @@ private:
             // Landmarks body frame
             const double x_b = slam_map_estimate(i, 0);
             const double y_b = slam_map_estimate(i + 1, 0);
-            const turtlelib::Vector2D vec_b{x_b, y_b};
-            const turtlelib::Transform2D T_BL(vec_b);
+            // const turtlelib::Vector2D vec_b{x_b, y_b};
+            // const turtlelib::Transform2D T_BL(vec_b);
 
             // Body in the map frame
-            const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
-            const double angle_mb = slam_pose_estimate(0, 0);
-            const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
+            // const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
+            // const double angle_mb = slam_pose_estimate(0, 0);
+            // const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
 
             // Landmarks in the map frame
-            const turtlelib::Transform2D T_ML = T_MB * T_BL;
+            // const turtlelib::Transform2D T_ML = T_MB * T_BL;
 
             slam_marker_msg.header.frame_id = "map";
             slam_marker_msg.header.stamp = get_clock()->now();
@@ -313,8 +324,8 @@ private:
             slam_marker_msg.scale.x = 0.038;
             slam_marker_msg.scale.y = 0.038;
             slam_marker_msg.scale.z = 0.25;
-            slam_marker_msg.pose.position.x = T_ML.translation().x;
-            slam_marker_msg.pose.position.y = T_ML.translation().y;
+            slam_marker_msg.pose.position.x = x_b;
+            slam_marker_msg.pose.position.y = y_b;
             slam_marker_msg.pose.position.z = 0.125;
             slam_marker_msg.pose.orientation.x = 0.0;
             slam_marker_msg.pose.orientation.y = 0.0;
@@ -490,7 +501,7 @@ int main(int argc, char *argv[])
     rclcpp::spin(std::make_shared<Slam>());
     rclcpp::shutdown();
 
-    log_file.close();
+    log_file.close(); // may be problamatic in the event that the node crashes and we don't get here?
 
     return 0;
 }

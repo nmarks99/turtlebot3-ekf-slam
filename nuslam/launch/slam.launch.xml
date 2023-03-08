@@ -28,7 +28,7 @@
     <!-- Runnning in simulation -->
     <group if="$(eval '\'$(var robot)\' == \'nusim\'')">
 
-        <!-- start the nusim node with basic_world.yaml config file -->
+        <!-- start the nusim node with nusim_slam_params.yaml config file -->
         <node pkg="nusim" exec="nusim" name="nusim">
             <param from="$(find-pkg-share nuslam)/config/nusim_slam_params.yaml"/>
             <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
