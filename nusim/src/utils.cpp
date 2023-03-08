@@ -150,7 +150,7 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
     {
         // Create a Vector2D for the current obstacle (x,y)
         turtlelib::Vector2D _v{obstacles_x.at(i), obstacles_y.at(i)};
-
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle i = " << _v);
         // Get the transforms so we can publish the obstacles in the body frame
         turtlelib::Transform2D T_WO(_v);
         turtlelib::Transform2D T_WB(turtlelib::Vector2D{true_pose.x, true_pose.y}, true_pose.theta);
@@ -159,6 +159,7 @@ void fill_basic_sensor_obstacles(visualization_msgs::msg::MarkerArray &marker_ar
         double ob_y_in_body = T_BO.translation().y;
 
         marker_msg.header.frame_id = "red/base_footprint";
+        marker_msg.header.stamp = rclcpp::Clock{}.now();
         marker_msg.id = last_id + (i + 1);
         marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
 
