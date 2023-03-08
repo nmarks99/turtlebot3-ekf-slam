@@ -23,6 +23,7 @@ void fill_obstacles(visualization_msgs::msg::MarkerArray &marker_arr,
     for (i = 0; i < obstacles_x.size(); i++)
     {
         marker_msg.header.frame_id = "nusim/world";
+        marker_msg.header.stamp = rclcpp::Clock{}.now();
         marker_msg.id = last_id + (i + 1);
         marker_msg.type = visualization_msgs::msg::Marker::CYLINDER;
         marker_msg.action = visualization_msgs::msg::Marker::ADD;
@@ -61,6 +62,7 @@ void fill_walls(visualization_msgs::msg::MarkerArray &marker_arr, double X_LENGT
     for (size_t i = 0; i < 4; i++)
     {
         marker_msg.header.frame_id = "nusim/world";
+        marker_msg.header.stamp = rclcpp::Clock{}.now();
         marker_msg.id = last_id + (i + 1);
         marker_msg.type = visualization_msgs::msg::Marker::CUBE;
         marker_msg.action = visualization_msgs::msg::Marker::ADD;
