@@ -253,6 +253,7 @@ private:
 
         // Update current pose of the robot with forward kinematics
         pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
+        RCLCPP_INFO_STREAM(get_logger(), "pose odom = " << pose_now.theta << "," << pose_now.x << "," << pose_now.y);
     }
 
     void fake_sensor_callback(const visualization_msgs::msg::MarkerArray &marker_arr)
@@ -283,7 +284,6 @@ private:
         {
             for (size_t i = 0; i <= slam_state_estimate.n_rows - 1; i++)
             {
-                RCLCPP_INFO_STREAM(get_logger(), "i = " << i);
                 if (i != slam_state_estimate.n_rows - 1)
                 {
                     log_file << slam_state_estimate(i, 0) << ",";
