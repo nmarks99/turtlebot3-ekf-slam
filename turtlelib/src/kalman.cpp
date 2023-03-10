@@ -113,6 +113,62 @@ namespace turtlelib
         }
     }
 
+    void KalmanFilter::predict_from_odometry(const Pose2D &pose, const Twist2D &V)
+    {
+        // This must only be called once update_measurements() has been called
+
+        // Note for the prediction step here, we set the noise
+        // equal to zero and the map stays stationary
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Beginning prediction step----------");
+        arma::mat A_t(3, 3, arma::fill::zeros);
+        arma::mat qt_hat_new(3, 1, arma::fill::zeros);
+        arma::mat w_t(3, 1, arma::fill::zeros); // w_t = 0
+
+        Xi_hat(0, 0) = normalize_angle(Xi_hat(0, 0));
+
+        qt_hat_new(0, 0) = pose.theta;
+        qt_hat_new(1, 0) = pose.x;
+        qt_hat_new(2, 0) = pose.y;
+
+        // zero rotational velocity
+        if (almost_equal(V.thetadot, 0.0))
+        {
+            // A_t = derivative of g
+            A_t(0, 0) = 0.0;
+            A_t(1, 0) = -V.xdot * std::sin(Xi_hat(0, 0));
+            A_t(2, 0) = V.xdot * std::cos(Xi_hat(0, 0));
+        }
+        else // non-zero rotational velocity
+        {
+            // A_t = derivative of g
+            A_t(0, 0) = 0.0;
+            A_t(1, 0) = -(V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0)) +
+                        (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0) + V.thetadot);
+            A_t(2, 0) = -(V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0)) +
+                        (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot);
+        }
+
+        // A_t should be (3+2n x 3+2n)
+        A_t = arma::join_rows(A_t, arma::mat(3, 2 * n, arma::fill::zeros));
+        A_t = arma::join_cols(A_t, arma::mat(2 * n, 3 + 2 * n, arma::fill::zeros));
+        A_t = A_t + arma::mat(arma::size(A_t), arma::fill::eye);
+        assert(A_t.n_rows == A_t.n_cols);
+        assert(A_t.n_rows == (3 + 2 * n));
+
+        // Save the new prediction of the robot's configuration
+        Xi_hat.submat(0, 0, 2, 0) = qt_hat_new;
+
+        // Now we propagate the uncertainty using the linear state transition model
+        sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_bar;
+
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat size = " << arma::size(sigma_hat));
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Xi_hat = \n"
+                                                                   << Xi_hat);
+        // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat = \n"
+        //                                                            << sigma_hat);
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Finished prediciton step-----------");
+    }
+
     void KalmanFilter::predict(const Twist2D &V)
     {
         // This must only be called once update_measurements() has been called
@@ -286,6 +342,20 @@ namespace turtlelib
         }
 
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "---------Finished update step---------");
+    }
+
+    void KalmanFilter::run_from_odometry(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
+    {
+
+        // Add new measurments and update dimensions if needed
+        for (size_t i = 0; i < measurements.size(); i++)
+        {
+            update_measurements(measurements.at(i));
+        }
+
+        predict_from_odometry(pose, V);
+
+        update(measurements);
     }
 
     void KalmanFilter::run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)

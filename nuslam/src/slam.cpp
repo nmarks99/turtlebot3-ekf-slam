@@ -271,7 +271,8 @@ private:
         }
 
         RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
-        ekf.run(Vb_now, landmarks);
+        // ekf.run(Vb_now, landmarks);
+        ekf.run_from_odometry(pose_now, Vb_now, landmarks);
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
         slam_state_estimate = ekf.state_prediction();
