@@ -10,9 +10,9 @@
         <remap from="/joint_states" to="/blue/joint_states"/>
     </node>
 
-    <!-- Start the nuslam node -->
-    <!-- blue robot is for odometry -->
+    <!-- Start the nuslam node which has SLAM and odometry-->
     <node pkg="nuslam" exec="slam" name="slam">
+        <param from="$(find-pkg-share nuslam)/config/slam_params.yaml"/>
         <param name="body_id" value="blue/base_footprint"/>
         <param name="odom_id" value="odom"/>
         <param name="wheel_left" value="blue/wheel_left_link" />
@@ -24,6 +24,7 @@
 
     <!-- start tf2_ros static transform publisher -->
     <node pkg="tf2_ros" exec="static_transform_publisher" name="static_transform_publisher" args=" --frame-id nusim/world --child-frame-id odom"/>
+
 
     <!-- Runnning in simulation -->
     <group if="$(eval '\'$(var robot)\' == \'nusim\'')">
@@ -65,9 +66,10 @@
 
     </group>
 
-    <!-- Running with the real robot -->
-    <!-- <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
-    </group> -->
+    <!-- Running with the real robot --> -->
+    <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
+        <!-- start hlds laser node -->
+    </group>
 
 
 </launch>

@@ -171,6 +171,8 @@ namespace turtlelib
 
     void KalmanFilter::predict(const Twist2D &V)
     {
+        // MATH IS WRONG DO NOT USE FOR NOW
+
         // This must only be called once update_measurements() has been called
 
         // Note for the prediction step here, we set the noise
@@ -346,15 +348,16 @@ namespace turtlelib
 
     void KalmanFilter::run_from_odometry(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
-
         // Add new measurments and update dimensions if needed
         for (size_t i = 0; i < measurements.size(); i++)
         {
             update_measurements(measurements.at(i));
         }
 
+        /// Kalman filter prediction step
         predict_from_odometry(pose, V);
 
+        // Kalman filter update step
         update(measurements);
     }
 
@@ -368,9 +371,7 @@ namespace turtlelib
             update_measurements(measurements.at(i));
         }
 
-        std::cout << Xi_hat << std::endl;
-
-        /// Kalman filter prediction step
+        // Kalman filter prediction step
         predict(V);
 
         // Kalman filter update step

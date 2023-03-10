@@ -54,19 +54,21 @@ namespace turtlelib
         arma::mat to_mat() const;
     };
 
-    /// @brief Extended Kalman Filter
+    /// @brief Extended Kalman Filter for use with EKF-SLAM
+    /// This was written with the Turtlebot3 in mind but could
+    /// probably be used for a wide variety of applications
     class KalmanFilter
     {
 
     private:
-        arma::mat Xi_hat;    // Full state prediction. [qt_hat mt_hat]
-        arma::mat sigma_hat; // covariance matrix
-        arma::mat Q_bar;     // process noise matrix
-        arma::mat R_bar;     // something to do with noise
-        uint64_t n = 0;      // number of landmarks
+        arma::mat Xi_hat;    // Full state prediction [pose, map state]
+        arma::mat sigma_hat; // Covariance matrix
+        arma::mat Q_bar;     // Process noise: Measure of how accurate the model is
+        arma::mat R_bar;     // Sensor noise: Measure of how accurate the sensors are
+        uint64_t n = 0;      // Number of landmarks
 
-        // map (dictionary) of id:index key value pairs
-        // the index is the index of the x_j compont of mt_j, so index+1 is y_j
+        /// @brief map (dictionary) of id:index key value pairs
+        // the index is the index of the x_j component of the map_j so index+1 is y_j
         std::map<unsigned int, unsigned int> landmarks_dict;
 
         /// @brief computes the theoretical measurement given the current state estimate
@@ -89,6 +91,7 @@ namespace turtlelib
         /// @brief extented Kalman filter prediction step which predicts
         /// the new robot state qt_hat at time t using the pose estimate
         /// from the odometry calculation done elsewhere. The process noise is zero here.
+        /// @param pose a Pose2D at time t
         /// @param V a Twist2D at time t
         void predict_from_odometry(const Pose2D &pose, const Twist2D &V);
 
@@ -100,32 +103,37 @@ namespace turtlelib
         /// @brief class constructor
         KalmanFilter();
 
-        /// @brief class constructor that accepts
+        /// @brief class constructor that accepts Q and R gains
         /// @param Q process noise gain
-        /// @param R measurment noise gain (I think)
+        /// @param R measurment noise gain
         KalmanFilter(double Q, double R);
 
-        /// @brief Runs one iterations of the extended Kalman filtera
-        /// with the given twist and landmark measurements
+        /// @brief Runs one iteration of the extended Kalman filtera
+        /// with the given twist and landmark measurements. The pose
+        /// estimate from the prediction step is computed internally
+        /// as opposed to using the pose from odometry computed elsewhere
         /// @param V a Twist2D
         /// @param measurements a vector of LandmarkMeasurements
         void run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
 
-        /// @brief Runs one iterations of the extended Kalman filtera
-        /// with the given twist and landmark measurements
+        /// @brief Runs one iteration of the extended Kalman filtera
+        /// with the given twist and landmark measurements. The pose
+        /// estimate from the prediction step comes from wheel odometry
+        /// which is computed elsewhere and passed to this function
         /// @param pose a Pose2D of the current pose from the odometry
+        /// @param V a Twist2D
         /// @param measurements a vector of LandmarkMeasurements
         void run_from_odometry(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
 
-        /// @brief returns the current pose prediction, qt_hat
+        /// @brief returns the current pose prediction
         /// @return an arma::mat of the prediction of the robot's current pose
         arma::mat pose_prediction() const;
 
-        /// @brief returns the current map prediction, mt_hat
+        /// @brief returns the current map prediction
         /// @return an arma::mat of the prediction of the state of the map
         arma::mat map_prediction() const;
 
-        /// @brief returns the current full state prediction, Xi_hat
+        /// @brief returns the current full state prediction
         /// @return an arma::mat of the prediction of the full state (robot+map)
         arma::mat state_prediction() const;
     };

@@ -23,6 +23,7 @@
 ///     None
 
 #include <chrono>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <string>
@@ -53,6 +54,12 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
+
+/// \cond
+static constexpr bool SAVE_TO_CSV = true;
+std::ofstream nusim_log_file;
+auto t0 = std::chrono::system_clock::now();
+//// \endcond
 
 /// \brief nusim turtlebot simulation node
 class Nusim : public rclcpp::Node
@@ -567,14 +574,34 @@ private:
 		fake_scan();
 		fake_lidar_msg.header.stamp = get_clock()->now();
 		fake_lidar_pub->publish(fake_lidar_msg);
+
+		if (SAVE_TO_CSV)
+		{
+			auto t1 = std::chrono::system_clock::now();
+			std::chrono::duration<double> diff = t1 - t0;
+			double timestamp = diff.count();
+			nusim_log_file << timestamp << ",";
+			nusim_log_file << true_pose.theta << ",";
+			nusim_log_file << true_pose.x << ",";
+			nusim_log_file << true_pose.x << "\n";
+		}
 	}
 };
 
 /// @brief the main function to run the nusim node
 int main(int argc, char *argv[])
 {
+	if (SAVE_TO_CSV)
+	{
+		t0 = std::chrono::system_clock::now();
+		nusim_log_file.open("nusim_log.csv");
+	}
+
 	rclcpp::init(argc, argv);
 	rclcpp::spin(std::make_shared<Nusim>());
 	rclcpp::shutdown();
+
+	nusim_log_file.close();
+
 	return 0;
 }

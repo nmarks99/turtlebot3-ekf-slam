@@ -1,6 +1,5 @@
-
 /// @file
-/// @brief slam and odometry node
+/// @brief SLAM and Odometry node
 ///
 /// PARAMETERS:
 ///     Q :  Extended Kalman Filter process noise gain
@@ -27,24 +26,26 @@
 
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
+
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/pose_with_covariance.hpp"
 #include "geometry_msgs/msg/twist_with_covariance.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
 #include "nuturtlebot_msgs/msg/sensor_data.hpp"
-#include "turtlelib/diff_drive.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
-#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2_ros/static_transform_broadcaster.h"
+
 #include "nuslam/srv/initial_pose.hpp"
 
+#include "turtlelib/diff_drive.hpp"
 #include "turtlelib/kalman.hpp"
 
 #include "armadillo"
@@ -55,16 +56,19 @@ using std::placeholders::_2;
 
 /// \cond
 // if true, saves slam data (pose predictions etc.) to a csv file
-static constexpr bool LOG_SLAM_DATA = true;
+// TODO: make this a ROS parameter
+static constexpr bool SAVE_TO_CSV = true;
 
 // for logging slam data to a csv file
-std::ofstream log_file;
+std::ofstream slam_log_file;
+std::ofstream odom_log_file;
+auto t0 = std::chrono::system_clock::now();
 
 // throttle the rate at which path messages are published
 constexpr unsigned int PATH_PUB_RATE = 100;
 /// \endcond
 
-/// @brief odometry node class
+/// @brief SLAM + Odometry node
 class Slam : public rclcpp::Node
 {
 public:
@@ -270,29 +274,39 @@ private:
         }
 
         RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
-        // ekf.run(Vb_now, landmarks);
+
+        // Run extended Kalman filter and update get the updated state estimate
         ekf.run_from_odometry(pose_now, Vb_now, landmarks);
         slam_pose_estimate = ekf.pose_prediction();
         slam_map_estimate = ekf.map_prediction();
         slam_state_estimate = ekf.state_prediction();
+
         RCLCPP_INFO_STREAM(get_logger(), "state = " << slam_state_estimate);
 
-        // landmarks.clear();
-
         // Saves the state estimate from the EKF to a csv file
-        if (LOG_SLAM_DATA)
+        if (SAVE_TO_CSV)
         {
+            auto t1 = std::chrono::system_clock::now();
+            std::chrono::duration<double> diff = t1 - t0;
+            double timestamp = diff.count();
+            slam_log_file << timestamp << ",";
+
             for (size_t i = 0; i <= slam_state_estimate.n_rows - 1; i++)
             {
                 if (i != slam_state_estimate.n_rows - 1)
                 {
-                    log_file << slam_state_estimate(i, 0) << ",";
+                    slam_log_file << slam_state_estimate(i, 0) << ",";
                 }
                 else
                 {
-                    log_file << slam_state_estimate(i, 0) << "\n";
+                    slam_log_file << slam_state_estimate(i, 0) << "\n";
                 }
             }
+
+            odom_log_file << timestamp << ",";
+            odom_log_file << pose_now.theta << ",";
+            odom_log_file << pose_now.x << ",";
+            odom_log_file << pose_now.y << "\n";
         }
     }
 
@@ -304,19 +318,9 @@ private:
         visualization_msgs::msg::Marker slam_marker_msg;
         for (size_t i = 0; i <= slam_map_estimate.n_rows - 2; i += 2)
         {
-            // Landmarks body frame
-            const double x_b = slam_map_estimate(i, 0);
-            const double y_b = slam_map_estimate(i + 1, 0);
-            // const turtlelib::Vector2D vec_b{x_b, y_b};
-            // const turtlelib::Transform2D T_BL(vec_b);
-
-            // Body in the map frame
-            // const turtlelib::Vector2D vec_mb{slam_pose_estimate(1, 0), slam_pose_estimate(2, 0)};
-            // const double angle_mb = slam_pose_estimate(0, 0);
-            // const turtlelib::Transform2D T_MB(vec_mb, angle_mb);
-
             // Landmarks in the map frame
-            // const turtlelib::Transform2D T_ML = T_MB * T_BL;
+            const double x_m = slam_map_estimate(i, 0);
+            const double y_m = slam_map_estimate(i + 1, 0);
 
             slam_marker_msg.header.frame_id = "map";
             slam_marker_msg.header.stamp = get_clock()->now();
@@ -324,8 +328,8 @@ private:
             slam_marker_msg.scale.x = 0.038;
             slam_marker_msg.scale.y = 0.038;
             slam_marker_msg.scale.z = 0.25;
-            slam_marker_msg.pose.position.x = x_b;
-            slam_marker_msg.pose.position.y = y_b;
+            slam_marker_msg.pose.position.x = x_m;
+            slam_marker_msg.pose.position.y = y_m;
             slam_marker_msg.pose.position.z = 0.125;
             slam_marker_msg.pose.orientation.x = 0.0;
             slam_marker_msg.pose.orientation.y = 0.0;
@@ -344,14 +348,15 @@ private:
     }
 
     /// @brief Publishes transforms for the odometry (blue) robot
-    //// as well as odometry information on the odom topic
+    /// as well as odometry information on the odom topic
+    /// @param path_flag flag for whether or not to actually publish the path
+    /// which is useful for decreasing path publishing frequency for performance
     void odom_to_blue(const bool &path_flag)
     {
         // Define quaternion for current rotation
         tf2::Quaternion q_ob;
         q_ob.setRPY(0.0, 0.0, pose_now.theta);
 
-        // This is for the blue robot
         // Fill in Odometry message
         odom_msg.header.stamp = get_clock()->now();
         odom_msg.header.frame_id = odom_id;
@@ -366,7 +371,6 @@ private:
         odom_msg.twist.twist.linear.y = Vb_now.ydot;
         odom_msg.twist.twist.angular.z = Vb_now.thetadot;
 
-        // This is for the blue robot
         // Fill in TransformStamped message between odom_id frame and body_id frame
         odom_blue_tf.header.stamp = get_clock()->now();
         odom_blue_tf.header.frame_id = odom_id;
@@ -398,6 +402,8 @@ private:
         }
     }
 
+    /// @brief Fills in odom_slam to green/base_footprint tf message
+    /// with the same transform info as the odom -> blue tf
     void slam_odom_to_green()
     {
         // odom_slam -> green/base_footprint
@@ -405,6 +411,9 @@ private:
         odom_green_tf.transform = odom_blue_tf.transform;
     }
 
+    /// @brief Publishes the map -> odom_slam tf and the path of the SLAM (green) robot
+    /// @param path_flag flag for whether or not to actually publish the path
+    /// which is useful for decreasing path publishing frequency for performance
     void map_to_slam_odom(const bool &path_flag)
     {
         // Compute transforms between frames
@@ -491,17 +500,19 @@ private:
 /// @brief the main function to run the odometry node
 int main(int argc, char *argv[])
 {
-
-    if (LOG_SLAM_DATA)
+    if (SAVE_TO_CSV)
     {
-        log_file.open("slam_log.csv");
+        t0 = std::chrono::system_clock::now();
+        slam_log_file.open("slam_log.csv");
+        odom_log_file.open("odom_log.csv");
     }
 
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<Slam>());
     rclcpp::shutdown();
 
-    log_file.close(); // may be problamatic in the event that the node crashes and we don't get here?
+    slam_log_file.close(); // may be problamatic in the event that the node crashes and we don't get here?
+    odom_log_file.close();
 
     return 0;
 }
