@@ -2,5 +2,5 @@
 
 TEST_CASE("HELLO I AM A TEST")
 {
-    REQUIRE(0 == 1);
+  REQUIRE(0 == 1);
 }

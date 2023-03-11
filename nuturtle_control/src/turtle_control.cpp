@@ -40,7 +40,7 @@ class NuturtleControl : public rclcpp::Node
 
 public:
   NuturtleControl()
-      : Node("nuturtle_control")
+  : Node("nuturtle_control")
   {
 
     // Declare parameters to the node and get them
@@ -58,41 +58,36 @@ public:
     encoder_ticks_per_rad = get_parameter("encoder_ticks_per_rad").get_value<double>();
 
     // Throw runtime error if any of the parameters are missing
-    if (wheel_radius == 0)
-    {
+    if (wheel_radius == 0) {
       RCLCPP_ERROR_STREAM(get_logger(), "wheel_radius parameter not provided");
       throw std::runtime_error("wheel_radius parameter not provided");
     }
-    if (track_width == 0)
-    {
+    if (track_width == 0) {
       RCLCPP_ERROR_STREAM(get_logger(), "track_width parameter not provided");
       throw std::runtime_error("track_width parameter not provided");
     }
-    if (motor_cmd_max == 0)
-    {
+    if (motor_cmd_max == 0) {
       RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_max parameter not provided");
       throw std::runtime_error("motor_cmd_max parameter not provided");
     }
-    if (motor_cmd_per_rad_sec == 0)
-    {
+    if (motor_cmd_per_rad_sec == 0) {
       RCLCPP_ERROR_STREAM(get_logger(), "motor_cmd_per_rad_sec parameter not provided");
       throw std::runtime_error("motor_cmd_per_rad_sec parameter not provided");
     }
-    if (encoder_ticks_per_rad == 0)
-    {
+    if (encoder_ticks_per_rad == 0) {
       RCLCPP_ERROR_STREAM(get_logger(), "encoder_ticks_per_rad parameter not provided");
       throw std::runtime_error("encoder_ticks_per_rad parameter not provided");
     }
 
     /// @brief Subscriber to cmd_vel topic
     cmd_vel_sub = create_subscription<geometry_msgs::msg::Twist>(
-        "cmd_vel", 10,
-        std::bind(&NuturtleControl::cmd_vel_callback, this, _1));
+      "cmd_vel", 10,
+      std::bind(&NuturtleControl::cmd_vel_callback, this, _1));
 
     /// @brief Subscriber to sensor_data topic
     sensor_data_sub = create_subscription<nuturtlebot_msgs::msg::SensorData>(
-        "sensor_data", 10,
-        std::bind(&NuturtleControl::sensor_data_callback, this, _1));
+      "sensor_data", 10,
+      std::bind(&NuturtleControl::sensor_data_callback, this, _1));
 
     /// @brief Publisher to wheel_cmd topic
     wheel_cmd_pub = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
@@ -102,8 +97,8 @@ public:
 
     /// \brief Timer (frequency defined by node parameter)
     _timer = create_wall_timer(
-        std::chrono::milliseconds((int)(1000 / RATE)),
-        std::bind(&NuturtleControl::timer_callback, this));
+      std::chrono::milliseconds((int)(1000 / RATE)),
+      std::bind(&NuturtleControl::timer_callback, this));
 
     // initialize joint states message
     js_msg.name.push_back("wheel_left_joint");
@@ -146,7 +141,7 @@ private:
   /// using inverse kinematics, then published a WheelCommands
   /// message to /wheel_cmd to move the robot with the requested twist
   /// @param Vmsg - (geometry_msgs/msg/Twist)
-  void cmd_vel_callback(const geometry_msgs::msg::Twist &Vmsg)
+  void cmd_vel_callback(const geometry_msgs::msg::Twist & Vmsg)
   {
     // Store the geometry_msg/Twist in a turtlelib/Twist2D
     turtlelib::Twist2D V{Vmsg.angular.z, Vmsg.linear.x, 0.0};
@@ -160,23 +155,19 @@ private:
     wheel_cmd_msg.right_velocity = speeds.right / motor_cmd_per_rad_sec;
 
     // Ensure wheel_cmd is within the allowable limits
-    if (wheel_cmd_msg.left_velocity > motor_cmd_max)
-    {
+    if (wheel_cmd_msg.left_velocity > motor_cmd_max) {
       RCLCPP_DEBUG_STREAM(get_logger(), "at max left");
       wheel_cmd_msg.left_velocity = motor_cmd_max;
     }
-    if (wheel_cmd_msg.left_velocity < -motor_cmd_max)
-    {
+    if (wheel_cmd_msg.left_velocity < -motor_cmd_max) {
       RCLCPP_DEBUG_STREAM(get_logger(), "at min left");
       wheel_cmd_msg.left_velocity = -motor_cmd_max;
     }
-    if (wheel_cmd_msg.right_velocity > motor_cmd_max)
-    {
+    if (wheel_cmd_msg.right_velocity > motor_cmd_max) {
       RCLCPP_DEBUG_STREAM(get_logger(), "at max right");
       wheel_cmd_msg.right_velocity = motor_cmd_max;
     }
-    if (wheel_cmd_msg.right_velocity < -motor_cmd_max)
-    {
+    if (wheel_cmd_msg.right_velocity < -motor_cmd_max) {
       RCLCPP_DEBUG_STREAM(get_logger(), "at min right");
       wheel_cmd_msg.right_velocity = -motor_cmd_max;
     }
@@ -188,7 +179,7 @@ private:
   /// @brief  callback function to /sensor_data subscription
   /// which computes joint positions and velcoties from encoder data
   /// @param sensor_data (nuturtlebot_msgs/msg/SensorData)
-  void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData &sensor_data)
+  void sensor_data_callback(const nuturtlebot_msgs::msg::SensorData & sensor_data)
   {
     // Update wheel angles
     js_msg.position.at(0) = sensor_data.left_encoder / encoder_ticks_per_rad;
@@ -201,8 +192,10 @@ private:
     // delta_encoder_ticks / encoder_ticks_per_rad = delta_theta
     // delta_theta / dt = rad/s
     const double dt = (1.0 / RATE);
-    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) / encoder_ticks_per_rad / dt;
-    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) / encoder_ticks_per_rad / dt;
+    js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) / encoder_ticks_per_rad /
+      dt;
+    js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) /
+      encoder_ticks_per_rad / dt;
     // RCLCPP_INFO_STREAM(get_logger(), "Wheel vel = " << js_msg.velocity.at(0) << "," << js_msg.velocity.at(1));
 
     // Update last_encode values
@@ -220,7 +213,7 @@ private:
 };
 
 /// @brief the main function to run the nuturtle_control node
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<NuturtleControl>());

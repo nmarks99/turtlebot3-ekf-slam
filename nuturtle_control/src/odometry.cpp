@@ -45,7 +45,7 @@ class Odometry : public rclcpp::Node
 {
 public:
   Odometry()
-      : Node("odometry")
+  : Node("odometry")
   {
     // pose_now.x = 0;
     // pose_now.y = 0;
@@ -69,18 +69,15 @@ public:
     wheel_right = get_parameter("wheel_right").get_value<std::string>();
 
     // throw runtime error if parameters are undefined
-    if (body_id.empty())
-    {
+    if (body_id.empty()) {
       RCLCPP_ERROR_STREAM(get_logger(), "body_id parameter not specified");
       throw std::runtime_error("body_id parameter not specified");
     }
-    if (wheel_right.empty())
-    {
+    if (wheel_right.empty()) {
       RCLCPP_ERROR_STREAM(get_logger(), "wheel_right parameter not specified");
       throw std::runtime_error("wheel_right parameter not specified");
     }
-    if (wheel_left.empty())
-    {
+    if (wheel_left.empty()) {
       RCLCPP_ERROR_STREAM(get_logger(), "left_right parameter not specified");
       throw std::runtime_error("left_right parameter not specified");
     }
@@ -90,25 +87,25 @@ public:
 
     /// @brief publishes the path of the odometry (nav_msgs/Path)
     path_pub = create_publisher<nav_msgs::msg::Path>(
-        "/odom/path", 10);
+      "/odom/path", 10);
 
     /// @brief Subscriber to joint_states topic
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
-        "/blue/joint_states", 10,
-        std::bind(&Odometry::joint_states_callback, this, _1));
+      "/blue/joint_states", 10,
+      std::bind(&Odometry::joint_states_callback, this, _1));
 
     /// @brief initial pose service that sets the initial pose of the robot
     _init_pose_service = this->create_service<nuturtle_control::srv::InitialPose>(
-        "odometry/initial_pose",
-        std::bind(&Odometry::init_pose_callback, this, _1, _2));
+      "odometry/initial_pose",
+      std::bind(&Odometry::init_pose_callback, this, _1, _2));
 
     /// @brief transform broadcaster used to publish transforms on the /tf topic
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
     /// \brief Timer (frequency defined by node parameter)
     _timer = create_wall_timer(
-        std::chrono::milliseconds((int)(1000 / RATE)),
-        std::bind(&Odometry::timer_callback, this));
+      std::chrono::milliseconds((int)(1000 / RATE)),
+      std::bind(&Odometry::timer_callback, this));
   }
 
 private:
@@ -157,8 +154,8 @@ private:
   /// @param request
   /// @param
   void init_pose_callback(
-      const std::shared_ptr<nuturtle_control::srv::InitialPose::Request> request,
-      std::shared_ptr<nuturtle_control::srv::InitialPose::Response>)
+    const std::shared_ptr<nuturtle_control::srv::InitialPose::Request> request,
+    std::shared_ptr<nuturtle_control::srv::InitialPose::Response>)
   {
     pose_now.x = request->x;
     pose_now.y = request->y;
@@ -215,8 +212,7 @@ private:
     odom_pub->publish(odom_msg);
 
     constexpr int PATH_PUB_RATE = 100;
-    if (count >= PATH_PUB_RATE)
-    {
+    if (count >= PATH_PUB_RATE) {
       count = 0;
       geometry_msgs::msg::PoseStamped temp_pose;
       temp_pose.header.stamp = get_clock()->now();
@@ -232,16 +228,14 @@ private:
       path_msg.header.stamp = get_clock()->now();
       path_msg.poses.push_back(temp_pose);
       path_pub->publish(path_msg);
-    }
-    else
-    {
+    } else {
       count++;
     }
   }
 };
 
 /// @brief the main function to run the odometry node
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<Odometry>());
