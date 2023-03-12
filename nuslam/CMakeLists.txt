@@ -121,8 +121,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
 
   find_package(Catch2 3 REQUIRED)
-  # enable_testing()
-  include(CTest)
+  enable_testing()
   add_executable(nuslam_test tests/tests.cpp)
   target_link_libraries(nuslam_test Catch2::Catch2WithMain)
 

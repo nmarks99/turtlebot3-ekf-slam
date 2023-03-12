@@ -2,7 +2,7 @@
 /// @brief Landmarks detection node
 ///
 /// PARAMETERS:
-/// 
+///
 /// PUBLISHES:
 ///
 /// SUBSCRIBES:
@@ -51,9 +51,9 @@ public:
 private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub;
 
-  void lidar_callback(const sensor_msgs::msg::LaserScan &lidar_data)
+  void lidar_callback(const sensor_msgs::msg::LaserScan & lidar_data)
   {
-    RCLCPP_INFO_STREAM(get_logger(),"lidar timestamp = " << lidar_data.header.stamp.sec);
+    RCLCPP_INFO_STREAM(get_logger(), "lidar timestamp = " << lidar_data.header.stamp.sec);
   }
 
 

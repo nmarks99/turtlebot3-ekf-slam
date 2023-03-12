@@ -113,7 +113,7 @@ public:
 
     /// @brief Publishes the path of the slam estimate
     odom_path_pub = create_publisher<nav_msgs::msg::Path>("/odom/path", 10);
-    
+
     /// @brief Publishses the SLAM landmarks
     slam_marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
       "/slam/landmarks", 10);
