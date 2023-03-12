@@ -56,7 +56,6 @@ using std::placeholders::_2;
 
 /// \cond
 // if true, saves slam data (pose predictions etc.) to a csv file
-// TODO: make this a ROS parameter
 static constexpr bool SAVE_TO_CSV = true;
 
 // for logging slam data to a csv file
@@ -114,7 +113,8 @@ public:
 
     /// @brief Publishes the path of the slam estimate
     odom_path_pub = create_publisher<nav_msgs::msg::Path>("/odom/path", 10);
-
+    
+    /// @brief Publishses the SLAM landmarks
     slam_marker_arr_pub = create_publisher<visualization_msgs::msg::MarkerArray>(
       "/slam/landmarks", 10);
 
@@ -154,7 +154,7 @@ public:
     odom_green_tf.header.frame_id = "odom_slam";
     odom_green_tf.child_frame_id = "green/base_footprint";
 
-    // map -> odom
+    // map -> odom_slam
     // this comes from the state estimate from the EKF
     map_odom_tf.header.frame_id = "map";
     map_odom_tf.child_frame_id = "odom_slam";
