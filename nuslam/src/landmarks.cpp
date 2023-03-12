@@ -13,6 +13,7 @@
 ///
 
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <fstream>
@@ -53,7 +54,31 @@ private:
 
   void lidar_callback(const sensor_msgs::msg::LaserScan & lidar_data)
   {
-    RCLCPP_INFO_STREAM(get_logger(), "lidar timestamp = " << lidar_data.header.stamp.sec);
+    constexpr double THRESHOLD = 0.1;
+    // Find clusters
+    for (size_t i = 0; i < lidar_data.ranges.size()-1; i++)
+    {
+      const double r1 = lidar_data.ranges.at(i);
+      const double phi1 = turtlelib::normalize_angle(turtlelib::deg2rad(i));
+      const double r2 = lidar_data.ranges.at(i+1);
+      const double phi2 = turtlelib::normalize_angle(turtlelib::deg2rad(i+1));
+      
+      const turtlelib::Vector2D v1 = turtlelib::Vector2D::from_polar(r1, phi1);
+      const turtlelib::Vector2D v2 = turtlelib::Vector2D::from_polar(r2, phi2);
+      const double d = turtlelib::distance(v1, v2);
+
+
+      if (d > 0.0 and d <= THRESHOLD)
+      {
+        RCLCPP_INFO_STREAM(get_logger(),"(r1,phi1) = " << r1 << "," << turtlelib::rad2deg(phi1));
+        RCLCPP_INFO_STREAM(get_logger(),"(r2,phi2) = " << r2 << "," << turtlelib::rad2deg(phi2));
+        RCLCPP_INFO_STREAM(get_logger(),"v1 = " << v1);
+        RCLCPP_INFO_STREAM(get_logger(),"v2 = " << v2);
+        RCLCPP_INFO_STREAM(get_logger(),"d = " << d);
+        RCLCPP_INFO_STREAM(get_logger(),"-------------------");
+      }
+
+    }
   }
 
 

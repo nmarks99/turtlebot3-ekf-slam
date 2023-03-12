@@ -27,6 +27,10 @@ namespace turtlelib
         Vector2D p1{0.0, 0.0};
         Vector2D p2{1.0, 1.0};
         REQUIRE(almost_equal(distance(p1, p2), std::sqrt(2.0)));
+
+        Vector2D p3{1.0,1.0};
+        Vector2D p4{1.01,1.0};
+        REQUIRE(almost_equal(distance(p3, p4), 0.01));
     }
 
     TEST_CASE("normalize_angle()", "[rigid2D]")
