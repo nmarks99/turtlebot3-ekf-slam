@@ -104,6 +104,12 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
 
+  find_package(Catch2 3 REQUIRED)
+  # enable_testing()
+  include(CTest)
+  add_executable(nuslam_test tests/tests.cpp)
+  target_link_libraries(nuslam_test Catch2::Catch2WithMain)
+
   ament_lint_auto_find_test_dependencies()
 endif()
 

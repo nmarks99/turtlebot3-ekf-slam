@@ -22,7 +22,7 @@ include_directories(${ARMADILLO_INCLUDE_DIRS})
 target_compile_features(turtlelib PUBLIC cxx_std_17)
 
 # warnings are your friend!
-target_compile_options(turtlelib PUBLIC -Wall -Wextra -Wpedantic)
+target_compile_options(turtlelib PUBLIC -Wall -Wextra -Wpedantic -std=c++17)
 
 # create the executable target  and link it with the rigid2d library
 # It is also possible specify multiple cpp files and they will be linked
