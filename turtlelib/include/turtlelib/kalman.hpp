@@ -84,11 +84,6 @@ namespace turtlelib
         void update_measurements(const LandmarkMeasurement &measurement);
 
         /// @brief extented Kalman filter prediction step which predicts
-        /// the new robot state qt_hat at time t. The process noise is zero here.
-        /// @param V a Twist2D at time t
-        void predict(const Twist2D &V);
-
-        /// @brief extented Kalman filter prediction step which predicts
         /// the new robot state qt_hat at time t using the pose estimate
         /// from the odometry calculation done elsewhere. The process noise is zero here.
         /// @param pose a Pose2D at time t
@@ -110,20 +105,12 @@ namespace turtlelib
 
         /// @brief Runs one iteration of the extended Kalman filtera
         /// with the given twist and landmark measurements. The pose
-        /// estimate from the prediction step is computed internally
-        /// as opposed to using the pose from odometry computed elsewhere
-        /// @param V a Twist2D
-        /// @param measurements a vector of LandmarkMeasurements
-        void run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
-
-        /// @brief Runs one iteration of the extended Kalman filtera
-        /// with the given twist and landmark measurements. The pose
         /// estimate from the prediction step comes from wheel odometry
         /// which is computed elsewhere and passed to this function
         /// @param pose a Pose2D of the current pose from the odometry
         /// @param V a Twist2D
         /// @param measurements a vector of LandmarkMeasurements
-        void run_from_odometry(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
+        void run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
 
         /// @brief returns the current pose prediction
         /// @return an arma::mat of the prediction of the robot's current pose

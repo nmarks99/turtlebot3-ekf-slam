@@ -65,15 +65,6 @@ namespace turtlelib
             double my_j = Xi_hat(2, 0) +
                    measurement.r * std::sin(normalize_angle(measurement.phi + Xi_hat(0, 0)));
 
-            // if (almost_equal(mx_j, 0.0))
-            // {
-                // mx_j = 0.0;
-            // }
-            // if (almost_equal(my_j, 0.0))
-            // {
-                // my_j = 0.0;
-            // }
-            
             mt_j = arma::mat{mx_j, my_j}.t();
 
             // Update the complete state estimate by adding in the new mt_j vector
@@ -107,12 +98,12 @@ namespace turtlelib
                 assert(Q_bar.n_rows == Q_bar.n_cols);
                 assert(Q_bar.n_rows == (3 + 2 * n));
             }
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Landmarks updated");
+            RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "Landmarks updated");
 
         } // else, Xi_hat gets updated in the EKF update step, and it's dimenions are already correct
         else
         {
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "No new landmarks added");
+            RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "No new landmarks added");
         }
     }
 
@@ -122,7 +113,7 @@ namespace turtlelib
 
         // Note for the prediction step here, we set the noise
         // equal to zero and the map stays stationary
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Beginning prediction step----------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Beginning prediction step----------");
         arma::mat A_t(3, 3, arma::fill::zeros);
         arma::mat qt_hat_new(3, 1, arma::fill::zeros);
         arma::mat w_t(3, 1, arma::fill::zeros); // w_t = 0
@@ -164,78 +155,12 @@ namespace turtlelib
         // Now we propagate the uncertainty using the linear state transition model
         sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_bar;
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat size = " << arma::size(sigma_hat));
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Xi_hat = \n"
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat size = " << arma::size(sigma_hat));
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "Xi_hat = \n"
                                                                    << Xi_hat);
-        // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat = \n"
+        // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat = \n"
         //                                                            << sigma_hat);
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Finished prediciton step-----------");
-    }
-
-    void KalmanFilter::predict(const Twist2D &V)
-    {
-        // MATH IS WRONG DO NOT USE FOR NOW
-
-        // This must only be called once update_measurements() has been called
-
-        // Note for the prediction step here, we set the noise
-        // equal to zero and the map stays stationary
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Beginning prediction step----------");
-        arma::mat A_t(3, 3, arma::fill::zeros);
-        arma::mat qt_hat_new(3, 1, arma::fill::zeros);
-        arma::mat w_t(3, 1, arma::fill::zeros); // w_t = 0
-
-        Xi_hat(0, 0) = normalize_angle(Xi_hat(0, 0));
-
-        // zero rotational velocity
-        if (almost_equal(V.thetadot, 0.0))
-        {
-            qt_hat_new(0, 0) = 0.0;
-            qt_hat_new(1, 0) = Xi_hat(1, 0) + V.xdot * std::cos(Xi_hat(0, 0)) + w_t(1, 0);
-            qt_hat_new(2, 0) = Xi_hat(2, 0) + V.xdot * std::sin(Xi_hat(0, 0)) + w_t(2, 0);
-
-            // A_t = derivative of g
-            A_t(0, 0) = 0.0;
-            A_t(1, 0) = -V.xdot * std::sin(Xi_hat(0, 0));
-            A_t(2, 0) = V.xdot * std::cos(Xi_hat(0, 0));
-        }
-        else // non-zero rotational velocity
-        {
-            qt_hat_new(0, 0) = normalize_angle(Xi_hat(0, 0) + V.thetadot) + w_t(0, 0);
-            qt_hat_new(1, 0) = Xi_hat(1, 0) -
-                               (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0)) +
-                               (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot) + w_t(1, 0);
-            qt_hat_new(2, 0) = Xi_hat(2, 0) +
-                               (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0)) -
-                               (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0) + V.thetadot) + w_t(2, 0);
-
-            // A_t = derivative of g
-            A_t(0, 0) = 0.0;
-            A_t(1, 0) = -(V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0)) +
-                        (V.xdot / V.thetadot) * std::cos(Xi_hat(0, 0) + V.thetadot);
-            A_t(2, 0) = -(V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0)) +
-                        (V.xdot / V.thetadot) * std::sin(Xi_hat(0, 0) + V.thetadot);
-        }
-
-        // A_t should be (3+2n x 3+2n)
-        A_t = arma::join_rows(A_t, arma::mat(3, 2 * n, arma::fill::zeros));
-        A_t = arma::join_cols(A_t, arma::mat(2 * n, 3 + 2 * n, arma::fill::zeros));
-        A_t = A_t + arma::mat(arma::size(A_t), arma::fill::eye);
-        assert(A_t.n_rows == A_t.n_cols);
-        assert(A_t.n_rows == (3 + 2 * n));
-
-        // Save the new prediction of the robot's configuration
-        Xi_hat.submat(0, 0, 2, 0) = qt_hat_new;
-
-        // Now we propagate the uncertainty using the linear state transition model
-        sigma_hat = (A_t * sigma_hat * A_t.t()) + Q_bar;
-
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat size = " << arma::size(sigma_hat));
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Xi_hat = \n"
-                                                                   << Xi_hat);
-        // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "sigma_hat = \n"
-        //                                                            << sigma_hat);
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Finished prediciton step-----------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-----------Finished prediciton step-----------");
     }
 
     arma::mat KalmanFilter::compute_h(unsigned int ind_in_Xi) const
@@ -253,7 +178,7 @@ namespace turtlelib
 
         arma::mat h = arma::mat{r_j, phi_j};
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "h = \n"
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "h = \n"
                                                                    << h);
         return h;
 
@@ -278,7 +203,7 @@ namespace turtlelib
         H(1, 3 + j) = -del_y / d;
         H(1, 4 + j) = del_x / d;
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "H = \n"
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "H = \n"
                                                                    << H);
         return H;
     }
@@ -286,7 +211,7 @@ namespace turtlelib
     void KalmanFilter::update(const std::vector<LandmarkMeasurement> &measurements)
     {
         // for each measurement
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Beginning update step-----------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Beginning update step-----------");
 
         // Note: if the vector has multiple measurments with the same id,
         // this will fail! The duplicate id measurement will not get added
@@ -305,7 +230,7 @@ namespace turtlelib
 
             // 3. Compute the posterior state update Xi_t_hat
             arma::mat zi = measurements.at(i).to_mat();
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "(zi - zi_hat)\n"
+            RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "(zi - zi_hat)\n"
                                                                        << zi << " - " << zi_hat.t());
             arma::mat z_diff = zi - zi_hat.t();
             z_diff(1, 0) = normalize_angle(z_diff(1, 0));
@@ -318,12 +243,12 @@ namespace turtlelib
             sigma_hat = (I - K * H) * sigma_hat;
         }
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "---------Finished update step---------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "---------Finished update step---------");
     }
 
-    void KalmanFilter::run_from_odometry(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
+    void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
         // Add new measurments and update dimensions if needed
         for (size_t i = 0; i < measurements.size(); i++)
         {
@@ -336,29 +261,8 @@ namespace turtlelib
         // Kalman filter update step
         update(measurements);
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
-    }
-
-    void KalmanFilter::run(const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
-    {
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
-
-        // Add new measurments and update dimensions if needed
-        for (size_t i = 0; i < measurements.size(); i++)
-        {
-            update_measurements(measurements.at(i));
-        }
-
-        // Kalman filter prediction step
-        predict(V);
-
-        // Kalman filter update step
-        update(measurements);
-
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
-
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
     }
 
     arma::mat KalmanFilter::pose_prediction() const
