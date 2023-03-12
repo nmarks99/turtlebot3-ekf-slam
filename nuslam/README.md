@@ -17,12 +17,10 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 
 ## Results
 
-### SLAM estimate remains good even after colliding with an obstacle, messing up odometry:
-
-**No noise:**
+### No noise or slipping
 - insert video here
 
 ![no_noise_collision_plot](https://user-images.githubusercontent.com/45540813/224561432-b61cfc50-321b-4f51-aa18-213fe21d4490.png)
 
-**With sensor noise and slipping:**
+### With sensor noise and slipping
 - Insert video and plot here
