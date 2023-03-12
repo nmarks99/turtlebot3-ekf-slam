@@ -73,11 +73,11 @@ namespace turtlelib
 
         /// @brief computes the theoretical measurement given the current state estimate
         /// @param j index of x component of mt_j in Xi_hat
-        arma::mat compute_h(int j) const;
+        arma::mat compute_h(unsigned int ind_in_Xi) const;
 
         /// @brief computes the derivative of h with respect to the state Xi
         /// @param j index of x component of mt_j in Xi_hat
-        arma::mat compute_H(int j) const;
+        arma::mat compute_H(unsigned int ind_in_Xi) const;
 
         /// @brief takes a measurement and if it hasn't been seen before, initializes it,
         /// and adds it to the set of known landmark measurments.

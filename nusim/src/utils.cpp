@@ -134,7 +134,7 @@ void fill_basic_sensor_obstacles(
   for (i = 0; i < obstacles_x.size(); i++) {
     // Create a Vector2D for the current obstacle (x,y)
     turtlelib::Vector2D _v{obstacles_x.at(i), obstacles_y.at(i)};
-    RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle i = " << _v);
+
     // Get the transforms so we can publish the obstacles in the body frame
     turtlelib::Transform2D T_WO(_v);
     turtlelib::Transform2D T_WB(turtlelib::Vector2D{true_pose.x, true_pose.y}, true_pose.theta);
