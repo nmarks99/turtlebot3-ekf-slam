@@ -561,7 +561,7 @@ private:
       nusim_log_file << timestamp << ",";
       nusim_log_file << true_pose.theta << ",";
       nusim_log_file << true_pose.x << ",";
-      nusim_log_file << true_pose.x << "\n";
+      nusim_log_file << true_pose.y << "\n";
     }
   }
 };
