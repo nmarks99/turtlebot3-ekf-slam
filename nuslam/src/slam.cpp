@@ -250,7 +250,6 @@ private:
     wheel_speeds_now.right = js_data.velocity.at(1);
 
     // Compute current body twist from given wheel velocities
-    // RCLCPP_INFO_STREAM(get_logger(), "Wheel speeds = " << wheel_speeds_now.left << "," << wheel_speeds_now.right);
     Vb_now = ddrive.body_twist(wheel_speeds_now);
 
     // Update current pose of the robot with forward kinematics
@@ -266,19 +265,14 @@ private:
       const double x = marker_arr.markers.at(i).pose.position.x;
       const double y = marker_arr.markers.at(i).pose.position.y;
       const unsigned int marker_id = marker_arr.markers.at(i).id;
-      RCLCPP_INFO_STREAM(get_logger(), "x,y,id = " << x << "," << y << "," << marker_id);
       landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
     }
 
-    RCLCPP_INFO_STREAM(get_logger(), "Vb = " << Vb_now);
-
     // Run extended Kalman filter and update get the updated state estimate
-    ekf.run_from_odometry(pose_now, Vb_now, landmarks);
+    ekf.run(pose_now, Vb_now, landmarks);
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();
-
-    RCLCPP_INFO_STREAM(get_logger(), "state = " << slam_state_estimate);
 
     // Saves the state estimate from the EKF to a csv file
     if (SAVE_TO_CSV) {
