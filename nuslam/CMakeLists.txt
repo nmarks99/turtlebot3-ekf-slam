@@ -23,12 +23,6 @@ find_package(nav_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(Armadillo REQUIRED)
 
-# add_library(kalman src/kalman.cpp)
-# ament_target_dependencies(kalman
-#   rclcpp
-# )
-# target_link_libraries(kalman turtlelib::turtlelib)
-
 # add slam.cpp executable
 add_executable(slam src/slam.cpp)
 ament_target_dependencies(slam
@@ -44,9 +38,30 @@ ament_target_dependencies(slam
   visualization_msgs
 )
 
+# add landmarks.cpp executable
+add_executable(landmarks src/landmarks.cpp)
+ament_target_dependencies(landmarks
+  rclcpp
+  std_msgs
+  std_srvs
+  geometry_msgs
+  tf2
+  tf2_ros
+  nav_msgs
+  sensor_msgs
+  nuturtlebot_msgs
+  visualization_msgs
+)
+
+# include armadillo library headers
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 
+# link armadillo and turtlelib
 target_link_libraries(slam
+  turtlelib::turtlelib
+  ${${ARMADILLO_LIBRARIES}}
+)
+target_link_libraries(landmarks
   turtlelib::turtlelib
   ${${ARMADILLO_LIBRARIES}}
 )
@@ -66,6 +81,7 @@ target_link_libraries(slam "${cpp_typesupport_target}")
 # install nodes
 install(TARGETS
   slam
+  landmarks
   DESTINATION lib/${PROJECT_NAME}
 )
 
