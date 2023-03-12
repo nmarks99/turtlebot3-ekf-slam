@@ -18,9 +18,10 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 ## Results
 
 ### No noise or slipping
-- insert video here
+![no_noise_run](https://user-images.githubusercontent.com/45540813/224562029-d6b0110a-d232-4a40-b849-6cfca3bfb454.png)
+
 
 ![no_noise_collision_plot](https://user-images.githubusercontent.com/45540813/224561432-b61cfc50-321b-4f51-aa18-213fe21d4490.png)
 
 ### With sensor noise and slipping
-- Insert video and plot here
+- Insert screenshot and plot here 
