@@ -25,16 +25,21 @@ namespace turtlelib
     struct LandmarkMeasurement
     {
         /// @brief distance in meters to the landmark
-        double r;
+        double r = 0.0;
 
         /// @brief  bearing(angle) to the landmark in radians
-        double phi;
+        double phi = 0.0;
 
         /// @brief integer id, typically associated with a ROS Marker message
-        unsigned int marker_id;
+        unsigned int marker_id = 0;
 
         /// @brief Default constructor that initializes variables to zero
         LandmarkMeasurement();
+
+        /// @brief Constructor which defines the r, and phi
+        /// @param _r range
+        /// @param _phi bearing (angle)
+        LandmarkMeasurement(double _r, double _phi);
 
         /// @brief Constructor which defines the r, phi, and marker_id
         /// @param _r range
@@ -52,6 +57,7 @@ namespace turtlelib
         /// @brief Stores the r and phi values in a 2x1 arma::mat and returns it
         /// @return 2x1 arma::mat [r phi]
         arma::mat to_mat() const;
+
     };
 
     /// @brief Extended Kalman Filter for use with EKF-SLAM

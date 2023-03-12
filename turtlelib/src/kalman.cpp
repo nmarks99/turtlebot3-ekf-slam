@@ -12,6 +12,9 @@ namespace turtlelib
     LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi, int _marker_id)
         : r(_r), phi(_phi), marker_id(_marker_id) {}
 
+    LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi)
+        : r(_r), phi(_phi), marker_id(0) {}
+
     LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y, int _marker_id)
     {
         LandmarkMeasurement measurement;

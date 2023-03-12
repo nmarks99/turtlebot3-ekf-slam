@@ -233,6 +233,11 @@ namespace turtlelib
         return v *= scalar;
     }
 
+    Vector2D Vector2D::from_polar(double r, double phi)
+    {
+        return Vector2D{r*std::cos(phi), r*std::sin(phi)};
+    }
+
     /*
     ========
     Twist2D

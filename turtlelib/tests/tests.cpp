@@ -275,6 +275,25 @@ namespace turtlelib
         REQUIRE(almost_equal(result.y, 6.0));
     }
 
+    TEST_CASE("from_polar()","[Twist2D]")
+    { // Nick, Marks
+        auto v = Vector2D::from_polar(1.0,M_PI/2.0);
+        REQUIRE(almost_equal(v.x, 0.0));
+        REQUIRE(almost_equal(v.y, 1.0));
+
+        auto v1 = Vector2D::from_polar(std::sqrt(2.0),M_PI/4.0);
+        REQUIRE(almost_equal(v1.x, 1.0));
+        REQUIRE(almost_equal(v1.y, 1.0));
+
+        auto v2 = Vector2D::from_polar(std::sqrt(2.0),-M_PI/4.0);
+        REQUIRE(almost_equal(v2.x, 1.0));
+        REQUIRE(almost_equal(v2.y, -1.0));
+    }
+
+    // =================
+    //      Twist2D
+    // =================
+
     TEST_CASE("operator<<", "[Twist2D]")
     { // Nick, Marks
         Twist2D V{4, 8, 3};

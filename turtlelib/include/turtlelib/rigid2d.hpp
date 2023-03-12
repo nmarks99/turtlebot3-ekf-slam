@@ -215,6 +215,10 @@ namespace turtlelib
         /// \param scalar - the scalar to multiply by
         /// \return a reference to the vector after multiplication
         Vector2D &operator*=(double scalar);
+        
+        /// @brief constructs a Vector2D from polar coordinates
+        /// converting (r,phi) to (x,y)
+        static Vector2D from_polar(double r, double phi);
     };
 
     /// @brief Computes straight line distance between two points in 2D
