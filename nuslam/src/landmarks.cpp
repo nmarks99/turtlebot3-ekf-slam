@@ -39,6 +39,10 @@
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
+/// @brief minimum amount of points to be considered a cluster
+constexpr unsigned int MIN_CLUSTER_SIZE = 3;
+
+
 /// @brief Landmarks detection node
 class Landmarks : public rclcpp::Node
 {
@@ -64,9 +68,12 @@ private:
 
   // Messages 
   visualization_msgs::msg::MarkerArray cluster_marker_arr;
-  
+ 
+  // Vector of Cluster objects representing all the clusters of points
   std::vector<Cluster> all_clusters;
 
+  /// @brief fills in a marker array containing a spherical
+  /// marker at the average (x,y) location of each cluster
   void fill_cluster_markers()
   {
     // Clear the markers from the last scan
@@ -77,13 +84,13 @@ private:
       
       auto p_avg = all_clusters.at(i).mean_point();
 
-      RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
-      for (auto &v : all_clusters.at(i).get_vector())  
-      {
-        RCLCPP_INFO_STREAM(get_logger(), v);
-      }
-      RCLCPP_INFO_STREAM(get_logger(),"avg (x,y) = " << p_avg);
-      RCLCPP_INFO_STREAM(get_logger(), "----------------------");
+      // RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
+      // for (auto &v : all_clusters.at(i).get_vector())
+      // {
+        // RCLCPP_INFO_STREAM(get_logger(), v);
+      // }
+      // RCLCPP_INFO_STREAM(get_logger(),"avg (x,y) = " << p_avg);
+      // RCLCPP_INFO_STREAM(get_logger(), "----------------------");
 
       visualization_msgs::msg::Marker cluster_marker;
 
@@ -97,11 +104,11 @@ private:
       cluster_marker.scale.z = 0.05;
       cluster_marker.pose.position.x = p_avg.x;
       cluster_marker.pose.position.y = p_avg.y;
-      cluster_marker.pose.position.z = 0.01;
+      cluster_marker.pose.position.z = 0.05;
       cluster_marker.color.a = 1.0;
-      cluster_marker.color.r = 0.2;
-      cluster_marker.color.g = 0.3;
-      cluster_marker.color.b = 0.5;
+      cluster_marker.color.r = 0.4;
+      cluster_marker.color.g = 0.4;
+      cluster_marker.color.b = 0.2;
       cluster_marker_arr.markers.push_back(cluster_marker);
     }
 
@@ -144,11 +151,10 @@ private:
       }
     }
 
-
     // Remove clusters with fewer than 3 points
     for (size_t i = 0; i < all_clusters.size(); i++)
     {
-      if (all_clusters.at(i).count() < 3)
+      if (all_clusters.at(i).count() < MIN_CLUSTER_SIZE)
       {
         all_clusters.erase(all_clusters.begin()+i);
       }
