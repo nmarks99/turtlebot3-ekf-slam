@@ -67,6 +67,47 @@ private:
   
   std::vector<Cluster> all_clusters;
 
+  void fill_cluster_markers()
+  {
+    // Clear the markers from the last scan
+    cluster_marker_arr.markers.clear();
+
+    for (size_t i = 0; i < all_clusters.size(); i++)
+    {
+      
+      auto p_avg = all_clusters.at(i).mean_point();
+
+      RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
+      for (auto &v : all_clusters.at(i).get_vector())  
+      {
+        RCLCPP_INFO_STREAM(get_logger(), v);
+      }
+      RCLCPP_INFO_STREAM(get_logger(),"avg (x,y) = " << p_avg);
+      RCLCPP_INFO_STREAM(get_logger(), "----------------------");
+
+      visualization_msgs::msg::Marker cluster_marker;
+
+      cluster_marker.header.stamp = get_clock()->now();
+      cluster_marker.header.frame_id = "red/base_footprint";
+      cluster_marker.id = i;
+      cluster_marker.action = visualization_msgs::msg::Marker::ADD;
+      cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
+      cluster_marker.scale.x = 0.05; 
+      cluster_marker.scale.y = 0.05; 
+      cluster_marker.scale.z = 0.05;
+      cluster_marker.pose.position.x = p_avg.x;
+      cluster_marker.pose.position.y = p_avg.y;
+      cluster_marker.pose.position.z = 0.01;
+      cluster_marker.color.a = 1.0;
+      cluster_marker.color.r = 0.2;
+      cluster_marker.color.g = 0.3;
+      cluster_marker.color.b = 0.5;
+      cluster_marker_arr.markers.push_back(cluster_marker);
+    }
+
+    cluster_pub->publish(cluster_marker_arr);
+
+  }
 
   void lidar_callback(const sensor_msgs::msg::LaserScan & lidar_data)
   {
@@ -111,46 +152,11 @@ private:
       {
         all_clusters.erase(all_clusters.begin()+i);
       }
-
     }
+    
+    // fill and publish cluster marker array for testing
+    fill_cluster_markers();
 
-    // Clear the markers from the last scan
-    cluster_marker_arr.markers.clear();
-
-    for (size_t i = 0; i < all_clusters.size(); i++)
-    {
-
-      RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
-      for (auto &v : all_clusters.at(i).get_vector())  
-      {
-        RCLCPP_INFO_STREAM(get_logger(), v);
-      }
-      RCLCPP_INFO_STREAM(get_logger(), "----------------------");
-
-      auto p_avg = all_clusters.at(i).mean_point();
-      visualization_msgs::msg::Marker cluster_marker;
-
-      cluster_marker.header.stamp = get_clock()->now();
-      cluster_marker.header.frame_id = "red/base_footprint";
-      cluster_marker.id = i;
-      cluster_marker.action = visualization_msgs::msg::Marker::ADD;
-      cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
-      cluster_marker.scale.x = 0.05; 
-      cluster_marker.scale.y = 0.05; 
-      cluster_marker.scale.z = 0.05;
-      cluster_marker.pose.position.x = p_avg.x;
-      cluster_marker.pose.position.y = p_avg.y;
-      cluster_marker.pose.position.z = 0.01;
-      cluster_marker.color.a = 1.0;
-      cluster_marker.color.r = 0.2;
-      cluster_marker.color.g = 0.3;
-      cluster_marker.color.b = 0.5;
-      cluster_marker_arr.markers.push_back(cluster_marker);
-    }
-    if (not cluster_marker_arr.markers.empty())
-    {
-      cluster_pub->publish(cluster_marker_arr);
-    }
   }
 
 
