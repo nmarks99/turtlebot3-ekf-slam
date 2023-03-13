@@ -1,26 +1,33 @@
 #include "nuslam/circle_fitting.hpp"
+#include <cstddef>
 #include <turtlelib/rigid2d.hpp>
 
 using turtlelib::almost_equal;
+using turtlelib::Vector2D;
 
+// =============
+//    Cluster
+// =============
+
+/// @cond
 Cluster::Cluster() {}
 
 
 Cluster::Cluster(double threshold) : THRESHOLD(threshold) {}
 
 
-Cluster::Cluster(turtlelib::Vector2D p_new, double threshold) : THRESHOLD(threshold)
+Cluster::Cluster(Vector2D p_new, double threshold) : THRESHOLD(threshold)
 {
     cluster_vec.push_back(p_new);
 }
 
 
-Cluster::Cluster(turtlelib::Vector2D p_new)
+Cluster::Cluster(Vector2D p_new)
 {
     cluster_vec.push_back(p_new);
 }
 
-bool Cluster::contains(turtlelib::Vector2D p_new)
+bool Cluster::contains(Vector2D p_new)
 {
     for (auto &p : cluster_vec)
     {
@@ -33,7 +40,7 @@ bool Cluster::contains(turtlelib::Vector2D p_new)
 }
 
 
-bool Cluster::belongs(turtlelib::Vector2D p_new)
+bool Cluster::belongs(Vector2D p_new)
 {
     for (auto &p : cluster_vec)
     {
@@ -53,7 +60,7 @@ bool Cluster::belongs(turtlelib::Vector2D p_new)
     return false;
 }
 
-bool Cluster::blind_add(turtlelib::Vector2D p_new)
+bool Cluster::blind_add(Vector2D p_new)
 {
     if (contains(p_new))
     {
@@ -68,7 +75,7 @@ bool Cluster::blind_add(turtlelib::Vector2D p_new)
 }
 
 
-turtlelib::Vector2D Cluster::mean_point() const
+Vector2D Cluster::centroid() const
 {
     double sum_x = 0.0;
     double sum_y = 0.0;
@@ -79,12 +86,12 @@ turtlelib::Vector2D Cluster::mean_point() const
         sum_y += c.y;
     }
     
-    return turtlelib::Vector2D{sum_x/n, sum_y/n};
+    return Vector2D{sum_x/n, sum_y/n};
 
 }
 
 
-std::vector<turtlelib::Vector2D> Cluster::get_vector() const
+std::vector<Vector2D> Cluster::get_vector() const
 {
     return cluster_vec;
 }
@@ -94,4 +101,140 @@ size_t Cluster::count() const
     return cluster_vec.size();
 }
 
+// ===================
+//    Circle Fitting
+// ===================
 
+// Shifts the ith point p to the centroid
+// and computes zi = x^2 + y^2
+double compute_zi(const Vector2D &p, const Vector2D &centroid)
+{
+    const double xi = p.x - centroid.x;
+    const double yi = p.y - centroid.y;
+    return std::pow(xi,2.0) + std::pow(yi,2.0);
+}
+
+double vector_mean(const std::vector<double> &v)
+{
+    return std::reduce(v.begin(),v.end())/static_cast<double>(v.size());
+}
+
+arma::mat compute_Z(Cluster cluster, std::vector<double> z_vec)
+{
+    const size_t n = cluster.count();
+    arma::mat Z = arma::mat(n,4, arma::fill::zeros);
+    Z.submat(0,3,n-1,3) = arma::mat(n,1,arma::fill::ones);
+
+    for (size_t i = 0; i < Z.n_rows; i++)
+    {
+        Z(i,0) = z_vec.at(i);
+        Z(i,1) = cluster.get_vector().at(i).x;
+        Z(i,2) = cluster.get_vector().at(i).y;
+    }
+    return Z;
+}
+
+arma::mat compute_M(arma::mat Z)
+{
+    return (1.0/Z.n_rows) * Z.t() * Z;
+
+}
+
+arma::mat compute_H(double z_bar)
+{
+    arma::mat H = arma::mat(4,4,arma::fill::eye);
+    H(0,0) = 8.0 * z_bar;
+    H(3,3) = 0.0;
+    H(0,3) = 2.0;
+    H(3,0) = 2.0;
+
+    return H;
+}
+
+arma::mat compute_Hinv(double z_bar)
+{
+    arma::mat Hinv = arma::mat(4,4,arma::fill::eye);
+    Hinv(0,0) = 0.0;
+    Hinv(3,3) = -2.0 * z_bar;
+    Hinv(0,3) = 0.5;
+    Hinv(3,0) = 0.5;
+
+    return Hinv;
+}
+
+bool fit_circle(Cluster cluster)
+{
+    // Compute the centroid of the cluster
+    Vector2D centroid = cluster.centroid();
+
+    // Compute the z for each point, and mean z_bar
+    std::vector<double> z_vec;
+    for (auto &p : cluster.get_vector())
+    {
+        z_vec.push_back(compute_zi(p,centroid));
+    }
+    double z_bar = vector_mean(z_vec);
+
+    // Form the data matrix Z
+    arma::mat Z = compute_Z(cluster,z_vec);
+    
+    // Form the moment matrix M
+    arma::mat M = compute_M(Z);
+
+    // Form the constraint matrix H and its inverse
+    arma::mat H = compute_H(z_bar);
+    arma::mat Hinv = compute_Hinv(z_bar);
+
+    // Compute the SVD of Z
+    arma::mat U;
+    arma::vec sigma;
+    arma::mat V;
+    arma::svd(U,sigma,V,Z);
+
+    // Compute A
+    arma::mat A = arma::mat(V.n_rows,1);
+    if (sigma(sigma.n_rows-1,0) < 10e-12)
+    {
+       A = V.col(3);
+    }
+    else
+    {
+        arma::mat Y = V * arma::diagmat(sigma) * V.t();
+        arma::mat Q = Y * Hinv * Y;
+
+        // Find eigenvalues and eigenvectors of Q
+        arma::vec eigval;
+        arma::mat eigvec;
+        eig_sym(eigval, eigvec, Q); 
+
+        // Find the index of the smallest positive eigenvalue
+        double smallest = arma::max(eigval);
+        size_t ind = 0;
+        for (size_t i = 0; i < eigval.n_rows-1; i++)
+        {
+            if (eigval(i) >= 0 and eigval(i) < smallest)
+            {
+                smallest = eigval(i);
+                ind = i;
+            }
+        }
+
+        // Get the eigenvector cooresponding to the smallest positive eignevalue
+        arma::mat A_star = eigvec.col(ind);
+        
+        // Solve YA = A* for A
+        arma::vec A = arma::solve(Y,A_star);
+        std::cout << A << std::endl;
+
+        // (x-a)^2 + (y-b)^2 = R^2
+        // double a = -A(1)/(2.0*A(0));
+        // double b = -A(2)/(2.0*A(0));
+        double R_sqr = ( std::pow(A(1),2.0) + std::pow(A(2),2.0) - 4*A(0)*A(3) ) / (2*std::pow(A(0),2.0));
+        std::cout << "radius = " << R_sqr << std::endl;
+
+    }
+
+    return true;
+}
+
+/// @endcond

@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <future>
 #include <turtlelib/rigid2d.hpp>
 #include <vector>
 #include "nuslam/circle_fitting.hpp"
@@ -17,7 +18,7 @@ TEST_CASE("Cluster()", "[Cluster]")
     cluster.belongs(p);
 
     // Size should be two since the new point should be added
-    REQUIRE(cluster.get_vector().size() == 2); 
+    REQUIRE(cluster.get_vector().size() == 2);
 
     // Add a new point if it belongs (this time it doesn't)
     Vector2D p2{2.0,2.0};
@@ -35,7 +36,7 @@ TEST_CASE("contains()", "[Cluster]")
     REQUIRE_FALSE(cluster.contains(Vector2D{2.0,2.0}));
 }
 
-TEST_CASE("mean_point()","[Cluster]")
+TEST_CASE("centroid()","[Cluster]")
 {
     Cluster cluster;
 
@@ -44,8 +45,117 @@ TEST_CASE("mean_point()","[Cluster]")
     cluster.blind_add(Vector2D{1.0,0.0});
     cluster.blind_add(Vector2D{0.0,1.0});
 
-    auto avg_xy = cluster.mean_point();
+    auto avg_xy = cluster.centroid();
     
     REQUIRE(almost_equal(avg_xy.x, 0.5));
     REQUIRE(almost_equal(avg_xy.y, 0.5));
 }
+
+TEST_CASE("vector_mean()")
+{
+    std::vector<double> v{10.0,20.0};
+    double avg = vector_mean(v);
+    REQUIRE(almost_equal(avg, 15.0));
+}
+
+TEST_CASE("compute_zi()")
+{
+    Vector2D v{2.0,2.0};
+    Vector2D com{1.0,1.0};
+    double zi = compute_zi(v, com);
+    REQUIRE(almost_equal(zi, 2.0));
+}
+
+
+TEST_CASE("construct_Z()")
+{
+    Cluster cluster;
+    cluster.blind_add(Vector2D{1.01,1.02});
+    cluster.blind_add(Vector2D{1.03,1.04});
+    cluster.blind_add(Vector2D{1.04,1.03});
+
+    Vector2D centroid = cluster.centroid();
+    std::vector<double> z_vec;
+    for (auto &p : cluster.get_vector())
+    {
+        z_vec.push_back(compute_zi(p,centroid));
+    }
+
+    arma::mat Z = compute_Z(cluster,z_vec);
+
+    REQUIRE(almost_equal(Z(0,1), 1.01));
+    REQUIRE(almost_equal(Z(0,2), 1.02));
+    REQUIRE(almost_equal(Z(1,1), 1.03));
+    REQUIRE(almost_equal(Z(1,2), 1.04));
+}
+
+TEST_CASE("compute_M()")
+{
+    Cluster cluster;
+    cluster.blind_add(Vector2D{1.01,1.02});
+    cluster.blind_add(Vector2D{1.03,1.04});
+    cluster.blind_add(Vector2D{1.04,1.03});
+
+    Vector2D centroid = cluster.centroid();
+    std::vector<double> z_vec;
+    for (auto &p : cluster.get_vector())
+    {
+        z_vec.push_back(compute_zi(p,centroid));
+    }
+
+    arma::mat Z = compute_Z(cluster,z_vec);
+    arma::mat M = compute_M(Z);
+}
+
+TEST_CASE("compute_H()")
+{
+    Cluster cluster;
+    cluster.blind_add(Vector2D{1.01,1.02});
+    cluster.blind_add(Vector2D{1.03,1.04});
+    cluster.blind_add(Vector2D{1.04,1.03});
+
+    Vector2D centroid = cluster.centroid();
+    std::vector<double> z_vec;
+    for (auto &p : cluster.get_vector())
+    {
+        z_vec.push_back(compute_zi(p,centroid));
+    }
+
+    double z_bar = vector_mean(z_vec); 
+    arma::mat H = compute_H(z_bar);
+    
+}
+
+
+TEST_CASE("compute_Hinv()")
+{
+    Cluster cluster;
+    cluster.blind_add(Vector2D{1.01,1.02});
+    cluster.blind_add(Vector2D{1.03,1.04});
+    cluster.blind_add(Vector2D{1.04,1.03});
+
+    Vector2D centroid = cluster.centroid();
+    std::vector<double> z_vec;
+    for (auto &p : cluster.get_vector())
+    {
+        z_vec.push_back(compute_zi(p,centroid));
+    }
+
+    double z_bar = vector_mean(z_vec); 
+    arma::mat Hinv = compute_Hinv(z_bar);
+    
+}
+
+TEST_CASE("fit_circle()")
+{
+    Cluster cluster;
+    cluster.blind_add(Vector2D{1.0,7.0});
+    cluster.blind_add(Vector2D{2.0,6.0});
+    cluster.blind_add(Vector2D{5.0,8.0});
+    cluster.blind_add(Vector2D{7.0,7.0});
+    cluster.blind_add(Vector2D{9.0,5.0});
+    cluster.blind_add(Vector2D{3.0,7.0});
+    fit_circle(cluster);
+}
+
+

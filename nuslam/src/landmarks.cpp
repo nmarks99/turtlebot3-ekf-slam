@@ -82,7 +82,7 @@ private:
     for (size_t i = 0; i < all_clusters.size(); i++)
     {
       
-      auto p_avg = all_clusters.at(i).mean_point();
+      auto p_avg = all_clusters.at(i).centroid();
 
       // RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
       // for (auto &v : all_clusters.at(i).get_vector())
