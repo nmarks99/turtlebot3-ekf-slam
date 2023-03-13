@@ -130,7 +130,7 @@ if(BUILD_TESTING)
   find_package(Catch2 3 REQUIRED)
   enable_testing()
   add_executable(nuslam_test tests/tests.cpp src/circle_fitting.cpp)
-  target_link_libraries(nuslam_test Catch2::Catch2WithMain)
+  target_link_libraries(nuslam_test Catch2::Catch2WithMain turtlelib::turtlelib circle_fitting)
 
   ament_lint_auto_find_test_dependencies()
 endif()

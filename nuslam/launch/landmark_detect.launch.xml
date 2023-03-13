@@ -22,7 +22,7 @@
         </node>
 
         <!-- start rviz with nuturle_control.rviz configuration -->
-        <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuslam)/config/nuslam.rviz --fixed-frame nusim/world"/>
+        <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuslam)/config/landmarks.rviz --fixed-frame nusim/world"/>
 
         <!-- load red robot into rviz with jsp-->
         <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
