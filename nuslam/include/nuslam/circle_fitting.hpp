@@ -10,7 +10,7 @@
 struct Cluster
 {
     private:
-        double THRESHOLD = 0.1;
+        double THRESHOLD = 0.05;
         std::vector<turtlelib::Vector2D> cluster_vec;
         
     public:
