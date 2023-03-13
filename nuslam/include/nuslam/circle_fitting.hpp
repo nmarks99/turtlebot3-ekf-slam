@@ -10,7 +10,7 @@
 struct Cluster
 {
     private:
-        double THRESHOLD = 0.05;
+        double THRESHOLD = 0.1;
         std::vector<turtlelib::Vector2D> cluster_vec;
         
     public:
@@ -55,6 +55,9 @@ struct Cluster
 
         /// @brief returns the cluster as a vector of Vector2D points
         std::vector<turtlelib::Vector2D> get_vector() const;
+        
+        /// @brief returns the number of points in the cluster
+        size_t count() const;
     
 };
 

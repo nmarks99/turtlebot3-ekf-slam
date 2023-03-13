@@ -89,12 +89,9 @@ std::vector<turtlelib::Vector2D> Cluster::get_vector() const
     return cluster_vec;
 }
 
+size_t Cluster::count() const
+{
+    return cluster_vec.size();
+}
 
-// std::vector<Cluster> squash(std::vector<Cluster> clusters)
-// {
-    // for (size_t i = 0; i < clusters.size(); i++)
-    // {
-        //
-    // }
-// }
 

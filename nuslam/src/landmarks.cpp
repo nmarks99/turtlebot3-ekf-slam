@@ -73,26 +73,8 @@ private:
 
     all_clusters.clear(); // clears clusters from the previous scan
 
-    // If all_clusters is empty, add the first non-zero range to it 
-    // as a new cluster
-
-    // if (all_clusters.empty())
-    // {
-      // for (size_t i = 0; i < lidar_data.ranges.size(); i++)
-      // {
-        // if (lidar_data.ranges.at(i) > 0.0)
-        // {
-          // auto _r = lidar_data.ranges.at(i);
-          // auto _phi = turtlelib::deg2rad(i);
-          // auto v = turtlelib::Vector2D::from_polar(_r,_phi);
-          // all_clusters.push_back(Cluster{v});
-          // break;
-        // }
-      // }
-    // }
-    
-    // check each point to see if it fits in a cluster,
-    // if not, make a new cluster
+    // check each point to see if it fits in an existing cluster,
+    // if not, add it to a new cluster
     for (size_t i = 0; i < lidar_data.ranges.size(); i++)
     {
       // for each point
@@ -116,12 +98,25 @@ private:
       }
       if (not added)
       {
-        // add the point as a new cluster
+        // add the point as a new Cluster
         all_clusters.push_back(Cluster(v));
       }
     }
-    
+
+
+    // Remove clusters with fewer than 3 points
+    for (size_t i = 0; i < all_clusters.size(); i++)
+    {
+      if (all_clusters.at(i).count() < 3)
+      {
+        all_clusters.erase(all_clusters.begin()+i);
+      }
+
+    }
+
+    // Clear the markers from the last scan
     cluster_marker_arr.markers.clear();
+
     for (size_t i = 0; i < all_clusters.size(); i++)
     {
 
@@ -132,7 +127,6 @@ private:
       }
       RCLCPP_INFO_STREAM(get_logger(), "----------------------");
 
-
       auto p_avg = all_clusters.at(i).mean_point();
       visualization_msgs::msg::Marker cluster_marker;
 
@@ -141,16 +135,16 @@ private:
       cluster_marker.id = i;
       cluster_marker.action = visualization_msgs::msg::Marker::ADD;
       cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
-      cluster_marker.scale.x = 0.02; 
-      cluster_marker.scale.y = 0.02; 
-      cluster_marker.scale.z = 0.02;
+      cluster_marker.scale.x = 0.05; 
+      cluster_marker.scale.y = 0.05; 
+      cluster_marker.scale.z = 0.05;
       cluster_marker.pose.position.x = p_avg.x;
       cluster_marker.pose.position.y = p_avg.y;
       cluster_marker.pose.position.z = 0.01;
       cluster_marker.color.a = 1.0;
       cluster_marker.color.r = 0.2;
-      cluster_marker.color.g = 0.5;
-      cluster_marker.color.b = 0.3;
+      cluster_marker.color.g = 0.3;
+      cluster_marker.color.b = 0.5;
       cluster_marker_arr.markers.push_back(cluster_marker);
     }
     if (not cluster_marker_arr.markers.empty())
