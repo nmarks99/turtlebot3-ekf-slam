@@ -6,6 +6,8 @@
 #include <numeric>
 #include <armadillo>
 #include <cassert>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/logging.hpp>
 #include "turtlelib/rigid2d.hpp"
 
 using turtlelib::Vector2D;

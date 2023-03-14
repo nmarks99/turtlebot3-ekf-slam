@@ -208,9 +208,12 @@ std::tuple<Vector2D, double> fit_circle(const Cluster &cluster)
 
     // Form the data matrix Z
     arma::mat Z = compute_Z(cluster,z_vec,centroid);
+    RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "Z = \n" << Z);
     
     // Form the moment matrix M
+    RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "Attemping to compute M");
     arma::mat M = compute_M(Z);
+
 
     // Form the constraint matrix H and its inverse
     arma::mat H = compute_H(z_bar);
@@ -222,6 +225,7 @@ std::tuple<Vector2D, double> fit_circle(const Cluster &cluster)
     arma::mat V;
     arma::svd(U,sigma,V,Z);
     
+    RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "sigma = " << sigma);
     arma::mat A = arma::mat(V.n_rows,1);
     if (sigma(sigma.n_rows-1,0) < 10e-12)
     {
@@ -229,13 +233,19 @@ std::tuple<Vector2D, double> fit_circle(const Cluster &cluster)
     }
     else
     {
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "V = \n" << V);
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "sigma mat = \n" << arma::diagmat(sigma));
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "V.t() = \n" << V.t());
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "Attemping to compute Y");
         arma::mat Y = V * arma::diagmat(sigma) * V.t();
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "Attemping to compute Q");
         arma::mat Q = Y * Hinv * Y;
         
         // Find eigenvalues and eigenvectors of Q
         arma::vec eigval;
         arma::mat eigvec;
         arma::eig_sym(eigval, eigvec, Q); 
+        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("circle_fitting"), "Attemping to find eigens");
 
         // Find the index of the smallest positive eigenvalue
         arma::uvec pos_inds = arma::find(eigval > 0.0);
@@ -290,20 +300,25 @@ bool is_circle(const Cluster &cluster,
     const Vector2D P2 = cluster.as_vector().back();
     
     std::vector<double> all_angles;
-    for (auto &P : cluster.as_vector())
+
+    // copy with first and lasts points removed
+    auto cluster_vec_copy = cluster.as_vector();
+    cluster_vec_copy.pop_back();
+    cluster_vec_copy.erase(cluster_vec_copy.begin()); 
+    for (const auto &P : cluster_vec_copy)
     {
         const double angle1 = P.angle(P1);
         const double angle2 = P.angle(P2);
         all_angles.push_back(angle1 + angle2);
     }
 
-    double mean = turtlelib::rad2deg(vec::mean(all_angles));
-    double std_dev = vec::standard_deviation(all_angles);
-    // std::cout << "mean = " << mean << std::endl;
-    // std::cout << "std_dev = " << std_dev << std::endl;
+
+    const double mean = turtlelib::rad2deg(vec::mean(all_angles));
+    const double std_dev = vec::standard_deviation(all_angles);
     
     const double mean_min = std::get<0>(mean_threshhold);
     const double mean_max = std::get<1>(mean_threshhold);
+
     if (mean >= mean_min and mean <= mean_max and std_dev <= std_threshold)
     {
         return true;
@@ -342,8 +357,6 @@ bool is_circle(const Cluster &cluster,
 
     double mean = turtlelib::rad2deg(vec::mean(all_angles));
     double std_dev = vec::standard_deviation(all_angles);
-    // std::cout << "mean = " << mean << std::endl;
-    // std::cout << "std_dev = " << std_dev << std::endl;
     
     const double mean_min = std::get<0>(mean_threshhold);
     const double mean_max = std::get<1>(mean_threshhold);

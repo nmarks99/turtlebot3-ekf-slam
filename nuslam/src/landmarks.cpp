@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <functional>
+#include <tuple>
 #include <memory>
 #include <fstream>
 #include <iostream>
@@ -34,14 +35,18 @@
 #include "turtlelib/kalman.hpp"
 #include "turtlelib/rigid2d.hpp"
 
+#include "nuslam/circle_fitting.hpp"
+
 #include "armadillo"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
 /// @brief minimum amount of points to be considered a cluster
-constexpr unsigned int MIN_CLUSTER_SIZE = 3;
+constexpr unsigned int MIN_CLUSTER_SIZE = 4;
 
+/// @brief true radius of the landmarks
+constexpr double TRUE_RADIUS = 0.038;
 
 /// @brief Landmarks detection node
 class Landmarks : public rclcpp::Node
@@ -71,6 +76,9 @@ private:
  
   // Vector of Cluster objects representing all the clusters of points
   std::vector<Cluster> all_clusters;
+  const std::tuple<double,double> mean_threshold{0.0,130.0}; // TODO: tune
+  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.2};
+  const double std_threshold = 0.15;
 
   /// @brief fills in a marker array containing a spherical
   /// marker at the average (x,y) location of each cluster
@@ -83,14 +91,6 @@ private:
     {
       
       auto p_avg = all_clusters.at(i).centroid();
-
-      // RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
-      // for (auto &v : all_clusters.at(i).as_vector())
-      // {
-        // RCLCPP_INFO_STREAM(get_logger(), v);
-      // }
-      // RCLCPP_INFO_STREAM(get_logger(),"avg (x,y) = " << p_avg);
-      // RCLCPP_INFO_STREAM(get_logger(), "----------------------");
 
       visualization_msgs::msg::Marker cluster_marker;
 
@@ -151,13 +151,35 @@ private:
       }
     }
 
-    // Remove clusters with fewer than 3 points
-    for (size_t i = 0; i < all_clusters.size(); i++)
+    // Remove clusters with too few points
+    std::vector<Cluster> temp_cluster_vec;
+    for (const auto &cluster : all_clusters)
     {
-      if (all_clusters.at(i).count() < MIN_CLUSTER_SIZE)
+      if (cluster.count() >= MIN_CLUSTER_SIZE)
       {
-        all_clusters.erase(all_clusters.begin()+i);
+        temp_cluster_vec.push_back(cluster);
       }
+    }
+    all_clusters = temp_cluster_vec;
+    temp_cluster_vec.clear();
+
+    for (const auto &cluster: all_clusters)
+    {
+      auto hkr = fit_circle(cluster);
+      RCLCPP_INFO_STREAM(get_logger(),"--------------------");
+      RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
+      RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
+
+      bool check = is_circle(cluster,mean_threshold,std_threshold,true_threshold);
+      if (check)
+      {
+        RCLCPP_INFO_STREAM(get_logger(),"Circle = True");
+      }
+      else
+      {
+        RCLCPP_INFO_STREAM(get_logger(),"Circle = False");
+      }
+      RCLCPP_INFO_STREAM(get_logger(),"--------------------");
     }
     
     // fill and publish cluster marker array for testing

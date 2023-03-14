@@ -192,8 +192,8 @@ namespace turtlelib
 
     double Vector2D::angle(const Vector2D &rhs) const
     {
-        auto dot_prod = this->dot(rhs);
-        auto prod_of_mag = this->magnitude() * rhs.magnitude();
+        auto dot_prod = dot(rhs);
+        auto prod_of_mag = magnitude() * rhs.magnitude();
         return acos(dot_prod / prod_of_mag);
     }
 
