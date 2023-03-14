@@ -167,43 +167,27 @@ arma::mat compute_Hinv(double z_bar)
 std::tuple<Vector2D, double> fit_circle(Cluster cluster)
 {
 
-    // print out points in the cluster
-    std::cout << "Cluster: ";
-    for (auto &p : cluster.get_vector())
-    {
-        std::cout << p << ",";
-    }
-    std::cout << std::endl;
-
     // Compute the centroid of the cluster
     Vector2D centroid = cluster.centroid();
-    // std::cout << "centroid = " << centroid << std::endl;
 
     // Compute the z for each point, and mean z_bar
     std::vector<double> z_vec;
-    // std::cout << "z = ";
     for (auto &p : cluster.get_vector())
     {
-        // std::cout << compute_zi(p,centroid) << ",";
         z_vec.push_back(compute_zi(p,centroid));
     }
     std::cout << std::endl;
     double z_bar = vector_mean(z_vec);
-    // std::cout << "z_bar = " << z_bar << std::endl;
 
     // Form the data matrix Z
     arma::mat Z = compute_Z(cluster,z_vec,centroid);
-    // std::cout << "Z = \n" << Z << std::endl;
     
     // Form the moment matrix M
     arma::mat M = compute_M(Z);
-    // std::cout << "M = \n" << M << std::endl;
 
     // Form the constraint matrix H and its inverse
     arma::mat H = compute_H(z_bar);
-    // std::cout << "H = \n" << H << std::endl;
     arma::mat Hinv = compute_Hinv(z_bar);
-    // std::cout << "Hinv = \n" << Hinv << std::endl;
 
     // Compute the SVD of Z
     arma::mat U;
@@ -211,9 +195,6 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     arma::mat V;
     arma::svd(U,sigma,V,Z);
     
-    double a = 0.0;
-    double b = 0.0;
-    double R = 0.0;
     arma::mat A = arma::mat(V.n_rows,1);
     if (sigma(sigma.n_rows-1,0) < 10e-12)
     {
@@ -222,41 +203,31 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     else
     {
         arma::mat Y = V * arma::diagmat(sigma) * V.t();
-        // std::cout << "Y = \n" << Y << std::endl;
-
         arma::mat Q = Y * Hinv * Y;
-        // std::cout << "Q = \n" << Q << std::endl;
         
         // Find eigenvalues and eigenvectors of Q
         arma::vec eigval;
         arma::mat eigvec;
         arma::eig_sym(eigval, eigvec, Q); 
-        // std::cout << "eigenvalues = \n" << eigval << std::endl;
-        // std::cout << "eigenvectors = \n" << eigvec << std::endl;
 
         // Find the index of the smallest positive eigenvalue
         arma::uvec pos_inds = arma::find(eigval > 0.0);
-        int ind = static_cast<int>(pos_inds(0));
-        // std::cout << "smallest positive index = " << ind << std::endl;
+        const int ind = static_cast<int>(pos_inds(0)); // eigval ordered least..greatest
 
         // Get the eigenvector cooresponding to the smallest positive eignevalue
         arma::vec A_star = eigvec.col(ind);
-        // std::cout << "A_star = \n" << A_star << std::endl;
 
         // Solve YA = A* for A
         A = arma::solve(Y,A_star);
-        // std::cout << "A = \n" << A << std::endl;
 
     }
 
-    a = -A(1)/(2.0*A(0)) + centroid.x;
-    b = -A(2)/(2.0*A(0)) + centroid.y;
-    // std::cout << "center = " << a << "," << b << std::endl;
-    R = std::sqrt(
+    const double a = -A(1)/(2.0*A(0)) + centroid.x;
+    const double b = -A(2)/(2.0*A(0)) + centroid.y;
+    const double R = std::sqrt(
             ( std::pow(A(1),2.0) + std::pow(A(2),2.0) - (4*A(0)*A(3)) ) /
             (4*std::pow(A(0),2.0))
             );
-    // std::cout << "R = " << R << std::endl;
 
     return std::tuple<Vector2D,double>{Vector2D{a,b}, R};
 }

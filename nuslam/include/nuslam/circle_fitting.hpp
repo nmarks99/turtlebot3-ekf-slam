@@ -67,9 +67,10 @@ struct Cluster
     
 };
 
-double compute_zi(const Vector2D &p, const Vector2D &centroid);
 
 double vector_mean(const std::vector<double> &v);
+
+double compute_zi(const Vector2D &p, const Vector2D &centroid);
 
 arma::mat compute_Z(const Cluster &cluster, const std::vector<double> &z_vec, const Vector2D &centroid);
 
@@ -79,6 +80,10 @@ arma::mat compute_H(double z_bar);
 
 arma::mat compute_Hinv(double z_bar);
 
+/// @brief Attempts to fit a circle to the points in
+/// the given cluster, returning the center and radius
+/// @param cluster A Cluster object defining a cluster of 2D points
+/// @returns std::tuple<Vector2D,double> (center,radius)
 std::tuple<Vector2D, double> fit_circle(Cluster cluster);
 
 #endif
