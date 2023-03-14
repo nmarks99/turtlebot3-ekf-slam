@@ -81,12 +81,12 @@ TEST_CASE("construct_Z()")
         z_vec.push_back(compute_zi(p,centroid));
     }
 
-    arma::mat Z = compute_Z(cluster,z_vec);
+    arma::mat Z = compute_Z(cluster,z_vec,centroid);
 
-    REQUIRE(almost_equal(Z(0,1), 1.01));
-    REQUIRE(almost_equal(Z(0,2), 1.02));
-    REQUIRE(almost_equal(Z(1,1), 1.03));
-    REQUIRE(almost_equal(Z(1,2), 1.04));
+    REQUIRE(almost_equal(Z(0,1), 1.01-centroid.x));
+    REQUIRE(almost_equal(Z(0,2), 1.02-centroid.y));
+    REQUIRE(almost_equal(Z(1,1), 1.03-centroid.x));
+    REQUIRE(almost_equal(Z(1,2), 1.04-centroid.y));
 }
 
 TEST_CASE("compute_M()")
@@ -103,7 +103,7 @@ TEST_CASE("compute_M()")
         z_vec.push_back(compute_zi(p,centroid));
     }
 
-    arma::mat Z = compute_Z(cluster,z_vec);
+    arma::mat Z = compute_Z(cluster,z_vec,centroid);
     arma::mat M = compute_M(Z);
 }
 
@@ -148,14 +148,46 @@ TEST_CASE("compute_Hinv()")
 
 TEST_CASE("fit_circle()")
 {
-    Cluster cluster;
-    cluster.blind_add(Vector2D{1.0,7.0});
-    cluster.blind_add(Vector2D{2.0,6.0});
-    cluster.blind_add(Vector2D{5.0,8.0});
-    cluster.blind_add(Vector2D{7.0,7.0});
-    cluster.blind_add(Vector2D{9.0,5.0});
-    cluster.blind_add(Vector2D{3.0,7.0});
-    fit_circle(cluster);
+    SECTION("Case 1")
+    {
+        Cluster cluster;
+        cluster.blind_add(Vector2D{1.0,7.0});
+        cluster.blind_add(Vector2D{2.0,6.0});
+        cluster.blind_add(Vector2D{5.0,8.0});
+        cluster.blind_add(Vector2D{7.0,7.0});
+        cluster.blind_add(Vector2D{9.0,5.0});
+        cluster.blind_add(Vector2D{3.0,7.0});
+
+        auto hkr = fit_circle(cluster);
+        Vector2D center = std::get<0>(hkr);
+        double R = std::get<1>(hkr);
+        
+        REQUIRE(almost_equal(center.x, 4.615482, 10e-4));
+        REQUIRE(almost_equal(center.y, 2.807354, 10e-4));
+        REQUIRE(almost_equal(R, 4.8275, 10e-4));
+    }
+
+    SECTION("Case 2")
+    {
+        Cluster cluster;
+        cluster.blind_add(Vector2D{-1.0,0.0});
+        cluster.blind_add(Vector2D{-0.3, -0.06});
+        cluster.blind_add(Vector2D{0.3,0.1});
+        cluster.blind_add(Vector2D{1.0,0.0});
+
+        auto hkr = fit_circle(cluster);
+        Vector2D center = std::get<0>(hkr);
+        double R = std::get<1>(hkr);
+
+        REQUIRE(almost_equal(center.x, 0.4908357, 10e-4));
+        REQUIRE(almost_equal(center.y, -22.15212, 10e-4));
+        REQUIRE(almost_equal(R, 22.17979,10e-4));
+    }
+
 }
+
+
+
+
 
 

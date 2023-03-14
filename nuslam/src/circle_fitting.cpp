@@ -1,5 +1,6 @@
 #include "nuslam/circle_fitting.hpp"
 #include <cstddef>
+#include <tuple>
 #include <turtlelib/rigid2d.hpp>
 
 using turtlelib::almost_equal;
@@ -119,7 +120,7 @@ double vector_mean(const std::vector<double> &v)
     return std::reduce(v.begin(),v.end())/static_cast<double>(v.size());
 }
 
-arma::mat compute_Z(Cluster cluster, std::vector<double> z_vec)
+arma::mat compute_Z(const Cluster &cluster, const std::vector<double> &z_vec, const Vector2D &centroid)
 {
     const size_t n = cluster.count();
     arma::mat Z = arma::mat(n,4, arma::fill::zeros);
@@ -128,14 +129,15 @@ arma::mat compute_Z(Cluster cluster, std::vector<double> z_vec)
     for (size_t i = 0; i < Z.n_rows; i++)
     {
         Z(i,0) = z_vec.at(i);
-        Z(i,1) = cluster.get_vector().at(i).x;
-        Z(i,2) = cluster.get_vector().at(i).y;
+        Z(i,1) = cluster.get_vector().at(i).x - centroid.x;
+        Z(i,2) = cluster.get_vector().at(i).y - centroid.y;
     }
     return Z;
 }
 
 arma::mat compute_M(arma::mat Z)
 {
+
     return (1.0/Z.n_rows) * Z.t() * Z;
 
 }
@@ -162,79 +164,101 @@ arma::mat compute_Hinv(double z_bar)
     return Hinv;
 }
 
-bool fit_circle(Cluster cluster)
+std::tuple<Vector2D, double> fit_circle(Cluster cluster)
 {
+
+    // print out points in the cluster
+    std::cout << "Cluster: ";
+    for (auto &p : cluster.get_vector())
+    {
+        std::cout << p << ",";
+    }
+    std::cout << std::endl;
+
     // Compute the centroid of the cluster
     Vector2D centroid = cluster.centroid();
+    // std::cout << "centroid = " << centroid << std::endl;
 
     // Compute the z for each point, and mean z_bar
     std::vector<double> z_vec;
+    // std::cout << "z = ";
     for (auto &p : cluster.get_vector())
     {
+        // std::cout << compute_zi(p,centroid) << ",";
         z_vec.push_back(compute_zi(p,centroid));
     }
+    std::cout << std::endl;
     double z_bar = vector_mean(z_vec);
+    // std::cout << "z_bar = " << z_bar << std::endl;
 
     // Form the data matrix Z
-    arma::mat Z = compute_Z(cluster,z_vec);
+    arma::mat Z = compute_Z(cluster,z_vec,centroid);
+    // std::cout << "Z = \n" << Z << std::endl;
     
     // Form the moment matrix M
     arma::mat M = compute_M(Z);
+    // std::cout << "M = \n" << M << std::endl;
 
     // Form the constraint matrix H and its inverse
     arma::mat H = compute_H(z_bar);
+    // std::cout << "H = \n" << H << std::endl;
     arma::mat Hinv = compute_Hinv(z_bar);
+    // std::cout << "Hinv = \n" << Hinv << std::endl;
 
     // Compute the SVD of Z
     arma::mat U;
     arma::vec sigma;
     arma::mat V;
     arma::svd(U,sigma,V,Z);
-
-    // Compute A
+    
+    double a = 0.0;
+    double b = 0.0;
+    double R = 0.0;
     arma::mat A = arma::mat(V.n_rows,1);
     if (sigma(sigma.n_rows-1,0) < 10e-12)
     {
-       A = V.col(3);
+        A = V.col(3);
     }
     else
     {
         arma::mat Y = V * arma::diagmat(sigma) * V.t();
-        arma::mat Q = Y * Hinv * Y;
+        // std::cout << "Y = \n" << Y << std::endl;
 
+        arma::mat Q = Y * Hinv * Y;
+        // std::cout << "Q = \n" << Q << std::endl;
+        
         // Find eigenvalues and eigenvectors of Q
         arma::vec eigval;
         arma::mat eigvec;
-        eig_sym(eigval, eigvec, Q); 
+        arma::eig_sym(eigval, eigvec, Q); 
+        // std::cout << "eigenvalues = \n" << eigval << std::endl;
+        // std::cout << "eigenvectors = \n" << eigvec << std::endl;
 
         // Find the index of the smallest positive eigenvalue
-        double smallest = arma::max(eigval);
-        size_t ind = 0;
-        for (size_t i = 0; i < eigval.n_rows-1; i++)
-        {
-            if (eigval(i) >= 0 and eigval(i) < smallest)
-            {
-                smallest = eigval(i);
-                ind = i;
-            }
-        }
+        arma::uvec pos_inds = arma::find(eigval > 0.0);
+        int ind = static_cast<int>(pos_inds(0));
+        // std::cout << "smallest positive index = " << ind << std::endl;
 
         // Get the eigenvector cooresponding to the smallest positive eignevalue
-        arma::mat A_star = eigvec.col(ind);
-        
-        // Solve YA = A* for A
-        arma::vec A = arma::solve(Y,A_star);
-        std::cout << A << std::endl;
+        arma::vec A_star = eigvec.col(ind);
+        // std::cout << "A_star = \n" << A_star << std::endl;
 
-        // (x-a)^2 + (y-b)^2 = R^2
-        // double a = -A(1)/(2.0*A(0));
-        // double b = -A(2)/(2.0*A(0));
-        double R_sqr = ( std::pow(A(1),2.0) + std::pow(A(2),2.0) - 4*A(0)*A(3) ) / (2*std::pow(A(0),2.0));
-        std::cout << "radius = " << R_sqr << std::endl;
+        // Solve YA = A* for A
+        A = arma::solve(Y,A_star);
+        // std::cout << "A = \n" << A << std::endl;
 
     }
 
-    return true;
+    a = -A(1)/(2.0*A(0)) + centroid.x;
+    b = -A(2)/(2.0*A(0)) + centroid.y;
+    // std::cout << "center = " << a << "," << b << std::endl;
+    R = std::sqrt(
+            ( std::pow(A(1),2.0) + std::pow(A(2),2.0) - (4*A(0)*A(3)) ) /
+            (4*std::pow(A(0),2.0))
+            );
+    // std::cout << "R = " << R << std::endl;
+
+    return std::tuple<Vector2D,double>{Vector2D{a,b}, R};
 }
 
 /// @endcond

@@ -71,7 +71,7 @@ double compute_zi(const Vector2D &p, const Vector2D &centroid);
 
 double vector_mean(const std::vector<double> &v);
 
-arma::mat compute_Z(Cluster cluster, std::vector<double> z_vec);
+arma::mat compute_Z(const Cluster &cluster, const std::vector<double> &z_vec, const Vector2D &centroid);
 
 arma::mat compute_M(arma::mat Z);
 
@@ -79,6 +79,6 @@ arma::mat compute_H(double z_bar);
 
 arma::mat compute_Hinv(double z_bar);
 
-bool fit_circle(Cluster cluster);
+std::tuple<Vector2D, double> fit_circle(Cluster cluster);
 
 #endif
