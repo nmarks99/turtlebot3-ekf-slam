@@ -1,5 +1,6 @@
 #include "nuslam/circle_fitting.hpp"
 #include <cstddef>
+#include <stdexcept>
 #include <tuple>
 #include <turtlelib/rigid2d.hpp>
 
@@ -106,10 +107,25 @@ size_t Cluster::count() const
 //    Circle Fitting
 // ===================
 
-double vector_mean(const std::vector<double> &v)
+namespace vec
 {
-    return std::reduce(v.begin(),v.end())/static_cast<double>(v.size());
+    double mean(const std::vector<double> &v)
+    {
+        return std::reduce(v.begin(),v.end())/static_cast<double>(v.size());
+    }
+
+    double standard_deviation(const std::vector<double> &v)
+    {
+        const double mu = mean(v);
+        double sum = 0.0;
+        for (const auto &val : v)
+        {
+            sum += std::pow(val-mu,2.0);
+        }
+        return std::sqrt(sum/v.size());
+    }
 }
+
 
 namespace
 {
@@ -172,13 +188,13 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     // Compute the centroid of the cluster
     Vector2D centroid = cluster.centroid();
 
-    // Compute the z for each point, and mean z_bar
+    // Compute the z for each point, and vec::mean z_bar
     std::vector<double> z_vec;
     for (auto &p : cluster.get_vector())
     {
         z_vec.push_back(compute_zi(p,centroid));
     }
-    double z_bar = vector_mean(z_vec);
+    double z_bar = vec::mean(z_vec);
 
     // Form the data matrix Z
     arma::mat Z = compute_Z(cluster,z_vec,centroid);
@@ -234,4 +250,43 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     return std::tuple<Vector2D,double>{Vector2D{a,b}, R};
 }
 
+bool is_circle(const Cluster &cluster, std::tuple<double,double> mean_threshhold, double std_threshold)
+{
+
+    // Here we make the assumption (perhaps a bad one)
+    // that the first and last points in the cluster
+    // are the endpoints of the supposed arc made by the cluster
+    if (cluster.get_vector().empty())
+    {
+        throw std::runtime_error("Cluster is empty");
+        return false;
+    }
+    const Vector2D P1 = cluster.get_vector().front();
+    const Vector2D P2 = cluster.get_vector().back();
+    
+    std::vector<double> all_angles;
+    for (auto &P : cluster.get_vector())
+    {
+        const double angle1 = P.angle(P1);
+        const double angle2 = P.angle(P2);
+        all_angles.push_back(angle1 + angle2);
+    }
+
+    double mean = turtlelib::rad2deg(vec::mean(all_angles));
+    double std_dev = vec::standard_deviation(all_angles);
+    std::cout << "mean = " << mean << std::endl;
+    std::cout << "std_dev = " << std_dev << std::endl;
+    
+    const double mean_min = std::get<0>(mean_threshhold);
+    const double mean_max = std::get<1>(mean_threshhold);
+    if (mean >= mean_min and mean <= mean_max and std_dev <= std_threshold)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    
+    }
+}
 /// @endcond

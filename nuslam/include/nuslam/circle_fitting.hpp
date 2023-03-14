@@ -73,8 +73,18 @@ struct Cluster
 /// @returns std::tuple<Vector2D,double> (center,radius)
 std::tuple<Vector2D, double> fit_circle(Cluster cluster);
 
-/// @brief computes the mean of the elements in a std::vector<double>
-double vector_mean(const std::vector<double> &v);
+/// @brief classifies whether a cluster is a circle or not
+bool is_circle(
+        const Cluster &cluster,
+        std::tuple<double,double> mean_threshold,
+        double std_threshold);
 
+namespace vec
+{
+    /// @brief computes the mean of the elements in a std::vector<double>
+    double mean(const std::vector<double> &v);
+
+    double standard_deviation(const std::vector<double> &v);
+}
 
 #endif

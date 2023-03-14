@@ -51,16 +51,23 @@ TEST_CASE("centroid()","[Cluster]")
     REQUIRE(almost_equal(avg_xy.y, 0.5));
 }
 
-TEST_CASE("vector_mean()")
+TEST_CASE("vec::mean()")
 {
     std::vector<double> v{10.0,20.0};
-    double avg = vector_mean(v);
+    double avg = vec::mean(v);
     REQUIRE(almost_equal(avg, 15.0));
+}
+
+TEST_CASE("vec::standard_deviation()")
+{
+    std::vector<double> v1{10.0,12.0,23.0,9.0};
+    double std_dev = vec::standard_deviation(v1);
+    REQUIRE(almost_equal(std_dev,5.59017,1e-4));
 }
 
 TEST_CASE("fit_circle()")
 {
-    SECTION("Case 1")
+    SECTION("Case 1: from circle fitting notes")
     {
         Cluster cluster;
         cluster.blind_add(Vector2D{1.0,7.0});
@@ -79,7 +86,7 @@ TEST_CASE("fit_circle()")
         REQUIRE(almost_equal(R, 4.8275, 10e-4));
     }
 
-    SECTION("Case 2")
+    SECTION("Case 2: from circle fitting notes")
     {
         Cluster cluster;
         cluster.blind_add(Vector2D{-1.0,0.0});
@@ -96,7 +103,41 @@ TEST_CASE("fit_circle()")
         REQUIRE(almost_equal(R, 22.17979,10e-4));
     }
 
+    SECTION("Case 3: Points near x^2 + y^2 = 4")
+    {
+
+        Cluster cluster;
+        cluster.blind_add(Vector2D{0.0,2.0});
+        cluster.blind_add(Vector2D{1.0,1.9});
+        cluster.blind_add(Vector2D{1.5, 1.2});
+        cluster.blind_add(Vector2D{2.0, 0.5});
+        cluster.blind_add(Vector2D{2.0,0.0});
+        auto hkr = fit_circle(cluster);
+        Vector2D center = std::get<0>(hkr);
+        double radius = std::get<1>(hkr);
+        // std::cout << "center = " << center.x << "," << center.y << std::endl;
+        // std::cout << "radius = " << radius << std::endl;
+        REQUIRE(almost_equal(center.x, 0.0, 1e-1));
+        REQUIRE(almost_equal(center.y, 0.0, 1e-1));
+        REQUIRE(almost_equal(radius, 2.0, 1e-1));
+
+    }
+
 }
+
+TEST_CASE("is_circle()")
+{
+
+    Cluster cluster;
+    cluster.blind_add(Vector2D{0.0,2.0});
+    cluster.blind_add(Vector2D{1.0,1.9});
+    cluster.blind_add(Vector2D{1.5, 1.2});
+    cluster.blind_add(Vector2D{2.0, 0.5});
+    cluster.blind_add(Vector2D{2.0,0.0});
+    bool result = is_circle(cluster, std::tuple<double,double>(90.0,130.0),0.15);
+    REQUIRE(result);
+}
+
 
 
 // NOTE: Previously passed these tests before making these 
@@ -167,7 +208,7 @@ TEST_CASE("fit_circle()")
         // z_vec.push_back(compute_zi(p,centroid));
     // }
 //
-    // double z_bar = vector_mean(z_vec);
+    // double z_bar = vec::mean(z_vec);
     // arma::mat H = compute_H(z_bar);
     //
 // }
@@ -187,7 +228,7 @@ TEST_CASE("fit_circle()")
         // z_vec.push_back(compute_zi(p,centroid));
     // }
 //
-    // double z_bar = vector_mean(z_vec);
+    // double z_bar = vec::mean(z_vec);
     // arma::mat Hinv = compute_Hinv(z_bar);
     //
 // }
