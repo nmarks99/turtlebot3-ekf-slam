@@ -140,9 +140,7 @@ namespace
 
     arma::mat compute_M(arma::mat Z)
     {
-
         return (1.0/Z.n_rows) * Z.t() * Z;
-
     }
 
     arma::mat compute_H(double z_bar)
@@ -167,9 +165,10 @@ namespace
         return Hinv;
     }
 }
+
+
 std::tuple<Vector2D, double> fit_circle(Cluster cluster)
 {
-
     // Compute the centroid of the cluster
     Vector2D centroid = cluster.centroid();
 

@@ -15,14 +15,14 @@ TEST_CASE("Cluster()", "[Cluster]")
     
     // Add a new point if it belongs (it does)
     turtlelib::Vector2D p{1.001,1.0};
-    cluster.belongs(p);
+    REQUIRE(cluster.belongs(p));
 
     // Size should be two since the new point should be added
     REQUIRE(cluster.get_vector().size() == 2);
 
     // Add a new point if it belongs (this time it doesn't)
     Vector2D p2{2.0,2.0};
-    cluster.belongs(p2);
+    REQUIRE_FALSE(cluster.belongs(p2));
     
     // should still be the same size
     REQUIRE(cluster.get_vector().size() == 2); 

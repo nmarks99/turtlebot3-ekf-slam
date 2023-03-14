@@ -69,7 +69,7 @@ struct Cluster
 
 /// @brief Attempts to fit a circle to the points in
 /// the given cluster, returning the center and radius
-/// @param cluster A Cluster object defining a cluster of 2D points
+/// @param cluster a Cluster object defining a cluster of 2D points
 /// @returns std::tuple<Vector2D,double> (center,radius)
 std::tuple<Vector2D, double> fit_circle(Cluster cluster);
 
