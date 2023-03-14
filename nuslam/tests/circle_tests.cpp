@@ -58,94 +58,6 @@ TEST_CASE("vector_mean()")
     REQUIRE(almost_equal(avg, 15.0));
 }
 
-TEST_CASE("compute_zi()")
-{
-    Vector2D v{2.0,2.0};
-    Vector2D com{1.0,1.0};
-    double zi = compute_zi(v, com);
-    REQUIRE(almost_equal(zi, 2.0));
-}
-
-
-TEST_CASE("construct_Z()")
-{
-    Cluster cluster;
-    cluster.blind_add(Vector2D{1.01,1.02});
-    cluster.blind_add(Vector2D{1.03,1.04});
-    cluster.blind_add(Vector2D{1.04,1.03});
-
-    Vector2D centroid = cluster.centroid();
-    std::vector<double> z_vec;
-    for (auto &p : cluster.get_vector())
-    {
-        z_vec.push_back(compute_zi(p,centroid));
-    }
-
-    arma::mat Z = compute_Z(cluster,z_vec,centroid);
-
-    REQUIRE(almost_equal(Z(0,1), 1.01-centroid.x));
-    REQUIRE(almost_equal(Z(0,2), 1.02-centroid.y));
-    REQUIRE(almost_equal(Z(1,1), 1.03-centroid.x));
-    REQUIRE(almost_equal(Z(1,2), 1.04-centroid.y));
-}
-
-TEST_CASE("compute_M()")
-{
-    Cluster cluster;
-    cluster.blind_add(Vector2D{1.01,1.02});
-    cluster.blind_add(Vector2D{1.03,1.04});
-    cluster.blind_add(Vector2D{1.04,1.03});
-
-    Vector2D centroid = cluster.centroid();
-    std::vector<double> z_vec;
-    for (auto &p : cluster.get_vector())
-    {
-        z_vec.push_back(compute_zi(p,centroid));
-    }
-
-    arma::mat Z = compute_Z(cluster,z_vec,centroid);
-    arma::mat M = compute_M(Z);
-}
-
-TEST_CASE("compute_H()")
-{
-    Cluster cluster;
-    cluster.blind_add(Vector2D{1.01,1.02});
-    cluster.blind_add(Vector2D{1.03,1.04});
-    cluster.blind_add(Vector2D{1.04,1.03});
-
-    Vector2D centroid = cluster.centroid();
-    std::vector<double> z_vec;
-    for (auto &p : cluster.get_vector())
-    {
-        z_vec.push_back(compute_zi(p,centroid));
-    }
-
-    double z_bar = vector_mean(z_vec); 
-    arma::mat H = compute_H(z_bar);
-    
-}
-
-
-TEST_CASE("compute_Hinv()")
-{
-    Cluster cluster;
-    cluster.blind_add(Vector2D{1.01,1.02});
-    cluster.blind_add(Vector2D{1.03,1.04});
-    cluster.blind_add(Vector2D{1.04,1.03});
-
-    Vector2D centroid = cluster.centroid();
-    std::vector<double> z_vec;
-    for (auto &p : cluster.get_vector())
-    {
-        z_vec.push_back(compute_zi(p,centroid));
-    }
-
-    double z_bar = vector_mean(z_vec); 
-    arma::mat Hinv = compute_Hinv(z_bar);
-    
-}
-
 TEST_CASE("fit_circle()")
 {
     SECTION("Case 1")
@@ -187,7 +99,96 @@ TEST_CASE("fit_circle()")
 }
 
 
+// NOTE: Previously passed these tests before making these 
+// functions private to the circle_fitting.cpp file. Not 
+// sure of a good way to include them here while still
+// retaining their static nature
 
-
-
-
+// TEST_CASE("compute_zi()")
+// {
+    // Vector2D v{2.0,2.0};
+    // Vector2D com{1.0,1.0};
+    // double zi = compute_zi(v, com);
+    // REQUIRE(almost_equal(zi, 2.0));
+// }
+//
+//
+// TEST_CASE("construct_Z()")
+// {
+    // Cluster cluster;
+    // cluster.blind_add(Vector2D{1.01,1.02});
+    // cluster.blind_add(Vector2D{1.03,1.04});
+    // cluster.blind_add(Vector2D{1.04,1.03});
+//
+    // Vector2D centroid = cluster.centroid();
+    // std::vector<double> z_vec;
+    // for (auto &p : cluster.get_vector())
+    // {
+        // z_vec.push_back(compute_zi(p,centroid));
+    // }
+//
+    // arma::mat Z = compute_Z(cluster,z_vec,centroid);
+//
+    // REQUIRE(almost_equal(Z(0,1), 1.01-centroid.x));
+    // REQUIRE(almost_equal(Z(0,2), 1.02-centroid.y));
+    // REQUIRE(almost_equal(Z(1,1), 1.03-centroid.x));
+    // REQUIRE(almost_equal(Z(1,2), 1.04-centroid.y));
+// }
+//
+// TEST_CASE("compute_M()")
+// {
+    // Cluster cluster;
+    // cluster.blind_add(Vector2D{1.01,1.02});
+    // cluster.blind_add(Vector2D{1.03,1.04});
+    // cluster.blind_add(Vector2D{1.04,1.03});
+//
+    // Vector2D centroid = cluster.centroid();
+    // std::vector<double> z_vec;
+    // for (auto &p : cluster.get_vector())
+    // {
+        // z_vec.push_back(compute_zi(p,centroid));
+    // }
+//
+    // arma::mat Z = compute_Z(cluster,z_vec,centroid);
+    // arma::mat M = compute_M(Z);
+// }
+//
+// TEST_CASE("compute_H()")
+// {
+    // Cluster cluster;
+    // cluster.blind_add(Vector2D{1.01,1.02});
+    // cluster.blind_add(Vector2D{1.03,1.04});
+    // cluster.blind_add(Vector2D{1.04,1.03});
+//
+    // Vector2D centroid = cluster.centroid();
+    // std::vector<double> z_vec;
+    // for (auto &p : cluster.get_vector())
+    // {
+        // z_vec.push_back(compute_zi(p,centroid));
+    // }
+//
+    // double z_bar = vector_mean(z_vec);
+    // arma::mat H = compute_H(z_bar);
+    //
+// }
+//
+//
+// TEST_CASE("compute_Hinv()")
+// {
+    // Cluster cluster;
+    // cluster.blind_add(Vector2D{1.01,1.02});
+    // cluster.blind_add(Vector2D{1.03,1.04});
+    // cluster.blind_add(Vector2D{1.04,1.03});
+//
+    // Vector2D centroid = cluster.centroid();
+    // std::vector<double> z_vec;
+    // for (auto &p : cluster.get_vector())
+    // {
+        // z_vec.push_back(compute_zi(p,centroid));
+    // }
+//
+    // double z_bar = vector_mean(z_vec);
+    // arma::mat Hinv = compute_Hinv(z_bar);
+    //
+// }
+//

@@ -106,64 +106,67 @@ size_t Cluster::count() const
 //    Circle Fitting
 // ===================
 
-// Shifts the ith point p to the centroid
-// and computes zi = x^2 + y^2
-double compute_zi(const Vector2D &p, const Vector2D &centroid)
-{
-    const double xi = p.x - centroid.x;
-    const double yi = p.y - centroid.y;
-    return std::pow(xi,2.0) + std::pow(yi,2.0);
-}
-
 double vector_mean(const std::vector<double> &v)
 {
     return std::reduce(v.begin(),v.end())/static_cast<double>(v.size());
 }
 
-arma::mat compute_Z(const Cluster &cluster, const std::vector<double> &z_vec, const Vector2D &centroid)
+namespace
 {
-    const size_t n = cluster.count();
-    arma::mat Z = arma::mat(n,4, arma::fill::zeros);
-    Z.submat(0,3,n-1,3) = arma::mat(n,1,arma::fill::ones);
 
-    for (size_t i = 0; i < Z.n_rows; i++)
+    // Shifts the ith point p to the centroid
+    // and computes zi = x^2 + y^2
+    double compute_zi(const Vector2D &p, const Vector2D &centroid)
     {
-        Z(i,0) = z_vec.at(i);
-        Z(i,1) = cluster.get_vector().at(i).x - centroid.x;
-        Z(i,2) = cluster.get_vector().at(i).y - centroid.y;
+        const double xi = p.x - centroid.x;
+        const double yi = p.y - centroid.y;
+        return std::pow(xi,2.0) + std::pow(yi,2.0);
     }
-    return Z;
+
+    arma::mat compute_Z(const Cluster &cluster, const std::vector<double> &z_vec, const Vector2D &centroid)
+    {
+        const size_t n = cluster.count();
+        arma::mat Z = arma::mat(n,4, arma::fill::zeros);
+        Z.submat(0,3,n-1,3) = arma::mat(n,1,arma::fill::ones);
+
+        for (size_t i = 0; i < Z.n_rows; i++)
+        {
+            Z(i,0) = z_vec.at(i);
+            Z(i,1) = cluster.get_vector().at(i).x - centroid.x;
+            Z(i,2) = cluster.get_vector().at(i).y - centroid.y;
+        }
+        return Z;
+    }
+
+    arma::mat compute_M(arma::mat Z)
+    {
+
+        return (1.0/Z.n_rows) * Z.t() * Z;
+
+    }
+
+    arma::mat compute_H(double z_bar)
+    {
+        arma::mat H = arma::mat(4,4,arma::fill::eye);
+        H(0,0) = 8.0 * z_bar;
+        H(3,3) = 0.0;
+        H(0,3) = 2.0;
+        H(3,0) = 2.0;
+
+        return H;
+    }
+
+    arma::mat compute_Hinv(double z_bar)
+    {
+        arma::mat Hinv = arma::mat(4,4,arma::fill::eye);
+        Hinv(0,0) = 0.0;
+        Hinv(3,3) = -2.0 * z_bar;
+        Hinv(0,3) = 0.5;
+        Hinv(3,0) = 0.5;
+
+        return Hinv;
+    }
 }
-
-arma::mat compute_M(arma::mat Z)
-{
-
-    return (1.0/Z.n_rows) * Z.t() * Z;
-
-}
-
-arma::mat compute_H(double z_bar)
-{
-    arma::mat H = arma::mat(4,4,arma::fill::eye);
-    H(0,0) = 8.0 * z_bar;
-    H(3,3) = 0.0;
-    H(0,3) = 2.0;
-    H(3,0) = 2.0;
-
-    return H;
-}
-
-arma::mat compute_Hinv(double z_bar)
-{
-    arma::mat Hinv = arma::mat(4,4,arma::fill::eye);
-    Hinv(0,0) = 0.0;
-    Hinv(3,3) = -2.0 * z_bar;
-    Hinv(0,3) = 0.5;
-    Hinv(3,0) = 0.5;
-
-    return Hinv;
-}
-
 std::tuple<Vector2D, double> fit_circle(Cluster cluster)
 {
 
@@ -176,7 +179,6 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     {
         z_vec.push_back(compute_zi(p,centroid));
     }
-    std::cout << std::endl;
     double z_bar = vector_mean(z_vec);
 
     // Form the data matrix Z
@@ -221,7 +223,8 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
         A = arma::solve(Y,A_star);
 
     }
-
+    
+    // Compute and return the center and radius of the circle
     const double a = -A(1)/(2.0*A(0)) + centroid.x;
     const double b = -A(2)/(2.0*A(0)) + centroid.y;
     const double R = std::sqrt(
