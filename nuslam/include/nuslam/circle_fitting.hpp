@@ -59,8 +59,8 @@ struct Cluster
         /// @return Vector2D of the centroid (x,y)
         Vector2D centroid() const;
 
-        /// @brief returns the cluster as a vector of Vector2D points
-        std::vector<Vector2D> get_vector() const;
+        /// @brief returns the cluster as a std::vector<Vector2D> 
+        std::vector<Vector2D> as_vector() const;
         
         /// @brief returns the number of points in the cluster
         size_t count() const;

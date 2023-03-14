@@ -93,7 +93,7 @@ Vector2D Cluster::centroid() const
 }
 
 
-std::vector<Vector2D> Cluster::get_vector() const
+std::vector<Vector2D> Cluster::as_vector() const
 {
     return cluster_vec;
 }
@@ -148,8 +148,8 @@ namespace
         for (size_t i = 0; i < Z.n_rows; i++)
         {
             Z(i,0) = z_vec.at(i);
-            Z(i,1) = cluster.get_vector().at(i).x - centroid.x;
-            Z(i,2) = cluster.get_vector().at(i).y - centroid.y;
+            Z(i,1) = cluster.as_vector().at(i).x - centroid.x;
+            Z(i,2) = cluster.as_vector().at(i).y - centroid.y;
         }
         return Z;
     }
@@ -190,7 +190,7 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
 
     // Compute the z for each point, and vec::mean z_bar
     std::vector<double> z_vec;
-    for (auto &p : cluster.get_vector())
+    for (auto &p : cluster.as_vector())
     {
         z_vec.push_back(compute_zi(p,centroid));
     }
@@ -256,16 +256,16 @@ bool is_circle(const Cluster &cluster, std::tuple<double,double> mean_threshhold
     // Here we make the assumption (perhaps a bad one)
     // that the first and last points in the cluster
     // are the endpoints of the supposed arc made by the cluster
-    if (cluster.get_vector().empty())
+    if (cluster.as_vector().empty())
     {
         throw std::runtime_error("Cluster is empty");
         return false;
     }
-    const Vector2D P1 = cluster.get_vector().front();
-    const Vector2D P2 = cluster.get_vector().back();
+    const Vector2D P1 = cluster.as_vector().front();
+    const Vector2D P2 = cluster.as_vector().back();
     
     std::vector<double> all_angles;
-    for (auto &P : cluster.get_vector())
+    for (auto &P : cluster.as_vector())
     {
         const double angle1 = P.angle(P1);
         const double angle2 = P.angle(P2);

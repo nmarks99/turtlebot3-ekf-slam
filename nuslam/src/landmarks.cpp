@@ -85,7 +85,7 @@ private:
       auto p_avg = all_clusters.at(i).centroid();
 
       // RCLCPP_INFO_STREAM(get_logger(), "Cluster " << i << ":");
-      // for (auto &v : all_clusters.at(i).get_vector())
+      // for (auto &v : all_clusters.at(i).as_vector())
       // {
         // RCLCPP_INFO_STREAM(get_logger(), v);
       // }

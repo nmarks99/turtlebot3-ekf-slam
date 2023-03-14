@@ -18,14 +18,14 @@ TEST_CASE("Cluster()", "[Cluster]")
     REQUIRE(cluster.belongs(p));
 
     // Size should be two since the new point should be added
-    REQUIRE(cluster.get_vector().size() == 2);
+    REQUIRE(cluster.as_vector().size() == 2);
 
     // Add a new point if it belongs (this time it doesn't)
     Vector2D p2{2.0,2.0};
     REQUIRE_FALSE(cluster.belongs(p2));
     
     // should still be the same size
-    REQUIRE(cluster.get_vector().size() == 2); 
+    REQUIRE(cluster.as_vector().size() == 2); 
 
 }
 
@@ -163,7 +163,7 @@ TEST_CASE("is_circle()")
 //
     // Vector2D centroid = cluster.centroid();
     // std::vector<double> z_vec;
-    // for (auto &p : cluster.get_vector())
+    // for (auto &p : cluster.as_vector())
     // {
         // z_vec.push_back(compute_zi(p,centroid));
     // }
@@ -185,7 +185,7 @@ TEST_CASE("is_circle()")
 //
     // Vector2D centroid = cluster.centroid();
     // std::vector<double> z_vec;
-    // for (auto &p : cluster.get_vector())
+    // for (auto &p : cluster.as_vector())
     // {
         // z_vec.push_back(compute_zi(p,centroid));
     // }
@@ -203,7 +203,7 @@ TEST_CASE("is_circle()")
 //
     // Vector2D centroid = cluster.centroid();
     // std::vector<double> z_vec;
-    // for (auto &p : cluster.get_vector())
+    // for (auto &p : cluster.as_vector())
     // {
         // z_vec.push_back(compute_zi(p,centroid));
     // }
@@ -223,7 +223,7 @@ TEST_CASE("is_circle()")
 //
     // Vector2D centroid = cluster.centroid();
     // std::vector<double> z_vec;
-    // for (auto &p : cluster.get_vector())
+    // for (auto &p : cluster.as_vector())
     // {
         // z_vec.push_back(compute_zi(p,centroid));
     // }
