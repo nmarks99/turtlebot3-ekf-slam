@@ -2,6 +2,7 @@ nusim:
   ros__parameters:
     slip_fraction: 0.0
     input_noise: 0.0
+    lidar_variance: 0.01
     x0: 0.0
     y0: 0.0
     theta0: 0.0

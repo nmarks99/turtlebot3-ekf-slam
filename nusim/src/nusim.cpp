@@ -91,6 +91,7 @@ public:
     declare_parameter<double>("lidar_min_range", LIDAR_MIN_RANGE);
     declare_parameter<double>("lidar_max_range", LIDAR_MAX_RANGE);
     declare_parameter<double>("lidar_increment", LIDAR_INCREMENT);
+    declare_parameter<double>("lidar_variance", LIDAR_VARIANCE);
     declare_parameter<bool>("draw_only", DRAW_ONLY);
 
     // Get parameters
@@ -113,6 +114,7 @@ public:
     LIDAR_MIN_RANGE = get_parameter("lidar_min_range").get_value<double>();
     LIDAR_MAX_RANGE = get_parameter("lidar_max_range").get_value<double>();
     LIDAR_INCREMENT = get_parameter("lidar_increment").get_value<double>();
+    LIDAR_VARIANCE = get_parameter("lidar_variance").get_value<double>();
     DRAW_ONLY = get_parameter("draw_only").get_value<bool>();
 
     // Check for required parameters
@@ -232,7 +234,7 @@ private:
   double Y0 = 0.0;
   double THETA0 = 0.0;
 
-  int RATE = 200;       // nusim loop frequency
+  int RATE = 200; // nusim loop frequency
 
   // Turtlebot wheel encoder/motor parameters
   double MOTOR_CMD_PER_RAD_SEC = 0.0;
@@ -248,8 +250,8 @@ private:
   double INPUT_NOISE = 0.0;
 
   // Basic sensor
-  double BASIC_SENSOR_VARIANCE = 0.001;       // 0.001
-  double BASIC_MAX_RANGE = 1.0;                   // max basic sensor range
+  double BASIC_SENSOR_VARIANCE = 0.001;   // 0.001
+  double BASIC_MAX_RANGE = 1.0;           // max basic sensor range
 
   double COLLISION_RADIUS = 0.105;
 
@@ -257,6 +259,7 @@ private:
   double LIDAR_INCREMENT = 1.0;         // degrees
   double LIDAR_MIN_RANGE = 0.160;       // meters
   double LIDAR_MAX_RANGE = 8.0;         // meters
+  double LIDAR_VARIANCE = 0.0;
 
   // Noise variables and params
   double left_noise = 0.0;
@@ -345,6 +348,10 @@ private:
     std::vector<double> ranges_out(360, 0.0);
     std::vector<std::tuple<double, double>> hits;
 
+    // Create Gaussian noise on the range values
+    double noise_r = 0.0;
+    std::normal_distribution<> d(0.0, LIDAR_VARIANCE);
+
     for (size_t ang = 0; ang < 360; ang++) {
       // Slope of the current lidar ray
       const auto m = std::tan(turtlelib::deg2rad(ang));
@@ -394,11 +401,14 @@ private:
     for (size_t i = 0; i < hits.size(); i++) {
       const double dist = std::get<0>(hits.at(i));
       const double ang = std::get<1>(hits.at(i));
-      ranges_out.at(ang) = dist;
+      if (LIDAR_VARIANCE > 0.0)
+      {
+        noise_r = d(get_random());
+      }
+      ranges_out.at(ang) = dist + noise_r;
     }
     for (size_t i = 0; i < ranges_out.size(); i++) {
       fake_lidar_msg.ranges.at(i) = ranges_out.at(i);
-      // RCLCPP_INFO_STREAM(get_logger(), ranges_out.at(i) << "," << i);
     }
   }
 
