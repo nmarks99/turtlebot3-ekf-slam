@@ -5,6 +5,7 @@
 #include <vector>
 #include <numeric>
 #include <armadillo>
+#include <cassert>
 #include "turtlelib/rigid2d.hpp"
 
 using turtlelib::Vector2D;
@@ -71,7 +72,22 @@ struct Cluster
 /// the given cluster, returning the center and radius
 /// @param cluster a Cluster object defining a cluster of 2D points
 /// @returns std::tuple<Vector2D,double> (center,radius)
-std::tuple<Vector2D, double> fit_circle(Cluster cluster);
+std::tuple<Vector2D, double> fit_circle(const Cluster &cluster);
+
+/// @brief classifies whether a cluster is a circle or not
+/// Here you can specify the expected radius and threshold.
+/// if the fit radius is outside the threshold percentage,
+/// this function returns false
+/// @param cluster a Cluster object
+/// @param mean_threshold the lower and upper mean threshold
+/// @param std_threshold the standard deviation threshold
+/// @param rad_thresh the true radius and a percentage the 
+/// predicted radius must be within to be considered
+bool is_circle(
+        const Cluster &cluster,
+        std::tuple<double,double> mean_threshold,
+        double std_threshold,
+        std::tuple<double,double> rad_thresh);
 
 /// @brief classifies whether a cluster is a circle or not
 bool is_circle(
@@ -86,5 +102,7 @@ namespace vec
 
     double standard_deviation(const std::vector<double> &v);
 }
+
+
 
 #endif

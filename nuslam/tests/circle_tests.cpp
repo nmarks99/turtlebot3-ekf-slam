@@ -127,15 +127,33 @@ TEST_CASE("fit_circle()")
 
 TEST_CASE("is_circle()")
 {
+    SECTION("Without knowing true radius")
+    {
+        Cluster cluster;
+        cluster.blind_add(Vector2D{0.0,2.0});
+        cluster.blind_add(Vector2D{1.0,1.9});
+        cluster.blind_add(Vector2D{1.5, 1.2});
+        cluster.blind_add(Vector2D{2.0, 0.5});
+        cluster.blind_add(Vector2D{2.0,0.0});
+        const bool result = is_circle(cluster, std::tuple<double,double>(90.0,130.0),0.15);
+        REQUIRE(result);
+    }
 
-    Cluster cluster;
-    cluster.blind_add(Vector2D{0.0,2.0});
-    cluster.blind_add(Vector2D{1.0,1.9});
-    cluster.blind_add(Vector2D{1.5, 1.2});
-    cluster.blind_add(Vector2D{2.0, 0.5});
-    cluster.blind_add(Vector2D{2.0,0.0});
-    bool result = is_circle(cluster, std::tuple<double,double>(90.0,130.0),0.15);
-    REQUIRE(result);
+    SECTION("Knowing true radius")
+    {
+        Cluster cluster;
+        cluster.blind_add(Vector2D{0.0,2.0});
+        cluster.blind_add(Vector2D{1.0,1.9});
+        cluster.blind_add(Vector2D{1.5, 1.2});
+        cluster.blind_add(Vector2D{2.0, 0.5});
+        cluster.blind_add(Vector2D{2.0,0.0});
+
+        const std::tuple<double,double> rad_thresh(2.0,0.05); // true radius = 2.0, threshold = 10%
+        const std::tuple<double,double> mean_thresh(90.0,130.0);
+        const double std_thresh = 0.15;
+        const bool result = is_circle(cluster, mean_thresh, std_thresh, rad_thresh);
+        REQUIRE(result);
+    }
 }
 
 

@@ -1,4 +1,5 @@
 #include "nuslam/circle_fitting.hpp"
+#include <cmath>
 #include <cstddef>
 #include <stdexcept>
 #include <tuple>
@@ -180,10 +181,19 @@ namespace
 
         return Hinv;
     }
+
+    constexpr bool within_percentage(double a, double b, double percentage)
+    {
+        assert(percentage >= 1e-4 and percentage <= 1.0);
+        const double diff = std::abs(a-b);
+        const double tol = percentage * std::abs(b);
+        return (diff <= tol);
+    }
+
 }
 
 
-std::tuple<Vector2D, double> fit_circle(Cluster cluster)
+std::tuple<Vector2D, double> fit_circle(const Cluster &cluster)
 {
     // Compute the centroid of the cluster
     Vector2D centroid = cluster.centroid();
@@ -250,7 +260,10 @@ std::tuple<Vector2D, double> fit_circle(Cluster cluster)
     return std::tuple<Vector2D,double>{Vector2D{a,b}, R};
 }
 
-bool is_circle(const Cluster &cluster, std::tuple<double,double> mean_threshhold, double std_threshold)
+bool is_circle(const Cluster &cluster,
+        std::tuple<double,double> mean_threshhold,
+        double std_threshold,
+        std::tuple<double,double> rad_thresh)
 {
 
     // Here we make the assumption (perhaps a bad one)
@@ -261,6 +274,18 @@ bool is_circle(const Cluster &cluster, std::tuple<double,double> mean_threshhold
         throw std::runtime_error("Cluster is empty");
         return false;
     }
+
+    const double R_true = std::get<0>(rad_thresh); 
+    const double R_true_percent = std::get<1>(rad_thresh); 
+    
+    auto hkr = fit_circle(cluster); // (center,R) = get<0>(hkr),get<1>(hkr)
+    if (not within_percentage(std::get<1>(hkr), R_true, R_true_percent))
+    {
+        std::cout << "R = " << std::get<1>(hkr) << std::endl;
+        std::cout << "Radius thrown out." << std::endl;
+        return false;
+    }
+
     const Vector2D P1 = cluster.as_vector().front();
     const Vector2D P2 = cluster.as_vector().back();
     
@@ -274,8 +299,51 @@ bool is_circle(const Cluster &cluster, std::tuple<double,double> mean_threshhold
 
     double mean = turtlelib::rad2deg(vec::mean(all_angles));
     double std_dev = vec::standard_deviation(all_angles);
-    std::cout << "mean = " << mean << std::endl;
-    std::cout << "std_dev = " << std_dev << std::endl;
+    // std::cout << "mean = " << mean << std::endl;
+    // std::cout << "std_dev = " << std_dev << std::endl;
+    
+    const double mean_min = std::get<0>(mean_threshhold);
+    const double mean_max = std::get<1>(mean_threshhold);
+    if (mean >= mean_min and mean <= mean_max and std_dev <= std_threshold)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    
+    }
+}
+
+bool is_circle(const Cluster &cluster,
+        std::tuple<double,double> mean_threshhold,
+        double std_threshold)
+{
+
+    // Here we make the assumption (perhaps a bad one)
+    // that the first and last points in the cluster
+    // are the endpoints of the supposed arc made by the cluster
+    if (cluster.as_vector().empty())
+    {
+        throw std::runtime_error("Cluster is empty");
+        return false;
+    }
+    
+    const Vector2D P1 = cluster.as_vector().front();
+    const Vector2D P2 = cluster.as_vector().back();
+    
+    std::vector<double> all_angles;
+    for (auto &P : cluster.as_vector())
+    {
+        const double angle1 = P.angle(P1);
+        const double angle2 = P.angle(P2);
+        all_angles.push_back(angle1 + angle2);
+    }
+
+    double mean = turtlelib::rad2deg(vec::mean(all_angles));
+    double std_dev = vec::standard_deviation(all_angles);
+    // std::cout << "mean = " << mean << std::endl;
+    // std::cout << "std_dev = " << std_dev << std::endl;
     
     const double mean_min = std::get<0>(mean_threshhold);
     const double mean_max = std::get<1>(mean_threshhold);
