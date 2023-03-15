@@ -15,20 +15,18 @@
 #include <chrono>
 #include <cstddef>
 #include <functional>
-#include <geometry_msgs/msg/detail/point__struct.hpp>
 #include <tuple>
 #include <memory>
 #include <fstream>
 #include <iostream>
 #include <rclcpp/publisher.hpp>
-#include <visualization_msgs/msg/detail/marker__struct.hpp>
-#include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
 #include "nuslam/circle_fitting.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include <geometry_msgs/msg/point.hpp>
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 

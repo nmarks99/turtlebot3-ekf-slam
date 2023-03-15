@@ -31,6 +31,7 @@
 #include "geometry_msgs/msg/pose_with_covariance.hpp"
 #include "geometry_msgs/msg/twist_with_covariance.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/point.hpp"
 #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
 #include "nuturtlebot_msgs/msg/sensor_data.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -130,8 +131,9 @@ public:
     /// for use with SLAM with unknown data association
     if (not KNOWN_ASSOCIATION)
     {
-      lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
-        "/scan", 10, std::bind(&Slam::lidar_callback, this, _1));
+      detected_landmarks_sub = create_subscription<geometry_msgs::msg::Point>(
+          "/detected_landmarks", 10, std::bind(&Slam::detected_landmarks_callback, this, _1)
+          );
     }
 
     /// @brief subscription to fake sensor for use with SLAM 
@@ -190,7 +192,7 @@ private:
   bool fake_sensor_flag = false;
 
   // Parameters that can be passed to the node
-  bool KNOWN_ASSOCIATION = false;
+  bool KNOWN_ASSOCIATION = true;
   double Q = 100.0;
   double R = 100.0;
   std::string body_id;
@@ -233,7 +235,7 @@ private:
 
   // Declare subscriptions
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
-  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub;
+  rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr detected_landmarks_sub;
   rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_sub;
 
   // Declare publishers
@@ -272,16 +274,22 @@ private:
     // Update current pose of the robot with forward kinematics
     pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
   }
-  
-  /// @brief callback for lidar scanner for SLAM with unknown data association
-  void lidar_callback(const sensor_msgs::msg::LaserScan &lidar_data)
+
+  void detected_landmarks_callback(const geometry_msgs::msg::Point &landmark_point)
   {
-    RCLCPP_INFO_STREAM(get_logger(),"unknown data association!!");
-    // get r,phi from lidar scan
-    // store as landmarks = vector<turtlelib::LandmarkMeasurement> with id set to 0
-    // ekf.run(pose_now, Vb_now, landmarks, known=false);
+    RCLCPP_INFO_STREAM(get_logger(),"(x,y) = " << landmark_point.x << "," << landmark_point.y);
+    std::vector<turtlelib::LandmarkMeasurement> measurements;
+    auto m = turtlelib::LandmarkMeasurement::from_cartesian(landmark_point.x,landmark_point.y, 0);
+    measurements.push_back(m);
+    measurements.push_back(m);
+    ekf.run(pose_now,Vb_now,measurements);
+    slam_pose_estimate = ekf.pose_prediction();
+    slam_map_estimate = ekf.map_prediction();
+    slam_state_estimate = ekf.state_prediction();
+    RCLCPP_INFO_STREAM(get_logger(),"state = " << slam_state_estimate);
+    measurements.clear();
   }
-  
+
   /// @brief callback for fake sensors for SLAM with known data association
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray & marker_arr)
   {   
