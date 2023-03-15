@@ -10,10 +10,10 @@ namespace turtlelib
         : r(0.0), phi(0.0), marker_id(0) {}
 
     LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi, int _marker_id)
-        : r(_r), phi(_phi), marker_id(_marker_id) {}
+        : r(_r), phi(_phi), marker_id(_marker_id), known(true) {}
 
     LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi)
-        : r(_r), phi(_phi), marker_id(0) {}
+        : r(_r), phi(_phi), marker_id(0), known(false) {}
 
     LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y, int _marker_id)
     {
@@ -21,8 +21,20 @@ namespace turtlelib
         measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
         measurement.phi = normalize_angle(std::atan2(_y, _x));
         measurement.marker_id = _marker_id;
+        measurement.known = true;
         return measurement;
     }
+
+    LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y)
+    {
+        LandmarkMeasurement measurement;
+        measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
+        measurement.phi = normalize_angle(std::atan2(_y, _x));
+        measurement.marker_id = 0;
+        measurement.known = false;
+        return measurement;
+    }
+
 
     arma::mat LandmarkMeasurement::to_mat() const
     {
@@ -344,45 +356,18 @@ namespace turtlelib
     void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
-    
-        // if any one of the measurements has a non-zero id, 
-        // we assume the data association in known
-        bool known = false;
-        for (const auto &m : measurements)
+        
+        for (auto &m : measurements)
         {
-            if (m.marker_id != 0)
-            {
-                known = true;
-                break;
-            }
-        }
-
-        // Add new measurments with known association
-        if (known)
-        {
-            for (size_t i = 0; i < measurements.size(); i++)
-            {
-                update_measurements(measurements.at(i));
-            }
+            // Add new measurments with known association
+            update_measurements(m);
         }
         
-        // Add new measurments with unknown association
-        else
-        {
-            // std::vector<LandmarkMeasurement> measurements_copy;
-            for (auto &m : measurements)
-            {
-                // after this function, landmarks_dict should 
-                // contain measurments with correct id's
-                associate_measurements(m);
-            }
-        }
-
         /// Kalman filter prediction step
-        // predict_from_odometry(pose, V);
+        predict_from_odometry(pose, V);
 
         // Kalman filter update step
-        // update(measurements);
+        update(measurements);
 
         // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
         // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");

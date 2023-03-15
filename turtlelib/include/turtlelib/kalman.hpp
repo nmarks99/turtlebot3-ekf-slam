@@ -24,39 +24,52 @@ namespace turtlelib
     /// Angles are normalized to be in the range (-pi, pi]
     struct LandmarkMeasurement
     {
-        /// @brief distance in meters to the landmark
-        double r = 0.0;
+        public:
+            /// @brief distance in meters to the landmark
+            double r = 0.0;
 
-        /// @brief  bearing(angle) to the landmark in radians
-        double phi = 0.0;
+            /// @brief  bearing(angle) to the landmark in radians
+            double phi = 0.0;
 
-        /// @brief integer id, typically associated with a ROS Marker message
-        unsigned int marker_id = 0;
+            /// @brief integer id, typically associated with a ROS Marker message
+            unsigned int marker_id = 0;
 
-        /// @brief Default constructor that initializes variables to zero
-        LandmarkMeasurement();
+            /// @brief Default constructor that initializes variables to zero
+            LandmarkMeasurement();
 
-        /// @brief Constructor which defines the r, and phi
-        /// @param _r range
-        /// @param _phi bearing (angle)
-        LandmarkMeasurement(double _r, double _phi);
+            /// @brief Constructor which defines the r, and phi
+            /// @param _r range
+            /// @param _phi bearing (angle)
+            LandmarkMeasurement(double _r, double _phi);
 
-        /// @brief Constructor which defines the r, phi, and marker_id
-        /// @param _r range
-        /// @param _phi bearing (angle)
-        /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
-        LandmarkMeasurement(double _r, double _phi, int _marker_id);
-        
-        /// @brief Constructor which defines the r, phi, and marker_id
-        /// given cartesian coordinates x and y, as well as the marker_id
-        /// @param _x x coordinate
-        /// @param _y y coordinate
-        /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
-        static LandmarkMeasurement from_cartesian(double _x, double _y, int _marker_id);
+            /// @brief Constructor which defines the r, phi, and marker_id
+            /// @param _r range
+            /// @param _phi bearing (angle)
+            /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
+            LandmarkMeasurement(double _r, double _phi, int _marker_id);
+            
+            /// @brief Constructor which defines the r, phi, and marker_id
+            /// given cartesian coordinates x and y, as well as the marker_id (known association)
+            /// @param _x x coordinate
+            /// @param _y y coordinate
+            /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
+            static LandmarkMeasurement from_cartesian(double _x, double _y, int _marker_id);
+            
+            /// @brief Constructor which defines the r, phi, and marker_id
+            /// given cartesian coordinates (x,y) with unknown data association
+            /// @param _x x coordinate
+            /// @param _y y coordinate
+            /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
+            static LandmarkMeasurement from_cartesian(double _x, double _y);
 
-        /// @brief Stores the r and phi values in a 2x1 arma::mat and returns it
-        /// @return 2x1 arma::mat [r phi]
-        arma::mat to_mat() const;
+            /// @brief Stores the r and phi values in a 2x1 arma::mat and returns it
+            /// @return 2x1 arma::mat [r phi]
+            arma::mat to_mat() const;
+
+        private:
+            /// @brief denotes if the data association is known
+            bool known = true;
+
 
     };
 
