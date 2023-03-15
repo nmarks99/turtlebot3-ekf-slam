@@ -277,7 +277,6 @@ private:
   void lidar_callback(const sensor_msgs::msg::LaserScan &lidar_data)
   {
     RCLCPP_INFO_STREAM(get_logger(),"unknown data association!!");
-
     // get r,phi from lidar scan
     // store as landmarks = vector<turtlelib::LandmarkMeasurement> with id set to 0
     // ekf.run(pose_now, Vb_now, landmarks, known=false);
