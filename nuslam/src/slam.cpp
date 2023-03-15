@@ -281,7 +281,6 @@ private:
     std::vector<turtlelib::LandmarkMeasurement> measurements;
     auto m = turtlelib::LandmarkMeasurement::from_cartesian(landmark_point.x,landmark_point.y, 0);
     measurements.push_back(m);
-    measurements.push_back(m);
     ekf.run(pose_now,Vb_now,measurements);
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();

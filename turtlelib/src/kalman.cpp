@@ -190,22 +190,17 @@ namespace turtlelib
 
     arma::mat KalmanFilter::compute_H(unsigned int ind_in_Xi) const
     {
-        const unsigned int j = (ind_in_Xi - 1) / 2;
+        unsigned int j = (ind_in_Xi - 1) / 2;
         const double del_x = (Xi_hat(ind_in_Xi, 0) - Xi_hat(1, 0));
         const double del_y = (Xi_hat(ind_in_Xi + 1, 0) - Xi_hat(2, 0));
         const double d = std::pow(del_x, 2.0) + std::pow(del_y, 2.0);
         
-        unsigned int Hcols = 0;
         if (sigma_hat.n_cols == 5)
         {
-            Hcols = 6;
-        }
-        else
-        {
-            Hcols = sigma_hat.n_cols;
+            j = j - 1;
         }
         
-        arma::mat H = arma::mat(2, Hcols, arma::fill::zeros);
+        arma::mat H = arma::mat(2, sigma_hat.n_cols, arma::fill::zeros);
 
         H(0, 1) = -del_x / std::sqrt(d);
         H(0, 2) = -del_y / std::sqrt(d);
@@ -331,6 +326,7 @@ namespace turtlelib
             RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "cov = \n" << cov);
             
             arma::mat zk = compute_h(k);
+            zk = zk.t();
             RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "zk = \n" << zk);
             
             arma::mat zi = arma::mat{measurement.r, measurement.phi}.t();
@@ -383,13 +379,13 @@ namespace turtlelib
         }
 
         /// Kalman filter prediction step
-        predict_from_odometry(pose, V);
+        // predict_from_odometry(pose, V);
 
         // Kalman filter update step
-        update(measurements);
+        // update(measurements);
 
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
+        // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
+        // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
     }
 
     arma::mat KalmanFilter::pose_prediction() const
