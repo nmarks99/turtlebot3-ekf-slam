@@ -7,31 +7,20 @@ namespace turtlelib
 {
 
     LandmarkMeasurement::LandmarkMeasurement()
-        : r(0.0), phi(0.0), marker_id(0), known(true) {}
+        : r(0.0), phi(0.0), marker_id(0) {}
+
+    LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi, int _marker_id)
+        : r(_r), phi(_phi), marker_id(_marker_id) {}
 
     LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi)
-        : r(_r), phi(_phi), marker_id(0), known(false) {}
-    
-    LandmarkMeasurement::LandmarkMeasurement(double _r, double _phi, unsigned int _marker_id)
-        : r(_r), phi(_phi), marker_id(_marker_id), known(true) {}
+        : r(_r), phi(_phi), marker_id(0) {}
 
-    LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y, unsigned int _marker_id)
+    LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y, int _marker_id)
     {
         LandmarkMeasurement measurement;
         measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
         measurement.phi = normalize_angle(std::atan2(_y, _x));
         measurement.marker_id = _marker_id;
-        measurement.known = true;
-        return measurement;
-    }
-
-    LandmarkMeasurement LandmarkMeasurement::from_cartesian(double _x, double _y)
-    {
-        LandmarkMeasurement measurement;
-        measurement.r = std::sqrt(std::pow(_x, 2.0) + std::pow(_y, 2.0));
-        measurement.phi = normalize_angle(std::atan2(_y, _x));
-        measurement.marker_id = 0;
-        measurement.known = false;
         return measurement;
     }
 
@@ -229,7 +218,7 @@ namespace turtlelib
         return H;
     }
 
-    void KalmanFilter::update(const LandmarkMeasurement &measurement)
+    void KalmanFilter::update(const std::vector<LandmarkMeasurement> &measurements)
     {
         // for each measurement
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Beginning update step-----------");
@@ -237,29 +226,32 @@ namespace turtlelib
         // Note: if the vector has multiple measurments with the same id,
         // this will fail! The duplicate id measurement will not get added
         // measurements.size() will be greater than the number of unique measurements
-        // Get the index of this landmark in the state vector
-        const unsigned int ind_in_Xi = landmarks_dict[measurement.marker_id];
+        for (size_t i = 0; i < measurements.size(); i++)
+        {
+            // Get the index of this landmark in the state vector
+            const unsigned int ind_in_Xi = landmarks_dict[measurements.at(i).marker_id];
 
-        // 1. Compute theoretical measurement zi_hat = h_j
-        arma::mat zi_hat = compute_h(ind_in_Xi); // index is location in Xi, we want j for compute_h
+            // 1. Compute theoretical measurement zi_hat = h_j
+            arma::mat zi_hat = compute_h(ind_in_Xi); // index is location in Xi, we want j for compute_h
 
-        // 2. Compute the Kalman gain (Eq 26)
-        arma::mat H = compute_H(ind_in_Xi);
-        arma::mat K = (sigma_hat * H.t()) * arma::inv(H * sigma_hat * H.t() + R_bar);
+            // 2. Compute the Kalman gain (Eq 26)
+            arma::mat H = compute_H(ind_in_Xi);
+            arma::mat K = (sigma_hat * H.t()) * arma::inv(H * sigma_hat * H.t() + R_bar);
 
-        // 3. Compute the posterior state update Xi_t_hat
-        arma::mat zi = measurement.to_mat();
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "(zi - zi_hat)\n"
-                                                                   << zi << " - " << zi_hat.t());
-        arma::mat z_diff = zi - zi_hat.t();
-        z_diff(1, 0) = normalize_angle(z_diff(1, 0));
+            // 3. Compute the posterior state update Xi_t_hat
+            arma::mat zi = measurements.at(i).to_mat();
+            RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "(zi - zi_hat)\n"
+                                                                       << zi << " - " << zi_hat.t());
+            arma::mat z_diff = zi - zi_hat.t();
+            z_diff(1, 0) = normalize_angle(z_diff(1, 0));
 
-        Xi_hat = Xi_hat + K * z_diff;
-        Xi_hat(0, 0) = normalize_angle(Xi_hat(0, 0)); // Normalize the angle
+            Xi_hat = Xi_hat + K * z_diff;
+            Xi_hat(0, 0) = normalize_angle(Xi_hat(0, 0)); // Normalize the angle
 
-        // 4. Compute the posterior covariance sigma_t
-        arma::mat I = arma::mat(arma::size(sigma_hat), arma::fill::eye);
-        sigma_hat = (I - K * H) * sigma_hat;
+            // 4. Compute the posterior covariance sigma_t
+            arma::mat I = arma::mat(arma::size(sigma_hat), arma::fill::eye);
+            sigma_hat = (I - K * H) * sigma_hat;
+        }
 
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "---------Finished update step---------");
     }
@@ -271,10 +263,57 @@ namespace turtlelib
     }
 
 
-    LandmarkMeasurement KalmanFilter::associate_measurements(LandmarkMeasurement measurement)
+    void KalmanFilter::associate_measurements(LandmarkMeasurement measurement)
     {
 
-       for (auto &landmark : landmarks_dict)
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Begin association of measurements");
+        arma::mat mt_j(2, 1, arma::fill::zeros);
+        
+        // from inverted measurment model, temporarily add measurment as new landmark
+        measurement.marker_id = n + 1;
+
+        double mx_j = Xi_hat(1, 0) +
+               measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat(0, 0)));
+        double my_j = Xi_hat(2, 0) +
+               measurement.r * std::sin(normalize_angle(measurement.phi + Xi_hat(0, 0)));
+
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Computed x,y from hinv");
+
+        mt_j = arma::mat{mx_j, my_j}.t();
+
+        // Update the complete state estimate by adding in the new mt_j vector
+        Xi_hat = arma::join_cols(Xi_hat, mt_j);
+
+        // store the index of the x_j component for this landmark
+        landmarks_dict[measurement.marker_id] = Xi_hat.n_rows - 2;
+        
+        n = (Xi_hat.n_rows - 3) / 2; // update number of landmarks
+        
+        // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
+        // sigma_hat is initialed to the correct size already for n=1
+        if (n > 1)
+        {
+            // n has increased by 1 since the last time this function was called
+            // Sigma_hat goes from 3+2n x 3+2n to 3+2(n+1) x 3+2(n+1)
+            sigma_hat = arma::join_cols(sigma_hat, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+            sigma_hat = arma::join_rows(sigma_hat, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
+
+            // not sure if we need to do this each time a measurment is added...
+            sigma_hat(sigma_hat.n_rows - 1, sigma_hat.n_cols - 1) = BIG_NUMBER;
+            sigma_hat(sigma_hat.n_rows - 2, sigma_hat.n_cols - 2) = BIG_NUMBER;
+
+            // Update the dimensions of the process noise matrix Q_bar
+            Q_bar = arma::join_cols(Q_bar, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+            Q_bar = arma::join_rows(Q_bar, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
+
+            // Verify dimensions are correct
+            assert(sigma_hat.n_rows == sigma_hat.n_cols);
+            assert(sigma_hat.n_rows == (3 + 2 * n));
+            assert(Q_bar.n_rows == Q_bar.n_cols);
+            assert(Q_bar.n_rows == (3 + 2 * n));
+        }
+
+        for (auto &landmark : landmarks_dict)
         {
             // const unsigned int id = landmark.first;
             const unsigned int k = landmark.second; // k = index in Xi_hat
@@ -298,37 +337,55 @@ namespace turtlelib
 
         }
 
-       unsigned int id = 69;
-       return LandmarkMeasurement{0.0,0.0,id};
 
     }
 
 
-    void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, LandmarkMeasurement measurement)
+    void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
-        
-        // If the data association is unknown, associate it (assign an id to it)
-        if (not measurement.known)
+    
+        // if any one of the measurements has a non-zero id, 
+        // we assume the data association in known
+        bool known = false;
+        for (const auto &m : measurements)
         {
-            measurement = associate_measurements(measurement);
+            if (m.marker_id != 0)
+            {
+                known = true;
+                break;
+            }
         }
 
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "r,phi,id = " << measurement.r);
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "r,phi,id = " << measurement.phi);
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "r,phi,id = " << measurement.marker_id);
-
         // Add new measurments with known association
-        update_measurements(measurement);
+        if (known)
+        {
+            for (size_t i = 0; i < measurements.size(); i++)
+            {
+                update_measurements(measurements.at(i));
+            }
+        }
         
+        // Add new measurments with unknown association
+        else
+        {
+            // std::vector<LandmarkMeasurement> measurements_copy;
+            for (auto &m : measurements)
+            {
+                // after this function, landmarks_dict should 
+                // contain measurments with correct id's
+                associate_measurements(m);
+            }
+        }
+
         /// Kalman filter prediction step
-        predict_from_odometry(pose, V);
+        // predict_from_odometry(pose, V);
 
         // Kalman filter update step
-        update(measurement);
+        // update(measurements);
 
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
-        RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
+        // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
+        // RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
     }
 
     arma::mat KalmanFilter::pose_prediction() const
