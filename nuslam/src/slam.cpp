@@ -277,15 +277,19 @@ private:
 
   void detected_landmarks_callback(const geometry_msgs::msg::Point &landmark_point)
   {
-    RCLCPP_INFO_STREAM(get_logger(),"(x,y) = " << landmark_point.x << "," << landmark_point.y);
+    // by not providing an id for the landmark, the EKF assumes an unknown data association
     std::vector<turtlelib::LandmarkMeasurement> measurements;
-    auto m = turtlelib::LandmarkMeasurement::from_cartesian(landmark_point.x,landmark_point.y, 0);
-    measurements.push_back(m);
+    auto m = turtlelib::LandmarkMeasurement::from_cartesian(
+        landmark_point.x,landmark_point.y);
+    // auto m = turtlelib::LandmarkMeasurement::from_cartesian(1.0,1.0);
+    measurements.push_back(m); // vector of 1 measurement...should be reworked
+    RCLCPP_INFO_STREAM(get_logger(),"x,y = " << landmark_point.x << "," << landmark_point.y); 
     ekf.run(pose_now,Vb_now,measurements);
-    slam_pose_estimate = ekf.pose_prediction();
-    slam_map_estimate = ekf.map_prediction();
-    slam_state_estimate = ekf.state_prediction();
-    RCLCPP_INFO_STREAM(get_logger(),"state = " << slam_state_estimate);
+
+    // slam_pose_estimate = ekf.pose_prediction();
+    // slam_map_estimate = ekf.map_prediction();
+    // slam_state_estimate = ekf.state_prediction();
+    // RCLCPP_INFO_STREAM(get_logger(),"state = " << slam_state_estimate);
     measurements.clear();
   }
 
@@ -296,6 +300,7 @@ private:
     fake_sensor_flag = true;
 
     // store markers in a vector of turtlelib::LandmarkMeasurement's
+    // passing a marker_id signifies to the EKF that the data association is known
     for (size_t i = 0; i < marker_arr.markers.size(); i++) {
       const double x = marker_arr.markers.at(i).pose.position.x;
       const double y = marker_arr.markers.at(i).pose.position.y;
