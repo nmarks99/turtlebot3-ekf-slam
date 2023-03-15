@@ -46,7 +46,7 @@ namespace turtlelib
         /// @param _phi bearing (angle)
         /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
         LandmarkMeasurement(double _r, double _phi, int _marker_id);
-
+        
         /// @brief Constructor which defines the r, phi, and marker_id
         /// given cartesian coordinates x and y, as well as the marker_id
         /// @param _x x coordinate
@@ -88,7 +88,7 @@ namespace turtlelib
         /// @brief takes a measurement and if it hasn't been seen before, initializes it,
         /// and adds it to the set of known landmark measurments.
         void update_measurements(const LandmarkMeasurement &measurement);
-
+        
         /// @brief extented Kalman filter prediction step which predicts
         /// the new robot state qt_hat at time t using the pose estimate
         /// from the odometry calculation done elsewhere. The process noise is zero here.
@@ -99,8 +99,17 @@ namespace turtlelib
         /// @brief extented Kalman filter update step
         /// @param measurements a vector of LandmarkMeasurements
         void update(const std::vector<LandmarkMeasurement> &measurements);
+        
+        /// @brief computes the mahalonobis distance between zi and zk
+        /// @param zi a 2x1 vector of the measurment i
+        /// @param zk a 2x1 vector of the measurment k
+        /// @param covariance the covariance matrix
+        arma::mat mahalanobis_distance(arma::mat zi, arma::mat zk, arma::mat covariance) const;
 
     public:
+        /// @brief incorporates unassociated data, modifies marker_id
+        void associate_measurements(LandmarkMeasurement measurment);
+        
         /// @brief class constructor
         KalmanFilter();
 

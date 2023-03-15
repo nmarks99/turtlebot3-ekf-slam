@@ -110,6 +110,7 @@ namespace turtlelib
         }
     }
 
+    
     void KalmanFilter::predict_from_odometry(const Pose2D &pose, const Twist2D &V)
     {
         // This must only be called once update_measurements() has been called
@@ -193,8 +194,19 @@ namespace turtlelib
         const double del_x = (Xi_hat(ind_in_Xi, 0) - Xi_hat(1, 0));
         const double del_y = (Xi_hat(ind_in_Xi + 1, 0) - Xi_hat(2, 0));
         const double d = std::pow(del_x, 2.0) + std::pow(del_y, 2.0);
+        
+        unsigned int Hcols = 0;
+        if (sigma_hat.n_cols == 5)
+        {
+            Hcols = 6;
+        }
+        else
+        {
+            Hcols = sigma_hat.n_cols;
+        }
+        
+        arma::mat H = arma::mat(2, Hcols, arma::fill::zeros);
 
-        arma::mat H = arma::mat(2, sigma_hat.n_cols, arma::fill::zeros);
         H(0, 1) = -del_x / std::sqrt(d);
         H(0, 2) = -del_y / std::sqrt(d);
         H(1, 0) = -1.0;
@@ -248,14 +260,126 @@ namespace turtlelib
 
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "---------Finished update step---------");
     }
+    
+    
+    arma::mat KalmanFilter::mahalanobis_distance(arma::mat zi, arma::mat zk, arma::mat covariance) const
+    {
+        return (zi - zk).t() * arma::inv(covariance) * (zi - zk); 
+    }
+
+
+    void KalmanFilter::associate_measurements(LandmarkMeasurement measurement)
+    {
+
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Begin association of measurements");
+        arma::mat mt_j(2, 1, arma::fill::zeros);
+        
+        // from inverted measurment model, temporarily add measurment as new landmark
+        measurement.marker_id = n + 1;
+
+        double mx_j = Xi_hat(1, 0) +
+               measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat(0, 0)));
+        double my_j = Xi_hat(2, 0) +
+               measurement.r * std::sin(normalize_angle(measurement.phi + Xi_hat(0, 0)));
+
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Computed x,y from hinv");
+
+        mt_j = arma::mat{mx_j, my_j}.t();
+
+        // Update the complete state estimate by adding in the new mt_j vector
+        Xi_hat = arma::join_cols(Xi_hat, mt_j);
+
+        // store the index of the x_j component for this landmark
+        landmarks_dict[measurement.marker_id] = Xi_hat.n_rows - 2;
+        
+        n = (Xi_hat.n_rows - 3) / 2; // update number of landmarks
+        
+        // Update dimensions of the covariance matrix Sigma (3+2n x 3+2n)
+        // sigma_hat is initialed to the correct size already for n=1
+        if (n > 1)
+        {
+            // n has increased by 1 since the last time this function was called
+            // Sigma_hat goes from 3+2n x 3+2n to 3+2(n+1) x 3+2(n+1)
+            sigma_hat = arma::join_cols(sigma_hat, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+            sigma_hat = arma::join_rows(sigma_hat, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
+
+            // not sure if we need to do this each time a measurment is added...
+            sigma_hat(sigma_hat.n_rows - 1, sigma_hat.n_cols - 1) = BIG_NUMBER;
+            sigma_hat(sigma_hat.n_rows - 2, sigma_hat.n_cols - 2) = BIG_NUMBER;
+
+            // Update the dimensions of the process noise matrix Q_bar
+            Q_bar = arma::join_cols(Q_bar, arma::mat(2, 3 + 2 * (n - 1), arma::fill::zeros));
+            Q_bar = arma::join_rows(Q_bar, arma::mat(3 + 2 * n, 2, arma::fill::zeros));
+
+            // Verify dimensions are correct
+            assert(sigma_hat.n_rows == sigma_hat.n_cols);
+            assert(sigma_hat.n_rows == (3 + 2 * n));
+            assert(Q_bar.n_rows == Q_bar.n_cols);
+            assert(Q_bar.n_rows == (3 + 2 * n));
+        }
+
+        for (auto &landmark : landmarks_dict)
+        {
+            // const unsigned int id = landmark.first;
+            const unsigned int k = landmark.second; // k = index in Xi_hat
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "k = " << k);
+             
+            arma::mat H = compute_H(k);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "H = \n" << H);
+            
+            arma::mat cov = H * sigma_hat * H.t() + R_bar;
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "cov = \n" << cov);
+            
+            arma::mat zk = compute_h(k);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "zk = \n" << zk);
+            
+            arma::mat zi = arma::mat{measurement.r, measurement.phi}.t();
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "zi = \n" << zi);
+            
+            arma::mat dk = mahalanobis_distance(zi,zk,cov);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "dk = \n" << dk);
+
+        }
+
+
+    }
+
 
     void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
         RCLCPP_DEBUG_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
-        // Add new measurments and update dimensions if needed
-        for (size_t i = 0; i < measurements.size(); i++)
+    
+        // if any one of the measurements has a non-zero id, 
+        // we assume the data association in known
+        bool known = false;
+        for (const auto &m : measurements)
         {
-            update_measurements(measurements.at(i));
+            if (m.marker_id != 0)
+            {
+                known = true;
+                break;
+            }
+        }
+
+        // Add new measurments with known association
+        if (known)
+        {
+            for (size_t i = 0; i < measurements.size(); i++)
+            {
+                update_measurements(measurements.at(i));
+            }
+        }
+        
+        // Add new measurments with unknown association
+        else
+        {
+            // std::vector<LandmarkMeasurement> measurements_copy;
+            for (auto &m : measurements)
+            {
+                // after this function, landmarks_dict should 
+                // contain measurments with correct id's
+                associate_measurements(m);
+            }
         }
 
         /// Kalman filter prediction step
