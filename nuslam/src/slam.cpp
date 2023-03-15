@@ -34,6 +34,7 @@
 #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
 #include "nuturtlebot_msgs/msg/sensor_data.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "visualization_msgs/msg/marker.hpp"
@@ -54,7 +55,7 @@ using namespace std::chrono_literals;
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-/// \cond
+/// @cond
 // if true, saves slam data (pose predictions etc.) to a csv file
 static constexpr bool SAVE_TO_CSV = true;
 
@@ -65,7 +66,7 @@ auto t0 = std::chrono::system_clock::now();
 
 // throttle the rate at which path messages are published
 constexpr unsigned int PATH_PUB_RATE = 100;
-/// \endcond
+/// @endcond
 
 /// @brief SLAM + Odometry node
 class Slam : public rclcpp::Node
@@ -82,10 +83,12 @@ public:
     declare_parameter("wheel_right", wheel_right);
     declare_parameter("Q", Q);
     declare_parameter("R", R);
+    declare_parameter("known_association", KNOWN_ASSOCIATION);
 
     // Get parameters
     Q = get_parameter("Q").get_value<double>();
     R = get_parameter("R").get_value<double>();
+    KNOWN_ASSOCIATION = get_parameter("known_association").get_value<bool>();
     body_id = get_parameter("body_id").get_value<std::string>();
     odom_id = get_parameter("odom_id").get_value<std::string>();
     wheel_left = get_parameter("wheel_left").get_value<std::string>();
@@ -122,10 +125,22 @@ public:
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
       "/blue/joint_states", 10,
       std::bind(&Slam::joint_states_callback, this, _1));
+    
+    /// @brief subscription to the lidar scanner (or simulated lidar) 
+    /// for use with SLAM with unknown data association
+    if (not KNOWN_ASSOCIATION)
+    {
+      lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
+        "/scan", 10, std::bind(&Slam::lidar_callback, this, _1));
+    }
 
-    fake_sensor_sub = create_subscription<visualization_msgs::msg::MarkerArray>(
-      "/fake_sensor", 10,
-      std::bind(&Slam::fake_sensor_callback, this, _1));
+    /// @brief subscription to fake sensor for use with SLAM 
+    /// with known data association
+    if (KNOWN_ASSOCIATION)
+    {
+      fake_sensor_sub = create_subscription<visualization_msgs::msg::MarkerArray>(
+        "/fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, _1));
+    }
 
     /// @brief initial pose service that sets the initial pose of the robot
     _init_pose_service = this->create_service<nuslam::srv::InitialPose>(
@@ -172,22 +187,23 @@ private:
 
   unsigned int count = 0;
   bool path_flag = true;
-  bool landmarks_flag = false;
+  bool fake_sensor_flag = false;
 
-  // KalmanFilter object
+  // Parameters that can be passed to the node
+  bool KNOWN_ASSOCIATION = false;
   double Q = 100.0;
   double R = 100.0;
+  std::string body_id;
+  std::string wheel_left;
+  std::string wheel_right;
+  std::string odom_id = "odom";
+
+  // KalmanFilter object
   turtlelib::KalmanFilter ekf{Q, R};
   arma::mat slam_pose_estimate = arma::mat(3, 1, arma::fill::zeros);
   arma::mat slam_map_estimate = arma::mat(3, 1, arma::fill::zeros);
   arma::mat slam_state_estimate = arma::mat(5, 1, arma::fill::zeros);
   std::vector<turtlelib::LandmarkMeasurement> landmarks;
-
-  // Parameters that can be passed to the node
-  std::string body_id;
-  std::string wheel_left;
-  std::string wheel_right;
-  std::string odom_id = "odom";
 
   // DiffDrive object
   turtlelib::DiffDrive ddrive;
@@ -217,6 +233,7 @@ private:
 
   // Declare subscriptions
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub;
   rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_sub;
 
   // Declare publishers
@@ -255,12 +272,24 @@ private:
     // Update current pose of the robot with forward kinematics
     pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
   }
+  
+  /// @brief callback for lidar scanner for SLAM with unknown data association
+  void lidar_callback(const sensor_msgs::msg::LaserScan &lidar_data)
+  {
+    RCLCPP_INFO_STREAM(get_logger(),"unknown data association!!");
 
+    // get r,phi from lidar scan
+    // store as landmarks = vector<turtlelib::LandmarkMeasurement> with id set to 0
+    // ekf.run(pose_now, Vb_now, landmarks, known=false);
+  }
+  
+  /// @brief callback for fake sensors for SLAM with known data association
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray & marker_arr)
-  {   // this is running at 5Hz, specified in nusim node
-    landmarks_flag = true;
+  {   
+    
+    fake_sensor_flag = true;
 
-    // store markers in a vector of LandmarkMeasurement's
+    // store markers in a vector of turtlelib::LandmarkMeasurement's
     for (size_t i = 0; i < marker_arr.markers.size(); i++) {
       const double x = marker_arr.markers.at(i).pose.position.x;
       const double y = marker_arr.markers.at(i).pose.position.y;
@@ -465,8 +494,8 @@ private:
     // publish odometry msg
     odom_pub->publish(odom_msg);
 
-    if (landmarks_flag) {
-      landmarks_flag = false;
+    if (fake_sensor_flag) {
+      fake_sensor_flag = false;
 
       // publish marker messages for map landmarks based on map_estimate
       fill_slam_marker_arr();

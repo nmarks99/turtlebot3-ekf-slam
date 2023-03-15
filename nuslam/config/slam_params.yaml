@@ -2,3 +2,4 @@ slam:
   ros__parameters:
     Q: 1.0
     R: 1.0
+    known_association: true
