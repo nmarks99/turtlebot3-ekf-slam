@@ -495,22 +495,13 @@ namespace turtlelib
 
     TEST_CASE("from_cartesian()", "[LandmarkMeasurement]")
     { // Nick, Marks
+        
+        // known data association
         auto ms = LandmarkMeasurement::from_cartesian(1.0, 1.0, 1);
         REQUIRE(almost_equal(ms.r, std::sqrt(2.0)));
         REQUIRE(almost_equal(ms.phi, M_PI / 4));
         REQUIRE(ms.marker_id == 1);
-    }
-
-    TEST_CASE("associate_measurements", "[KalmanFilter]")
-    {
-        auto m1 = LandmarkMeasurement::from_cartesian(1.0, 1.0, 0);
-        auto m2 = LandmarkMeasurement::from_cartesian(3.0, 2.0, 0);
-        auto m3 = LandmarkMeasurement::from_cartesian(1.0, 2.0, 0);
-        std::vector<LandmarkMeasurement> measurments;
-        measurments.push_back(m1);
-        measurments.push_back(m2);
-        measurments.push_back(m3);
-        
+        REQUIRE(ms.known);
     }
 
 }

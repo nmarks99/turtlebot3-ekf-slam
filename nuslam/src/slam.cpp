@@ -279,9 +279,9 @@ private:
   {
     RCLCPP_INFO_STREAM(get_logger(),"(x,y) = " << landmark_point.x << "," << landmark_point.y);
     std::vector<turtlelib::LandmarkMeasurement> measurements;
-    auto m = turtlelib::LandmarkMeasurement::from_cartesian(landmark_point.x,landmark_point.y, 0);
-    measurements.push_back(m);
-    ekf.run(pose_now,Vb_now,measurements);
+    auto m = turtlelib::LandmarkMeasurement::from_cartesian(landmark_point.x,landmark_point.y);
+    // measurements.push_back(m);
+    ekf.run(pose_now,Vb_now,m);
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();
@@ -300,11 +300,13 @@ private:
       const double x = marker_arr.markers.at(i).pose.position.x;
       const double y = marker_arr.markers.at(i).pose.position.y;
       const unsigned int marker_id = marker_arr.markers.at(i).id;
-      landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
+      const auto landmark_i = turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id);
+      ekf.run(pose_now,Vb_now,landmark_i);
+      // landmarks.push_back(turtlelib::LandmarkMeasurement::from_cartesian(x, y, marker_id));
     }
 
     // Run extended Kalman filter and update get the updated state estimate
-    ekf.run(pose_now, Vb_now, landmarks);
+    // ekf.run(pose_now, Vb_now, landmarks);
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();

@@ -32,27 +32,37 @@ namespace turtlelib
 
         /// @brief integer id, typically associated with a ROS Marker message
         unsigned int marker_id = 0;
+        
+        /// @brief denotes whether or not the data association is known
+        bool known = true;
 
         /// @brief Default constructor that initializes variables to zero
         LandmarkMeasurement();
 
-        /// @brief Constructor which defines the r, and phi
+        /// @brief Constructor which defines the r, and phi (unknown association)
         /// @param _r range
         /// @param _phi bearing (angle)
         LandmarkMeasurement(double _r, double _phi);
 
-        /// @brief Constructor which defines the r, phi, and marker_id
+        /// @brief Constructor which defines the r, phi, and marker_id (known association)
         /// @param _r range
         /// @param _phi bearing (angle)
         /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
-        LandmarkMeasurement(double _r, double _phi, int _marker_id);
+        LandmarkMeasurement(double _r, double _phi, unsigned int _marker_id);
         
         /// @brief Constructor which defines the r, phi, and marker_id
         /// given cartesian coordinates x and y, as well as the marker_id
+        /// for known data association
         /// @param _x x coordinate
         /// @param _y y coordinate
         /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
-        static LandmarkMeasurement from_cartesian(double _x, double _y, int _marker_id);
+        static LandmarkMeasurement from_cartesian(double _x, double _y, unsigned int _marker_id);
+        
+        /// @brief Constructor which defines the r, phi, and marker_id
+        /// given cartesian coordinates x,y for unknown data association
+        /// @param _x x coordinate
+        /// @param _y y coordinate
+        static LandmarkMeasurement from_cartesian(double _x, double _y);
 
         /// @brief Stores the r and phi values in a 2x1 arma::mat and returns it
         /// @return 2x1 arma::mat [r phi]
@@ -98,7 +108,7 @@ namespace turtlelib
 
         /// @brief extented Kalman filter update step
         /// @param measurements a vector of LandmarkMeasurements
-        void update(const std::vector<LandmarkMeasurement> &measurements);
+        void update(const LandmarkMeasurement &measurement);
         
         /// @brief computes the mahalonobis distance between zi and zk
         /// @param zi a 2x1 vector of the measurment i
@@ -108,7 +118,7 @@ namespace turtlelib
 
     public:
         /// @brief incorporates unassociated data, modifies marker_id
-        void associate_measurements(LandmarkMeasurement measurment);
+        LandmarkMeasurement associate_measurements(LandmarkMeasurement measurment);
         
         /// @brief class constructor
         KalmanFilter();
@@ -118,14 +128,14 @@ namespace turtlelib
         /// @param R measurment noise gain
         KalmanFilter(double Q, double R);
 
-        /// @brief Runs one iteration of the extended Kalman filtera
-        /// with the given twist and landmark measurements. The pose
+        /// @brief Runs one iteration of the extended Kalman filter
+        /// with the given twist and landmark measurement. The pose
         /// estimate from the prediction step comes from wheel odometry
         /// which is computed elsewhere and passed to this function
         /// @param pose a Pose2D of the current pose from the odometry
         /// @param V a Twist2D
         /// @param measurements a vector of LandmarkMeasurements
-        void run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements);
+        void run(const Pose2D &pose, const Twist2D &V, LandmarkMeasurement measurement);
 
         /// @brief returns the current pose prediction
         /// @return an arma::mat of the prediction of the robot's current pose
