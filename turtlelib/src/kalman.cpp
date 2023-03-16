@@ -276,7 +276,11 @@ namespace turtlelib
     
     double KalmanFilter::mahalanobis_distance(arma::mat zi, arma::mat zk, arma::mat covariance) const
     {
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "zi = \n" << zi);
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "zk = \n" << zk);
+
         arma::mat d_mat = (zi - zk).t() * arma::inv(covariance) * (zi - zk);
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "mahal distance = " << d_mat);
         return d_mat(0);
     }
 
@@ -287,6 +291,15 @@ namespace turtlelib
         // takes in a LandmarkMeasurement with unknown association and associates it
         // in other words, assigns the appropriate id to it and returns it.
         
+        // if this is the first measurement, set id=0 and return
+        if (n == 0)
+        {
+            measurement.marker_id = 0;
+            measurement.known = true;
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Data association complete-----------");
+            return measurement;
+        }
+
         // Create temporary variables
         arma::mat Xi_hat_temp = Xi_hat;
         arma::mat sigma_hat_temp = sigma_hat;
@@ -294,25 +307,23 @@ namespace turtlelib
         auto n_temp = n;
         auto landmarks_dict_temp = landmarks_dict;
 
-        
         // Temporarily add landmark via inverted measurement model
         arma::mat mt_j = arma::mat(2,1,arma::fill::zeros);
 
-        double mx_j = Xi_hat_temp(1, 0) +
+        const double mx_j = Xi_hat_temp(1, 0) +
                measurement.r * std::cos(normalize_angle(measurement.phi + Xi_hat_temp(0, 0)));
-        double my_j = Xi_hat_temp(2, 0) +
+        const double my_j = Xi_hat_temp(2, 0) +
                measurement.r * std::sin(normalize_angle(measurement.phi + Xi_hat_temp(0, 0)));
 
         mt_j = arma::mat{mx_j, my_j}.t();
         
-        // Update the complete state estimate by adding in the new mt_j vector
         Xi_hat_temp = arma::join_cols(Xi_hat_temp, mt_j);
 
-        // number of landmarks
-        n_temp = (Xi_hat_temp.n_rows - 3) / 2;
+        // temporarily updated number of landmarks
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "n_temp = " << n_temp);
+        n_temp = (Xi_hat_temp.n_rows - 3) / 2;
         
-        // store the index of the x_j component for this landmark
+        // store the temporary new landmark in the landmarks_dict
         measurement.marker_id = n_temp-1;
         landmarks_dict_temp[measurement.marker_id] = Xi_hat_temp.n_rows - 2;
 
@@ -338,13 +349,13 @@ namespace turtlelib
             assert(Q_bar_temp.n_rows == (3 + 2 * n_temp));
         }
         
-        std::map<double, unsigned int> d_map; // mahalonobis distance : k(index in Xi) 
+        std::map<double, unsigned int> d_map; // mahalonobis distance : marker_id
         arma::mat zi = arma::mat{measurement.r, measurement.phi}.t();
         for (auto &landmark : landmarks_dict_temp)
         {
             const unsigned int k = landmark.second; // k = index in Xi_hat
              
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), landmark.first << "," << landmark.second);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "ID: " << landmark.first << ", Index: " << landmark.second);
 
             // Compute H
             arma::mat H = arma::mat(2, sigma_hat_temp.n_cols, arma::fill::zeros);
@@ -380,23 +391,56 @@ namespace turtlelib
                     std::atan2(mj_y - Xi_hat_temp(2, 0), mj_x - Xi_hat_temp(1, 0)) - Xi_hat_temp(0, 0));
             arma::mat zk = arma::mat{r_j, phi_j};
             zk = zk.t();
-            
-            
-            double dk = mahalanobis_distance(zi,zk,cov);
-            d_map[dk] = ((k-1)/2)-1;
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "dk = " << dk);
+           
+            // ingnorning temp landmark???
+            if (landmark.second != Xi_hat_temp.n_rows-2)
+            {
+                double dk = mahalanobis_distance(zi,zk,cov);
+                d_map[dk] = landmark.first; // d:id
+            }
         }
         
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "d_map: ");
-        for (auto &i : d_map)
+        double d_star = d_map.begin()->first;
+        double d_star_id = d_map.begin()->second;
+        double d_thresh = 0.001;
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "d_star = " << d_star);
+        if (d_star > d_thresh)
         {
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), i.first << "," << i.second);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "New landmark!");
+            measurement.marker_id = n_temp-1;
+            measurement.known = true;
+        }
+        else if (d_star < d_thresh)
+        {
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "Associated with marker " << d_star_id);
+            measurement.marker_id = d_star_id;
+            measurement.known = true;
         }
 
-        // unsigned int new_id = m;
-        // unsigned int k_smallest = ((d_map.begin()->second - 1) / 2) - 1;
 
-        measurement.marker_id = 0;
+        // for (auto &i : d_map)
+        // {
+            // if (i.first > 0 and i.first < distance_threshold)
+            // {
+                // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"),"Winner!" << i.first << "," << i.second);
+                // new_id = i.second;
+                // measurement.known = true;
+                // break;
+            // }
+            // // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "d:ID = " << i.first << "," << i.second);
+        // }
+        // new_id = d_map.begin()->second;
+        // measurement.known = true;
+        
+        // if (measurement.known)
+        // {
+            // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"),"Associated with marker " << new_id);
+        // }
+        // else
+        // {
+            // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"),"No association found");
+        // }
+        // measurement.marker_id = new_id;
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Data association complete-----------");
         return measurement;
     }
@@ -405,27 +449,38 @@ namespace turtlelib
     void KalmanFilter::run(const Pose2D &pose, const Twist2D &V, const std::vector<LandmarkMeasurement> &measurements)
     {
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Start run-------------");
+       
+        // makes sure not to run predict and update without having initialed landmarks
+        bool initialized = false;
         
-
+        // associate and incorporate measurments
         for (auto m : measurements)
         {
-           
             if (not m.known)
             {
+                // Returns the same measurement with updated marker_id
                 m = associate_measurement(m);
             }
-
-            // Add new measurments with known association
-            update_measurements(m);
+            
+            if (m.known)
+            {
+                // Add new measurments with known association
+                update_measurements(m);
+                initialized = true;
+            }
         }
         
-        /// Kalman filter prediction step
-        predict_from_odometry(pose, V);
+        // EKF predict and update
+        if (initialized) 
+        {
+            /// Kalman filter prediction step
+            predict_from_odometry(pose, V);
 
-        // Kalman filter update step
-        update(measurements);
+            // Kalman filter update step
+            update(measurements);
+        }
 
-        // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
+        RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "-------------Run complete-------------");
     }
 
