@@ -290,13 +290,13 @@ namespace turtlelib
         // in other words, assigns the appropriate id to it and returns it.
         
         // if this is the first measurement, set id=0 and return
-        if (n == 0)
-        {
-            measurement.marker_id = 0;
-            measurement.known = true;
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Data association complete-----------");
-            return measurement;
-        }
+        // if (n == 0)
+        // {
+            // measurement.marker_id = 0;
+            // measurement.known = true;
+            // RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "------------Data association complete-----------");
+            // return measurement;
+        // }
 
         // Create temporary variables
         arma::mat Xi_hat_temp = Xi_hat;
@@ -485,7 +485,7 @@ namespace turtlelib
             predict_from_odometry(pose, V);
 
             // Kalman filter update step
-            update(meas_copy);
+            // update(meas_copy);
         }
 
         RCLCPP_INFO_STREAM(rclcpp::get_logger("KalmanFilter"), "State = " << Xi_hat);

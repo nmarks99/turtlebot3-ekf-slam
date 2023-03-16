@@ -80,10 +80,13 @@ rosidl_generate_interfaces(
   ${PROJECT_NAME}_srv
   "srv/Control.srv"
   "srv/InitialPose.srv"
+  "msg/PointArray.msg"
   LIBRARY_NAME ${PROJECT_NAME}
+  DEPENDENCIES geometry_msgs
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 target_link_libraries(slam "${cpp_typesupport_target}")
+target_link_libraries(landmarks "${cpp_typesupport_target}")
 
 
 # install nodes

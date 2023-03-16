@@ -2,7 +2,7 @@ nusim:
   ros__parameters:
     slip_fraction: 0.0
     input_noise: 0.0
-    lidar_variance: 0.001
+    lidar_variance: 0.00
     basic_sensor_variance: 0.0
     max_range: 5.0
     x0: 0.0

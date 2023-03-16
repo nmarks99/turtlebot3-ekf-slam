@@ -24,6 +24,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "nuslam/msg/detail/point_array__struct.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -51,6 +52,7 @@
 #include "turtlelib/kalman.hpp"
 
 #include "armadillo"
+#include "nuslam/msg/point_array.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -131,7 +133,7 @@ public:
     /// for use with SLAM with unknown data association
     if (not KNOWN_ASSOCIATION)
     {
-      detected_landmarks_sub = create_subscription<geometry_msgs::msg::Point>(
+      detected_landmarks_sub = create_subscription<nuslam::msg::PointArray>(
           "/detected_landmarks", 10, std::bind(&Slam::detected_landmarks_callback, this, _1)
           );
     }
@@ -235,7 +237,7 @@ private:
 
   // Declare subscriptions
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
-  rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr detected_landmarks_sub;
+  rclcpp::Subscription<nuslam::msg::PointArray>::SharedPtr detected_landmarks_sub;
   rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr fake_sensor_sub;
 
   // Declare publishers
@@ -274,25 +276,34 @@ private:
     // Update current pose of the robot with forward kinematics
     pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
   }
-
-  void detected_landmarks_callback(const geometry_msgs::msg::Point &landmark_point)
+  
+  /// @brief callback function for detected landmark centers
+  /// from circle fitting/classification published by landmarks node
+  void detected_landmarks_callback(const nuslam::msg::PointArray &point_arr)
   {
     // by not providing an id for the landmark, the EKF assumes an unknown data association
     std::vector<turtlelib::LandmarkMeasurement> measurements;
-    auto m = turtlelib::LandmarkMeasurement::from_cartesian(
-        landmark_point.x,landmark_point.y);
+    for (const auto &landmark_point : point_arr.points)
+    {
+      auto m = turtlelib::LandmarkMeasurement::from_cartesian(
+          landmark_point.x,landmark_point.y);
 
-    measurements.push_back(m); // vector of 1 measurement...should be reworked
-    RCLCPP_INFO_STREAM(get_logger(),"Measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
+      measurements.push_back(m); // vector of 1 measurement...should be reworked
+      RCLCPP_INFO_STREAM(get_logger(),
+          "New measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
+    }
+    
+    // Run the extended Kalman filter for these measurements
     ekf.run(pose_now,Vb_now,measurements);
 
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();
-    // RCLCPP_INFO_STREAM(get_logger(),"State = \n" << slam_state_estimate);
-    measurements.clear();
 
+    // fill and publish SLAM landmark markers
     fill_slam_marker_arr();
+
+    measurements.clear();
   }
 
   /// @brief callback for fake sensors for SLAM with known data association

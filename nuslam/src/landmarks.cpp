@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <functional>
+#include <geometry_msgs/msg/detail/point__struct.hpp>
 #include <tuple>
 #include <memory>
 #include <fstream>
@@ -22,13 +23,15 @@
 #include <rclcpp/publisher.hpp>
 
 #include "nuslam/circle_fitting.hpp"
+#include "nuslam/msg/detail/point_array__struct.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 #include "sensor_msgs/msg/laser_scan.hpp"
-#include <geometry_msgs/msg/point.hpp>
+#include "geometry_msgs/msg/point.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "nuslam/msg/point_array.hpp"
 
 #include "turtlelib/diff_drive.hpp"
 #include "turtlelib/kalman.hpp"
@@ -62,7 +65,7 @@ public:
     cluster_pub = create_publisher<visualization_msgs::msg::MarkerArray>
       ("/clusters", 10);
 
-    detected_landmarks_pub = create_publisher<geometry_msgs::msg::Point>
+    detected_landmarks_pub = create_publisher<nuslam::msg::PointArray>
       ("/detected_landmarks", 10);
   }
 
@@ -72,7 +75,7 @@ private:
   
   // Publishers
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr cluster_pub;
-  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr detected_landmarks_pub;
+  rclcpp::Publisher<nuslam::msg::PointArray>::SharedPtr detected_landmarks_pub;
 
   // Messages 
   visualization_msgs::msg::MarkerArray cluster_marker_arr;
@@ -165,13 +168,14 @@ private:
     }
     all_clusters = temp_cluster_vec;
     temp_cluster_vec.clear();
-
+    
+    nuslam::msg::PointArray point_arr;
     for (const auto &cluster: all_clusters)
     {
       auto hkr = fit_circle(cluster);
       // RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
       // RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
-
+      
       if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
       {
         // publishe the landmarks (x,y) which is the center of the circle
@@ -179,9 +183,10 @@ private:
         center.x = std::get<0>(hkr).x;
         center.y = std::get<0>(hkr).y;
         center.z = 0.0;
-        detected_landmarks_pub->publish(center);
+        point_arr.points.push_back(center);
       }
     }
+    detected_landmarks_pub->publish(point_arr);
     
     // fill and publish cluster marker array for testing
     fill_cluster_markers();
