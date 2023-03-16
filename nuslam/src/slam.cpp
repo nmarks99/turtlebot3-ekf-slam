@@ -281,16 +281,17 @@ private:
     std::vector<turtlelib::LandmarkMeasurement> measurements;
     auto m = turtlelib::LandmarkMeasurement::from_cartesian(
         landmark_point.x,landmark_point.y);
-    // auto m = turtlelib::LandmarkMeasurement::from_cartesian(1.0,1.0);
-    measurements.push_back(m); // vector of 1 measurement...should be reworked
-    RCLCPP_INFO_STREAM(get_logger(),"x,y = " << landmark_point.x << "," << landmark_point.y); 
-    ekf.run(pose_now,Vb_now,measurements);
 
-    // slam_pose_estimate = ekf.pose_prediction();
-    // slam_map_estimate = ekf.map_prediction();
-    // slam_state_estimate = ekf.state_prediction();
-    // RCLCPP_INFO_STREAM(get_logger(),"state = " << slam_state_estimate);
+    measurements.push_back(m); // vector of 1 measurement...should be reworked
+    RCLCPP_INFO_STREAM(get_logger(),"Measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
+    ekf.run(pose_now,Vb_now,measurements);
+    slam_pose_estimate = ekf.pose_prediction();
+    slam_map_estimate = ekf.map_prediction();
+    slam_state_estimate = ekf.state_prediction();
+    RCLCPP_INFO_STREAM(get_logger(),"State = \n" << slam_state_estimate); 
     measurements.clear();
+
+    fill_slam_marker_arr();
   }
 
   /// @brief callback for fake sensors for SLAM with known data association

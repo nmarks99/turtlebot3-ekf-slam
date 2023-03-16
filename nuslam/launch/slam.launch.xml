@@ -13,6 +13,7 @@
     <!-- Start the nuslam node which has SLAM and odometry-->
     <node pkg="nuslam" exec="slam" name="slam">
         <param from="$(find-pkg-share nuslam)/config/slam_params.yaml"/>
+        <param name="known_association" value="true"/>
         <param name="body_id" value="blue/base_footprint"/>
         <param name="odom_id" value="odom"/>
         <param name="wheel_left" value="blue/wheel_left_link" />
