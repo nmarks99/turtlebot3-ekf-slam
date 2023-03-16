@@ -285,10 +285,11 @@ private:
     measurements.push_back(m); // vector of 1 measurement...should be reworked
     RCLCPP_INFO_STREAM(get_logger(),"Measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
     ekf.run(pose_now,Vb_now,measurements);
+
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();
-    RCLCPP_INFO_STREAM(get_logger(),"State = \n" << slam_state_estimate); 
+    // RCLCPP_INFO_STREAM(get_logger(),"State = \n" << slam_state_estimate);
     measurements.clear();
 
     fill_slam_marker_arr();

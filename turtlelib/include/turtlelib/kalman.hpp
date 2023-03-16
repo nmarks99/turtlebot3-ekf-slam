@@ -61,7 +61,6 @@ namespace turtlelib
         /// given cartesian coordinates (x,y) with unknown data association
         /// @param _x x coordinate
         /// @param _y y coordinate
-        /// @param _marker_id integer id of the marker in the MarkerArray of landmarks
         static LandmarkMeasurement from_cartesian(double _x, double _y);
 
         /// @brief Stores the r and phi values in a 2x1 arma::mat and returns it
