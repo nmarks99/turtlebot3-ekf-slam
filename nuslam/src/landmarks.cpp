@@ -173,8 +173,8 @@ private:
     for (const auto &cluster: all_clusters)
     {
       auto hkr = fit_circle(cluster);
-      // RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
-      // RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
+      RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
+      RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
       
       if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
       {

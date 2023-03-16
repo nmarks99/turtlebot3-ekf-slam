@@ -13,6 +13,8 @@
 ///     /slam/path (nav_msgs/Path): path taken by roobt from SLAM estimate
 /// SUBSCRIBES:
 ///		/joint_states (sensor_msgs/JointState): joint (wheel) states information
+///		/detected_landmarks (nuslam/PointArray): landmark locations from circle fitting algorithm
+///		/fake_sensor (visualization_msgs/MarkerArray): Markers representing fake sensed obstacles
 /// SERVICES:
 ///		/initial_pose
 /// CLIENTS:
@@ -24,7 +26,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "nuslam/msg/detail/point_array__struct.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -142,6 +143,7 @@ public:
     /// with known data association
     if (KNOWN_ASSOCIATION)
     {
+      RCLCPP_INFO_STREAM(get_logger(), "Known data association, using fake sensor");
       fake_sensor_sub = create_subscription<visualization_msgs::msg::MarkerArray>(
         "/fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, _1));
     }
@@ -287,12 +289,16 @@ private:
     {
       auto m = turtlelib::LandmarkMeasurement::from_cartesian(
           landmark_point.x,landmark_point.y);
-
-      measurements.push_back(m); // vector of 1 measurement...should be reworked
       RCLCPP_INFO_STREAM(get_logger(),
           "New measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
+      measurements.push_back(m); // vector of 1 measurement...should be reworked
     }
     
+    for (auto &i: measurements)
+    {
+      RCLCPP_INFO_STREAM(get_logger(),
+          "New measurement (r,phi) = " << i.r << "," << i.phi); 
+    }
     // Run the extended Kalman filter for these measurements
     ekf.run(pose_now,Vb_now,measurements);
 
@@ -311,7 +317,7 @@ private:
   {   
     
     fake_sensor_flag = true;
-
+    RCLCPP_INFO_STREAM(get_logger(),"shouldn't be here!");
     // store markers in a vector of turtlelib::LandmarkMeasurement's
     // passing a marker_id signifies to the EKF that the data association is known
     for (size_t i = 0; i < marker_arr.markers.size(); i++) {
