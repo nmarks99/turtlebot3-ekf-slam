@@ -1,15 +1,17 @@
 nusim:
   ros__parameters:
-    slip_fraction: 0.0
-    input_noise: 0.0
+    slip_fraction: 0.01
+    input_noise: 0.01
     lidar_variance: 0.00
-    basic_sensor_variance: 0.0
+    basic_sensor_variance: 0.001
     max_range: 5.0
     x0: 0.0
     y0: 0.0
     theta0: 0.0
-    obstacles/x: [1.0, 0.3, 0.0, -1.0, -1.0, -0.5, 0.4, 1.0]
-    obstacles/y: [1.0, 0.5, 0.75, 1.0, -1.0, -0.25, -1.6, -1.0]
+    obstacles/x: [0.5,-0.5,0.5,-0.5]
+    obstacles/y: [0.5,0.5, -0.5,-0.5]
+    # obstacles/x: [1.0, 0.3, 0.0, -1.0, -1.0, -0.5, 0.4, 1.0]
+    # obstacles/y: [1.0, 0.5, 0.75, 1.0, -1.0, -0.25, -1.6, -1.0]
     obstacles/r: 0.038
 
 

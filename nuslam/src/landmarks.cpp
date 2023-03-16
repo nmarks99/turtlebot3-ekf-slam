@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <functional>
 #include <geometry_msgs/msg/detail/point__struct.hpp>
+#include <rclcpp/duration.hpp>
 #include <tuple>
 #include <memory>
 #include <fstream>
@@ -78,49 +79,14 @@ private:
   rclcpp::Publisher<nuslam::msg::PointArray>::SharedPtr detected_landmarks_pub;
 
   // Messages 
-  visualization_msgs::msg::MarkerArray cluster_marker_arr;
+  // visualization_msgs::msg::MarkerArray cluster_marker_arr;
  
   // Vector of Cluster objects representing all the clusters of points
   std::vector<Cluster> all_clusters;
   const std::tuple<double,double> mean_threshold{0.0,130.0}; // TODO: tune
-  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.2};
+  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.1};
   const double std_threshold = 0.15;
 
-  /// @brief fills in a marker array containing a spherical
-  /// marker at the average (x,y) location of each cluster
-  void fill_cluster_markers()
-  {
-    // Clear the markers from the last scan
-    cluster_marker_arr.markers.clear();
-
-    for (size_t i = 0; i < all_clusters.size(); i++)
-    {
-      
-      auto p_avg = all_clusters.at(i).centroid();
-
-      visualization_msgs::msg::Marker cluster_marker;
-
-      cluster_marker.header.stamp = get_clock()->now();
-      cluster_marker.header.frame_id = "red/base_footprint";
-      cluster_marker.id = i;
-      cluster_marker.action = visualization_msgs::msg::Marker::ADD;
-      cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
-      cluster_marker.scale.x = 0.05; 
-      cluster_marker.scale.y = 0.05; 
-      cluster_marker.scale.z = 0.05;
-      cluster_marker.pose.position.x = p_avg.x;
-      cluster_marker.pose.position.y = p_avg.y;
-      cluster_marker.pose.position.z = 0.05;
-      cluster_marker.color.a = 1.0;
-      cluster_marker.color.r = 0.4;
-      cluster_marker.color.g = 0.4;
-      cluster_marker.color.b = 0.2;
-      cluster_marker_arr.markers.push_back(cluster_marker);
-    }
-
-    cluster_pub->publish(cluster_marker_arr);
-
-  }
 
   void lidar_callback(const sensor_msgs::msg::LaserScan & lidar_data)
   {
@@ -170,30 +136,63 @@ private:
     temp_cluster_vec.clear();
     
     nuslam::msg::PointArray point_arr;
-    for (const auto &cluster: all_clusters)
+    RCLCPP_INFO_STREAM(get_logger(),"----------------------------------");
+    int count = 1;
+    if (not all_clusters.empty())
     {
-      auto hkr = fit_circle(cluster);
-      RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
-      RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
-      
-      if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
+      for (const auto &cluster: all_clusters)
       {
-        // publishe the landmarks (x,y) which is the center of the circle
-        geometry_msgs::msg::Point center;
-        center.x = std::get<0>(hkr).x;
-        center.y = std::get<0>(hkr).y;
-        center.z = 0.0;
-        point_arr.points.push_back(center);
+        auto hkr = fit_circle(cluster);
+        RCLCPP_INFO_STREAM(get_logger(),"Cluster " << count);
+        RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
+        RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
+        RCLCPP_INFO_STREAM(get_logger(),"----------------------------------");
+        count ++; 
+        if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
+        {
+          // publishe the landmarks (x,y) which is the center of the circle
+          geometry_msgs::msg::Point center;
+          center.x = std::get<0>(hkr).x;
+          center.y = std::get<0>(hkr).y;
+          center.z = 0.0;
+          point_arr.points.push_back(center);
+        }
       }
-    }
-    detected_landmarks_pub->publish(point_arr);
+      detected_landmarks_pub->publish(point_arr);
     
-    // fill and publish cluster marker array for testing
-    fill_cluster_markers();
+  
+      // Publisher cluster markers
+      visualization_msgs::msg::MarkerArray cluster_marker_arr;
 
+      for (size_t i = 0; i < all_clusters.size(); i++)
+      {
+        
+        auto p_avg = all_clusters.at(i).centroid();
+
+        visualization_msgs::msg::Marker cluster_marker;
+
+        cluster_marker.header.stamp = get_clock()->now();
+        cluster_marker.header.frame_id = "red/base_footprint";
+        cluster_marker.id = i;
+        cluster_marker.action = visualization_msgs::msg::Marker::ADD;
+        cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
+        cluster_marker.scale.x = 0.05; 
+        cluster_marker.scale.y = 0.05; 
+        cluster_marker.scale.z = 0.05;
+        cluster_marker.pose.position.x = p_avg.x;
+        cluster_marker.pose.position.y = p_avg.y;
+        cluster_marker.pose.position.z = 0.05;
+        cluster_marker.color.a = 1.0;
+        cluster_marker.color.r = 0.4;
+        cluster_marker.color.g = 0.4;
+        cluster_marker.color.b = 0.2;
+        cluster_marker.lifetime = rclcpp::Duration(210ms);
+        cluster_marker_arr.markers.push_back(cluster_marker);
+      }
+
+      cluster_pub->publish(cluster_marker_arr);
+    }
   }
-
-
 };
 
 /// @brief the main function to run the odometry node

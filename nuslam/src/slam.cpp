@@ -130,8 +130,8 @@ public:
       "/blue/joint_states", 10,
       std::bind(&Slam::joint_states_callback, this, _1));
     
-    /// @brief subscription to the lidar scanner (or simulated lidar) 
-    /// for use with SLAM with unknown data association
+    /// @brief subscription to the detected landmarks from circle fitting
+    /// which is based on data from the lidar scanner (or fake lidar scanner)
     if (not KNOWN_ASSOCIATION)
     {
       detected_landmarks_sub = create_subscription<nuslam::msg::PointArray>(
