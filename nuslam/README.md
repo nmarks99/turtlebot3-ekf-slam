@@ -1,6 +1,10 @@
 # NUSLAM
 This ROS2 package does Extended Kalman Filter SLAM and publishes
 the associated pose and map estimations for the robot and landmarks.
+With a known data association, the SLAM algorithm works quite well and 
+outperforms odometry. Unfortunately I ran out of time and was not able
+to get the data association to work correctly for the case where the 
+data association is not known.
 
 ## Configuration
 The `config/slam_params.yaml` file can be used to configure
