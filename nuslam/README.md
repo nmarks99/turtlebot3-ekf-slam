@@ -80,7 +80,13 @@ and (-0.5,-0.25). Since the simulated LIDAR sensor variance in this example is
 set to 0.001, the noise is quite low and we can see the predicted centers align
 very closely with the true centers.
 
-## Data Association
+To run the landmark detection algorithm on the real robot, displaying sensed
+landmarks in RVIZ, run:
+```
+ros2 launch nuslam landmarks_detect.launch.xml robot:=localhost
+```
+
+## Unknown Data Association
 After the landmarks have been detected through clustering, circle fitting, and
 circle classification, each measurment must be associated with previously seen landmarks
 or added as a new landmark. Unfortunately, I was not able to get this aspect of the
@@ -90,11 +96,14 @@ project working in the end. The video below demonstrates as far as I got.
 https://user-images.githubusercontent.com/45540813/225811251-f7f0c89b-dcbe-4b93-85c2-c22c3ff7b758.mp4
 
 
-
-
 To start, the two landmarks that are detected by the circle fitting/classification algorithm are shown
 in the correct locations. However, when the robot begins to move, additional landmarks are
 added which are mostly not correct. I believe the issue is related to a mixup in indices
 in the state vector and how that is mapped to ID's cooresponding to the landmarks and how this
 all get incorporated in the update step of the EKF, however I ran out of time to spend on debugging.
+
+To try it out for yourself with simulated LIDAR in the simulator, run the following command:
+```
+ros2 launch nuslam unknown_data_assoc.launch.xml use_rviz:=true
+```
 
