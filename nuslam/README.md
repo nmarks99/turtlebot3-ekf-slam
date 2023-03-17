@@ -22,7 +22,8 @@ ros2 launch nuslam slam.launch.xml use_rviz:=true
 
 
 ### With sensor noise and slipping
-- Insert screenshot and plot here 
+![slam_good_with_noise](https://user-images.githubusercontent.com/45540813/225810142-71e0eefd-bd22-4f12-90d9-a50f69bef441.png)
+
 
 
 ## Landmark Detection
@@ -61,6 +62,7 @@ In the image the markers near the green spheres are located at (0.3,0.5)
 and (-0.5,-0.25). Since the simulated LIDAR sensor variance in this example is
 set to 0.001, the noise is quite low and we can see the predicted centers align
 very closely with the true centers.
+![landmark_detection](https://user-images.githubusercontent.com/45540813/225810177-f3f4e44b-e4df-422a-8238-0337ad411027.png)
 
 
 ## Data Association
