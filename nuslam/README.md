@@ -45,7 +45,11 @@ ros2 launch nuslam landmarks_detect.launch.xml
 
 The image below shows the result of the running the below launchfile.
 The dark green spheres represent the centroid of the clusters detected
-by the algorithm. A custom message which defines an array of geometry_msg/Point
+by the algorithm. 
+
+![landmark_detection](https://user-images.githubusercontent.com/45540813/225810177-f3f4e44b-e4df-422a-8238-0337ad411027.png)
+
+A custom message which defines an array of geometry_msg/Point
 messages of the centers of the detected circles is pubished on /detected_landmarks.
 for the case as shown in the image, `ros2 topic echo /detected_landmarks`
 produces the following:
@@ -62,7 +66,7 @@ In the image the markers near the green spheres are located at (0.3,0.5)
 and (-0.5,-0.25). Since the simulated LIDAR sensor variance in this example is
 set to 0.001, the noise is quite low and we can see the predicted centers align
 very closely with the true centers.
-![landmark_detection](https://user-images.githubusercontent.com/45540813/225810177-f3f4e44b-e4df-422a-8238-0337ad411027.png)
+
 
 
 ## Data Association
