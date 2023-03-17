@@ -47,16 +47,6 @@ public:
   Odometry()
   : Node("odometry")
   {
-    // pose_now.x = 0;
-    // pose_now.y = 0;
-    // pose_now.theta = 0;
-    // wheel_angles_now.left = 0;
-    // wheel_angles_now.right = 0;
-    // wheel_speeds_now.left = 0;
-    // wheel_speeds_now.right = 0;
-    // Vb_now.thetadot = 0;
-    // Vb_now.xdot = 0;
-    // Vb_now.ydot = 0;
 
     // declare parameters to the node
     declare_parameter("body_id", body_id);

@@ -185,10 +185,6 @@ private:
     js_msg.position.at(0) = sensor_data.left_encoder / encoder_ticks_per_rad;
     js_msg.position.at(1) = sensor_data.right_encoder / encoder_ticks_per_rad;
 
-    // Update wheel velocities
-    // js_msg.velocity.at(0) = (sensor_data.left_encoder - last_encoder_left) * motor_cmd_per_rad_sec;
-    // js_msg.velocity.at(1) = (sensor_data.right_encoder - last_encoder_right) * motor_cmd_per_rad_sec;
-
     // delta_encoder_ticks / encoder_ticks_per_rad = delta_theta
     // delta_theta / dt = rad/s
     const double dt = (1.0 / RATE);
