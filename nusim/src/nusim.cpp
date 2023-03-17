@@ -401,8 +401,7 @@ private:
     for (size_t i = 0; i < hits.size(); i++) {
       const double dist = std::get<0>(hits.at(i));
       const double ang = std::get<1>(hits.at(i));
-      if (LIDAR_VARIANCE > 0.0)
-      {
+      if (LIDAR_VARIANCE > 0.0) {
         noise_r = d(get_random());
       }
       ranges_out.at(ang) = dist + noise_r;

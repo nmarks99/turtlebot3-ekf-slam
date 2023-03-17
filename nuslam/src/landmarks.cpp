@@ -63,35 +63,29 @@ public:
 
     declare_parameter("robot", ROBOT);
     ROBOT = get_parameter("robot").get_value<std::string>();
-  
-    if (ROBOT == "nusim")
-    {
+
+    if (ROBOT == "nusim") {
       lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
         "/scan", 10,
         std::bind(&Landmarks::lidar_callback, this, _1));
-    }
-    else if (ROBOT == "localhost")
-    {
+    } else if (ROBOT == "localhost") {
       lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
-      "/scan", rclcpp::SensorDataQoS(),
-      std::bind(&Landmarks::lidar_callback, this, _1));
+        "/scan", rclcpp::SensorDataQoS(),
+        std::bind(&Landmarks::lidar_callback, this, _1));
     }
 
-    cluster_pub = create_publisher<visualization_msgs::msg::MarkerArray>
-      ("/clusters", 10);
+    cluster_pub = create_publisher<visualization_msgs::msg::MarkerArray>("/clusters", 10);
 
-    detected_landmarks_pub = create_publisher<nuslam::msg::PointArray>
-      ("/detected_landmarks", 10);
+    detected_landmarks_pub = create_publisher<nuslam::msg::PointArray>("/detected_landmarks", 10);
   }
 
 private:
-  
   // Parameters
   std::string ROBOT = "nusim";
 
   // Subscriptions
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub;
-  
+
   // Publishers
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr cluster_pub;
   rclcpp::Publisher<nuslam::msg::PointArray>::SharedPtr detected_landmarks_pub;
@@ -100,8 +94,8 @@ private:
   std::vector<Cluster> all_clusters;
 
   // Thresholds for circle classification
-  const std::tuple<double,double> mean_threshold{0.0,130.0};
-  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.2};
+  const std::tuple<double, double> mean_threshold{0.0, 130.0};
+  const std::tuple<double, double> true_threshold{TRUE_RADIUS, 0.2};
   const double std_threshold = 0.15;
 
 
@@ -112,29 +106,24 @@ private:
 
     // check each point to see if it fits in an existing cluster,
     // if not, add it to a new cluster
-    for (size_t i = 0; i < lidar_data.ranges.size(); i++)
-    {
+    for (size_t i = 0; i < lidar_data.ranges.size(); i++) {
       // for each point
       const double r = lidar_data.ranges.at(i);
-      if (turtlelib::almost_equal(r,0.0))
-      {
+      if (turtlelib::almost_equal(r, 0.0)) {
         continue;
       }
       const double phi = turtlelib::normalize_angle(turtlelib::deg2rad(i));
       const turtlelib::Vector2D v = turtlelib::Vector2D::from_polar(r, phi);
-      
+
       // for each cluster we have
       bool added = false;
-      for (auto &cluster : all_clusters)
-      {
+      for (auto & cluster : all_clusters) {
         added = cluster.belongs(v);
-        if (added)
-        {
+        if (added) {
           break;
         }
       }
-      if (not added)
-      {
+      if (not added) {
         // add the point as a new Cluster
         all_clusters.push_back(Cluster(v));
       }
@@ -142,33 +131,28 @@ private:
 
     // Remove clusters with too few points
     std::vector<Cluster> temp_cluster_vec;
-    for (const auto &cluster : all_clusters)
-    {
-      if (cluster.count() >= MIN_CLUSTER_SIZE)
-      {
+    for (const auto & cluster : all_clusters) {
+      if (cluster.count() >= MIN_CLUSTER_SIZE) {
         temp_cluster_vec.push_back(cluster);
       }
     }
     all_clusters = temp_cluster_vec;
     temp_cluster_vec.clear();
-    
+
     nuslam::msg::PointArray point_arr;
-    RCLCPP_DEBUG_STREAM(get_logger(),"----------------------------------");
+    RCLCPP_DEBUG_STREAM(get_logger(), "----------------------------------");
     int count = 1;
-    if (not all_clusters.empty())
-    {
-      for (const auto &cluster: all_clusters)
-      {
+    if (not all_clusters.empty()) {
+      for (const auto & cluster: all_clusters) {
         auto hkr = fit_circle(cluster);
-        RCLCPP_DEBUG_STREAM(get_logger(),"Cluster " << count);
-        RCLCPP_DEBUG_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
-        RCLCPP_DEBUG_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
-        RCLCPP_DEBUG_STREAM(get_logger(),"----------------------------------");
-        
-        if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
-        {
-          RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
-          RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
+        RCLCPP_DEBUG_STREAM(get_logger(), "Cluster " << count);
+        RCLCPP_DEBUG_STREAM(get_logger(), "Center = " << std::get<0>(hkr));
+        RCLCPP_DEBUG_STREAM(get_logger(), "Radius = " << std::get<1>(hkr));
+        RCLCPP_DEBUG_STREAM(get_logger(), "----------------------------------");
+
+        if (is_circle(cluster, mean_threshold, std_threshold, true_threshold)) {
+          RCLCPP_INFO_STREAM(get_logger(), "Center = " << std::get<0>(hkr));
+          RCLCPP_INFO_STREAM(get_logger(), "Radius = " << std::get<1>(hkr));
 
           // publish the landmarks (x,y) which is the center of the circle
           geometry_msgs::msg::Point center;
@@ -177,17 +161,16 @@ private:
           center.z = 0.0;
           point_arr.points.push_back(center);
         }
-        count ++; 
+        count++;
       }
       detected_landmarks_pub->publish(point_arr);
-    
-  
+
+
       // Publisher cluster markers
       visualization_msgs::msg::MarkerArray cluster_marker_arr;
 
-      for (size_t i = 0; i < all_clusters.size(); i++)
-      {
-        
+      for (size_t i = 0; i < all_clusters.size(); i++) {
+
         // Set the marker at the centroid of each cluster
         auto p_avg = all_clusters.at(i).centroid();
 
@@ -198,8 +181,8 @@ private:
         cluster_marker.id = i;
         cluster_marker.action = visualization_msgs::msg::Marker::ADD;
         cluster_marker.type = visualization_msgs::msg::Marker::SPHERE;
-        cluster_marker.scale.x = 0.05; 
-        cluster_marker.scale.y = 0.05; 
+        cluster_marker.scale.x = 0.05;
+        cluster_marker.scale.y = 0.05;
         cluster_marker.scale.z = 0.05;
         cluster_marker.pose.position.x = p_avg.x;
         cluster_marker.pose.position.y = p_avg.y;

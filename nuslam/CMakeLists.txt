@@ -126,7 +126,7 @@ if(BUILD_TESTING)
 
   # the following line skips cpplint (only works in a git repo)
   set(ament_cmake_cpplint_FOUND TRUE)
-  
+
   # Create Catch2 test executable
   # It will be at build/nuslam/nuslam_test
   # TODO: get colcon test to run this automatically

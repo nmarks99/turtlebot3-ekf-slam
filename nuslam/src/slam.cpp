@@ -130,20 +130,18 @@ public:
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
       "/blue/joint_states", 10,
       std::bind(&Slam::joint_states_callback, this, _1));
-    
+
     /// @brief subscription to the detected landmarks from circle fitting
     /// which is based on data from the lidar scanner (or fake lidar scanner)
-    if (not KNOWN_ASSOCIATION)
-    {
+    if (not KNOWN_ASSOCIATION) {
       detected_landmarks_sub = create_subscription<nuslam::msg::PointArray>(
-          "/detected_landmarks", 10, std::bind(&Slam::detected_landmarks_callback, this, _1)
-          );
+        "/detected_landmarks", 10, std::bind(&Slam::detected_landmarks_callback, this, _1)
+      );
     }
 
-    /// @brief subscription to fake sensor for use with SLAM 
+    /// @brief subscription to fake sensor for use with SLAM
     /// with known data association
-    if (KNOWN_ASSOCIATION)
-    {
+    if (KNOWN_ASSOCIATION) {
       RCLCPP_INFO_STREAM(get_logger(), "Known data association, using fake sensor");
       fake_sensor_sub = create_subscription<visualization_msgs::msg::MarkerArray>(
         "/fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, _1));
@@ -279,23 +277,22 @@ private:
     // Update current pose of the robot with forward kinematics
     pose_now = ddrive.forward_kinematics(pose_now, wheel_angles_now);
   }
-  
+
   /// @brief callback function for detected landmark centers
   /// from circle fitting/classification published by landmarks node
-  void detected_landmarks_callback(const nuslam::msg::PointArray &point_arr)
+  void detected_landmarks_callback(const nuslam::msg::PointArray & point_arr)
   {
     // by not providing an id for the landmark, the EKF assumes an unknown data association
     std::vector<turtlelib::LandmarkMeasurement> measurements;
-    for (const auto &landmark_point : point_arr.points)
-    {
+    for (const auto & landmark_point : point_arr.points) {
       auto m = turtlelib::LandmarkMeasurement::from_cartesian(
-          landmark_point.x,landmark_point.y);
+        landmark_point.x, landmark_point.y);
       measurements.push_back(m); // vector of 1 measurement...should be reworked
     }
-    
+
     // Run the extended Kalman filter for these measurements
-    ekf.run(pose_now,Vb_now,measurements);
-    
+    ekf.run(pose_now, Vb_now, measurements);
+
     // Store state prediction from SLAM
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
@@ -309,8 +306,8 @@ private:
 
   /// @brief callback for fake sensors for SLAM with known data association
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray & marker_arr)
-  {   
-    
+  {
+
     fake_sensor_flag = true;
 
     // store markers in a vector of turtlelib::LandmarkMeasurement's
