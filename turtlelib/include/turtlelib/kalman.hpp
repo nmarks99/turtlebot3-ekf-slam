@@ -113,9 +113,13 @@ namespace turtlelib
         /// @param zi a 2x1 vector of the measurment i
         /// @param zk a 2x1 vector of the measurment k
         /// @param covariance the covariance matrix
+        /// @return the mahalonobis distance
         double mahalanobis_distance(arma::mat zi, arma::mat zk, arma::mat covariance) const;
 
         /// @brief incorporates unassociated data, modifies marker_id
+        /// @param measurment the LandmarkMeasurement to associate
+        /// @return LandmarkMeasurement that is the same as the input,
+        /// except with an updated marker_id
         LandmarkMeasurement associate_measurement(LandmarkMeasurement measurment);
 
     public:
