@@ -11,12 +11,13 @@
 ///     /odom (nav_msgs/Odometry): odom information
 ///     /odom/path (nav_msgs/Path): path taken by robot from odometry estimate
 ///     /slam/path (nav_msgs/Path): path taken by roobt from SLAM estimate
+///     /slam/landmarks (visualization_msgs/MarkerArray): Estimated landmark locations from SLAM
 /// SUBSCRIBES:
 ///		/joint_states (sensor_msgs/JointState): joint (wheel) states information
 ///		/detected_landmarks (nuslam/PointArray): landmark locations from circle fitting algorithm
 ///		/fake_sensor (visualization_msgs/MarkerArray): Markers representing fake sensed obstacles
 /// SERVICES:
-///		/initial_pose
+///		/initial_pose: Can be used to set the initial pose for the odometry estimate
 /// CLIENTS:
 ///
 
@@ -289,19 +290,13 @@ private:
     {
       auto m = turtlelib::LandmarkMeasurement::from_cartesian(
           landmark_point.x,landmark_point.y);
-      RCLCPP_INFO_STREAM(get_logger(),
-          "New measurement (x,y) = " << landmark_point.x << "," << landmark_point.y); 
       measurements.push_back(m); // vector of 1 measurement...should be reworked
     }
     
-    for (auto &i: measurements)
-    {
-      RCLCPP_INFO_STREAM(get_logger(),
-          "New measurement (r,phi) = " << i.r << "," << i.phi); 
-    }
     // Run the extended Kalman filter for these measurements
     ekf.run(pose_now,Vb_now,measurements);
-
+    
+    // Store state prediction from SLAM
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();
@@ -317,6 +312,7 @@ private:
   {   
     
     fake_sensor_flag = true;
+
     // store markers in a vector of turtlelib::LandmarkMeasurement's
     // passing a marker_id signifies to the EKF that the data association is known
     for (size_t i = 0; i < marker_arr.markers.size(); i++) {
@@ -328,6 +324,8 @@ private:
 
     // Run extended Kalman filter and update get the updated state estimate
     ekf.run(pose_now, Vb_now, landmarks);
+
+    // Store state estimate from SLAM
     slam_pose_estimate = ekf.pose_prediction();
     slam_map_estimate = ekf.map_prediction();
     slam_state_estimate = ekf.state_prediction();

@@ -338,6 +338,8 @@ bool is_circle(const Cluster &cluster,
     // Here we make the assumption (perhaps a bad one)
     // that the first and last points in the cluster
     // are the endpoints of the supposed arc made by the cluster
+    // this puts the responsibility of the code that creates the
+    // clusters to ensure this is the case
     if (cluster.as_vector().empty())
     {
         throw std::runtime_error("Cluster is empty");

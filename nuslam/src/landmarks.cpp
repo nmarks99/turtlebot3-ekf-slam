@@ -1,16 +1,18 @@
 /// @file
-/// @brief Landmarks detection node
+/// @brief Landmarks detection node which detects
+/// landmarks from LIDAR data using circle fitting
 ///
 /// PARAMETERS:
-///
+///   robot: "nusim" for simulation, "localhost" for robot
 /// PUBLISHES:
-///
+///   /detected_landmarks (nuslam/msg/PointArray): Centers of the detected landmarks
+///   /clusters (visualization_msgs/MarkerArray): Centroids of the detected clusters
 /// SUBSCRIBES:
-///
+///   /scan (sensor_msgs/LaserScan): LIDAR scanner
 /// SERVICES:
-///
+///   None
 /// CLIENTS:
-///
+///   None
 
 #include <chrono>
 #include <cstddef>
@@ -94,11 +96,10 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr cluster_pub;
   rclcpp::Publisher<nuslam::msg::PointArray>::SharedPtr detected_landmarks_pub;
 
-  // Messages 
-  // visualization_msgs::msg::MarkerArray cluster_marker_arr;
- 
   // Vector of Cluster objects representing all the clusters of points
   std::vector<Cluster> all_clusters;
+
+  // Thresholds for circle classification
   const std::tuple<double,double> mean_threshold{0.0,130.0};
   const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.2};
   const double std_threshold = 0.15;
@@ -168,7 +169,8 @@ private:
         {
           RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
           RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
-          // publishe the landmarks (x,y) which is the center of the circle
+
+          // publish the landmarks (x,y) which is the center of the circle
           geometry_msgs::msg::Point center;
           center.x = std::get<0>(hkr).x;
           center.y = std::get<0>(hkr).y;
@@ -186,6 +188,7 @@ private:
       for (size_t i = 0; i < all_clusters.size(); i++)
       {
         
+        // Set the marker at the centroid of each cluster
         auto p_avg = all_clusters.at(i).centroid();
 
         visualization_msgs::msg::Marker cluster_marker;
