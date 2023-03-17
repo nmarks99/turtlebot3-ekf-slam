@@ -6,8 +6,8 @@ Panels:
       Expanded:
         - /Simulation Robot1/Description Topic1
         - /TF1/Tree1
+        - /nusim obstacles1
         - /MarkerArray1
-        - /MarkerArray1/Status1
       Splitter Ratio: 0.5
     Tree Height: 752
   - Class: rviz_common/Selection
@@ -108,18 +108,6 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: nusim obstacles
-      Namespaces:
-        "": true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /nusim/obstacles
-      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -132,7 +120,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -153,7 +141,7 @@ Visualization Manager:
         Value: /scan
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/TF
       Enabled: false
       Frame Timeout: 15
@@ -207,6 +195,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /odom
       Value: false
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: nusim obstacles
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /nusim/obstacles
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: MarkerArray
@@ -265,25 +265,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.6277167797088623
+      Distance: 2.9925360679626465
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.040661633014678955
-        Y: 0.053402844816446304
-        Z: 0.44003668427467346
+        X: 0.032938435673713684
+        Y: -0.2492903172969818
+        Z: 0.030725546181201935
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5047983527183533
+      Pitch: 0.5947978496551514
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.25541353225708
+      Yaw: 4.270411014556885
     Saved: ~
 Window Geometry:
   Displays:

@@ -7,11 +7,14 @@
         <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
     </node>
 
-    <!-- start circle node -->
-    <node pkg="nuslam" exec="landmarks" name="landmarks"/>
 
     <!-- Runnning in simulation -->
     <group if="$(eval '\'$(var robot)\' == \'nusim\'')">
+
+        <!-- start landmarks node -->
+        <node pkg="nuslam" exec="landmarks" name="landmarks">
+            <param name="robot" value="nusim"/>
+        </node>
 
         <!-- start the nusim node with nusim_slam_params.yaml config file -->
         <node pkg="nusim" exec="nusim" name="nusim">
@@ -31,7 +34,34 @@
             <arg name="use_jsp" value="true"/>
         </include>
 
-
     </group>
 
+    <!-- Runnning with the real robot -->
+    <group if="$(eval '\'$(var robot)\' == \'localhost\'')">
+
+        <!-- start landmarks node -->
+        <node pkg="nuslam" exec="landmarks" name="landmarks">
+            <param name="robot" value="localhost"/>
+        </node>
+
+        <!-- start the nusim node with nusim_slam_params.yaml config file -->
+        <!-- This is just to show the robot and fake lidar is remapped so it doesn't interfere -->
+        <node pkg="nusim" exec="nusim" name="nusim">
+            <param from="$(find-pkg-share nuslam)/config/nusim_slam_params.yaml"/>
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_params.yaml"/>
+            <remap from="/scan" to="/fake_scan"/>
+        </node>
+
+        <!-- start rviz with nuturle_control.rviz configuration -->
+        <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share nuslam)/config/landmarks.rviz --fixed-frame nusim/world"/>
+
+        
+        <!-- load red robot into rviz with jsp -->
+        <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py">
+            <arg name="color" value="red"/>
+            <arg name="use_rviz" value="false"/>
+            <arg name="use_jsp" value="true"/>
+        </include>
+
+    </group>
 </launch>

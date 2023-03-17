@@ -59,9 +59,21 @@ public:
   : Node("landmarks")
   {
 
-    lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
-      "/scan", 10,
+    declare_parameter("robot", ROBOT);
+    ROBOT = get_parameter("robot").get_value<std::string>();
+  
+    if (ROBOT == "nusim")
+    {
+      lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
+        "/scan", 10,
+        std::bind(&Landmarks::lidar_callback, this, _1));
+    }
+    else if (ROBOT == "localhost")
+    {
+      lidar_sub = create_subscription<sensor_msgs::msg::LaserScan>(
+      "/scan", rclcpp::SensorDataQoS(),
       std::bind(&Landmarks::lidar_callback, this, _1));
+    }
 
     cluster_pub = create_publisher<visualization_msgs::msg::MarkerArray>
       ("/clusters", 10);
@@ -71,6 +83,10 @@ public:
   }
 
 private:
+  
+  // Parameters
+  std::string ROBOT = "nusim";
+
   // Subscriptions
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub;
   
@@ -83,8 +99,8 @@ private:
  
   // Vector of Cluster objects representing all the clusters of points
   std::vector<Cluster> all_clusters;
-  const std::tuple<double,double> mean_threshold{0.0,130.0}; // TODO: tune
-  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.1};
+  const std::tuple<double,double> mean_threshold{0.0,130.0};
+  const std::tuple<double,double> true_threshold{TRUE_RADIUS,0.2};
   const double std_threshold = 0.15;
 
 
@@ -136,20 +152,22 @@ private:
     temp_cluster_vec.clear();
     
     nuslam::msg::PointArray point_arr;
-    RCLCPP_INFO_STREAM(get_logger(),"----------------------------------");
+    RCLCPP_DEBUG_STREAM(get_logger(),"----------------------------------");
     int count = 1;
     if (not all_clusters.empty())
     {
       for (const auto &cluster: all_clusters)
       {
         auto hkr = fit_circle(cluster);
-        RCLCPP_INFO_STREAM(get_logger(),"Cluster " << count);
-        RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
-        RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
-        RCLCPP_INFO_STREAM(get_logger(),"----------------------------------");
-        count ++; 
+        RCLCPP_DEBUG_STREAM(get_logger(),"Cluster " << count);
+        RCLCPP_DEBUG_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
+        RCLCPP_DEBUG_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
+        RCLCPP_DEBUG_STREAM(get_logger(),"----------------------------------");
+        
         if(is_circle(cluster,mean_threshold,std_threshold,true_threshold))
         {
+          RCLCPP_INFO_STREAM(get_logger(),"Center = " << std::get<0>(hkr));
+          RCLCPP_INFO_STREAM(get_logger(),"Radius = " << std::get<1>(hkr));
           // publishe the landmarks (x,y) which is the center of the circle
           geometry_msgs::msg::Point center;
           center.x = std::get<0>(hkr).x;
@@ -157,6 +175,7 @@ private:
           center.z = 0.0;
           point_arr.points.push_back(center);
         }
+        count ++; 
       }
       detected_landmarks_pub->publish(point_arr);
     

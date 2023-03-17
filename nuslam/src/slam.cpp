@@ -317,7 +317,6 @@ private:
   {   
     
     fake_sensor_flag = true;
-    RCLCPP_INFO_STREAM(get_logger(),"shouldn't be here!");
     // store markers in a vector of turtlelib::LandmarkMeasurement's
     // passing a marker_id signifies to the EKF that the data association is known
     for (size_t i = 0; i < marker_arr.markers.size(); i++) {
