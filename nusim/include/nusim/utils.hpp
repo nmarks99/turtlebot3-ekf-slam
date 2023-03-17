@@ -31,6 +31,17 @@ void fill_walls(
   visualization_msgs::msg::MarkerArray & marker_arr, double X_LENGTH,
   double Y_LENGTH);
 
+/// @brief fills the Marker array with the positions of the obstacles
+/// to simulate a basic sensor. This fake sensor data is used for SLAM
+/// with known data association.
+/// @param marker_arr the MarkerArray to fill
+/// @param obstacles_x the vector of x positions of the obstacles
+/// @param obstacles_y the vector of y positions of the obstacles
+/// @param obstacles_r the radius of the obstacles
+/// @param true_pose the true pose of the robot known to the simulator
+/// @param max_range the maximim distance the sensor can see obstacles
+/// @param basic_sensor_variance the variance used in generating
+/// random Gaussian noise for the fake sensor
 void fill_basic_sensor_obstacles(
   visualization_msgs::msg::MarkerArray & marker_arr,
   const std::vector<double> & obstacles_x, const std::vector<double> & obstacles_y,

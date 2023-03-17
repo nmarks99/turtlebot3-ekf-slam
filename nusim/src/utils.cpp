@@ -152,10 +152,8 @@ void fill_basic_sensor_obstacles(
       turtlelib::Vector2D{_v.x, _v.y},
       turtlelib::Vector2D{true_pose.x, true_pose.y});
     if (dist > max_range) {
-      // RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle " << _v.x << "," << _v.y << " OUT OF RANGE: distance = " << dist);
       marker_msg.action = visualization_msgs::msg::Marker::DELETE;
     } else {
-      // RCLCPP_INFO_STREAM(rclcpp::get_logger("nusim/utils"), "obstacle " << _v.x << "," << _v.y << " IN RANGE: distance = " << dist);
       marker_msg.action = visualization_msgs::msg::Marker::ADD;
     }
     marker_msg.scale.x = obstacles_r;
