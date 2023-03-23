@@ -1,7 +1,9 @@
-# ME495 Sensing, Navigation and Machine Learning For Robotics
-* Nick Marks
-* Winter 2022
-* Also worked with: Kevin, Ishaan
+# EKF SLAM From Scratch
+In this project, I implmement an extended Kalman filter simultaneous localization
+and mapping (SLAM) algorithm from scratch for the Turtlebot3 using C++ and ROS2.
+This includes a simulator so the algorithm can be tested in simulation before
+being tested on the real robot. A complete list of packages in this repository
+is provided in the next section
 
 # Package List
 This repository consists of several ROS packages
