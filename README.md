@@ -1,5 +1,5 @@
 # EKF SLAM From Scratch
-In this project, I implmement an extended Kalman filter simultaneous localization
+In this project, I implmement an extended Kalman filter (EKF) simultaneous localization
 and mapping (SLAM) algorithm from scratch for the Turtlebot3 using C++ and ROS2.
 This includes a simulator so the algorithm can be tested in simulation before
 being tested on the real robot. A complete list of packages in this repository
