@@ -56,7 +56,7 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 
 /// \cond
-static constexpr bool SAVE_TO_CSV = true;
+static constexpr bool SAVE_TO_CSV = false;
 std::ofstream nusim_log_file;
 auto t0 = std::chrono::system_clock::now();
 //// \endcond
