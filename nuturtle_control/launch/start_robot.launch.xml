@@ -2,7 +2,7 @@
 
     <arg name="robot" default="nusim" />
     <arg name="cmd_src" default="none" />
-    <arg name="use_rviz" default="false" />
+    <arg name="use_rviz" default="true" />
 
     <!-- start nuturtle_control node with diff_params.yaml config file -->
     <node pkg="nuturtle_control" exec="nuturtle_control" name="nuturtle_control">
