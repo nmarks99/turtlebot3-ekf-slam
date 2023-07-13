@@ -69,6 +69,7 @@ rosidl_generate_interfaces(
   ${PROJECT_NAME}_srv
   "srv/Control.srv"
   "srv/InitialPose.srv"
+  "srv/CsvTwist.srv"
   LIBRARY_NAME ${PROJECT_NAME}
 )
 

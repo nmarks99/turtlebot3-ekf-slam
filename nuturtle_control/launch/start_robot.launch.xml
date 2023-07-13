@@ -10,6 +10,9 @@
         <remap from="/joint_states" to="/blue/joint_states"/>
     </node>
 
+
+    <node pkg="vango" exec="play_csv" name="play_csv"/>
+
     <!-- start odometry node for blue robot-->
     <node pkg="nuturtle_control" exec="odometry" name="odometry">
         <param name="body_id" value="blue/base_footprint"/>
